@@ -213,6 +213,7 @@ function renderReferencePrices(c: DashboardCard, currency: Currency): string {
     return `        <div class="row"><span class="label">참조 가격대</span><span class="value small dim">데이터 없음</span></div>`;
   }
   const cur = s.price;
+  const ind = c.indicators;
   const diff = (target: number): string => {
     if (cur == null || cur === 0) return '—';
     const pct = ((target - cur) / cur) * 100;
@@ -226,6 +227,11 @@ function renderReferencePrices(c: DashboardCard, currency: Currency): string {
     ['Q3 (상위 25%선)', refs.q3],
     ['52주 고', hi],
   ];
+  if (ind?.sma50 != null) rows.push(['50일선 (중기 추세)', ind.sma50]);
+  if (ind?.sma200 != null) rows.push(['200일선 (장기 추세)', ind.sma200]);
+  // 가격 오름차순 정렬 — 현재가 기준 위/아래 직관적 비교
+  rows.sort((a, b) => a[1] - b[1]);
+
   const tbody = rows
     .map(([label, target]) => {
       const pct = diff(target);
