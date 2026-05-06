@@ -17,6 +17,7 @@ export interface DashboardPage {
   macros: MacroQuote[];
   kr: StockDashboardSection;
   us: StockDashboardSection;
+  valueKr: StockDashboardSection | null;
 }
 
 export class DashboardReporter {
@@ -40,12 +41,13 @@ export class DashboardReporter {
     <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)}</div>
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
+${this.renderWeather(page.weather)}
+${this.renderInsights(page)}
 ${this.renderRulesIntro()}
 ${this.renderMacro(page.macros)}
-${this.renderWeather(page.weather)}
 ${this.renderStockSection('🇰🇷 국내 주식', page.kr)}
 ${this.renderStockSection('🇺🇸 미국 빅테크', page.us)}
-${this.renderInsights(page)}
+${this.renderValueSection(page.valueKr)}
 </body>
 </html>
 `;
@@ -80,10 +82,25 @@ ${cells}
   </section>`;
   }
 
+  private renderValueSection(section: StockDashboardSection | null): string {
+    if (!section || section.cards.length === 0) return '';
+    const cards = section.cards
+      .map((c) => this.renderCard(c, section.currency))
+      .join('\n');
+    return `  <section class="value-candidates">
+    <h2>📚 가치 평가 기준 후보 — 스크리닝 시드 <span class="meta">(${esc(section.currency)})</span></h2>
+    <p class="value-intro">아래 종목은 한국 시장에서 일반적으로 <strong>저PER / 저PBR / 고배당</strong> 같은 객관 기준으로 거론되는 시드입니다. <strong>매수 추천이 아닙니다.</strong> 단순 저평가가 가치 함정(value trap)일 수 있으며, 산업 사양·실적 악화로 영구 저평가될 위험이 있습니다. 본인이 추가 검증 후 판단하세요. 빼거나 다른 종목으로 바꾸려면 <code>KR_VALUE_CANDIDATES</code> 환경변수로 조정.</p>
+    <div class="cards">
+${cards}
+    </div>
+  </section>`;
+  }
+
   private renderInsights(page: DashboardPage): string {
     const krInsights = page.kr.cards.map((c) => evaluateInsight(c, 'KR'));
     const usInsights = page.us.cards.map((c) => evaluateInsight(c, 'US'));
-    const all = [...krInsights, ...usInsights];
+    const valueInsights = page.valueKr?.cards.map((c) => evaluateInsight(c, 'KR')) ?? [];
+    const all = [...krInsights, ...usInsights, ...valueInsights];
     if (all.length === 0) return '';
     const cards = all.map((ins) => renderInsightCard(ins, ins.market === 'KR' ? 'KRW' : 'USD')).join('\n');
     return `  <section class="insights">
@@ -296,6 +313,9 @@ ${flowRows}
       .pattern-head .ratio { color: #888; font-weight: normal; margin-left: 4px; }
       .pattern-desc { color: #777; font-size: .92em; margin-top: 2px; }
       .insight-note { margin: 10px 0 0; padding: 8px 10px; font-size: .82em; color: #666; background: #f7f9fc; border-radius: 4px; line-height: 1.5; }
+      section.value-candidates { padding: 20px 24px; background: #f0f7ff; border-top: 1px solid #cfd8dc; border-bottom: 1px solid #cfd8dc; }
+      .value-intro { font-size: .9em; color: #555; line-height: 1.55; margin: 0 0 14px; padding: 10px 12px; background: #fff; border-left: 3px solid #1976d2; border-radius: 4px; }
+      .value-intro code { background: #eee; padding: 1px 5px; border-radius: 3px; font-size: .9em; }
       footer.rules { padding: 20px 24px; background: #f7f9fc; border-top: 1px solid #e6e6e6; }
       footer.rules h2 { font-size: 1em; margin: 0 0 8px; color: #555; }
       footer.rules ul { margin: 0; padding-left: 20px; font-size: .9em; color: #444; line-height: 1.6; }

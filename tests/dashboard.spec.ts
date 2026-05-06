@@ -29,21 +29,36 @@ import type { MacroQuote } from '../src/types/macro.js';
 import { logger } from '../src/utils/logger.js';
 
 // 필수: 005930 삼성전자, 000660 SK하이닉스 (반도체)
-// 추가 시드 (섹터 분산, 시총·외국인 보유·유동성 기준):
+// 추가 10종 (섹터 분산, 시총·외국인 보유·유동성 기준) — 사용자 요청 총 12종:
 //   035420 NAVER (플랫폼)
+//   035720 카카오 (플랫폼)
 //   373220 LG에너지솔루션 (2차전지)
-//   005380 현대차 (자동차/수출)
-//   207940 삼성바이오로직스 (바이오/CDMO)
-//   105560 KB금융 (금융/배당)
-const DEFAULT_KR = '005930,000660,035420,373220,005380,207940,105560';
+//   005380 현대차 (자동차)
+//   000270 기아 (자동차)
+//   207940 삼성바이오로직스 (바이오)
+//   068270 셀트리온 (바이오)
+//   105560 KB금융 (금융)
+//   066570 LG전자 (가전·전기)
+//   028260 삼성물산 (지주)
+const DEFAULT_KR =
+  '005930,000660,035420,035720,373220,005380,000270,207940,068270,105560,066570,028260';
 const DEFAULT_US = 'AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA';
+
+// 가치 평가 기준 후보 (스크리닝 시드, 추천 X)
+// 객관 근거: 저PER / 저PBR / 고배당 / 시총 상위로 자주 거론되는 한국 대형주
+// 가치 함정(value trap) 위험 있음 — 본인 검증 필수
+const DEFAULT_VALUE_KR =
+  '005490,012330,017670,033780,086790,055550,032830,024110,267250,051910';
 const krCodes = (process.env.KR_DASHBOARD_CODES ?? DEFAULT_KR)
   .split(',').map((s) => s.trim()).filter(Boolean);
 const usTickers = (process.env.US_DASHBOARD_TICKERS ?? DEFAULT_US)
   .split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+const valueKrCodes = (process.env.KR_VALUE_CANDIDATES ?? DEFAULT_VALUE_KR)
+  .split(',').map((s) => s.trim()).filter(Boolean);
 
 const krSnaps: StockSnapshot[] = [];
 const usSnaps: StockSnapshot[] = [];
+const valueKrSnaps: StockSnapshot[] = [];
 let weatherForecasts: WeatherForecast[] = [];
 const indicatorMap = new Map<string, IndicatorSet>();
 const closesMap = new Map<string, number[]>();
@@ -84,6 +99,7 @@ test('시계열 + 기술적 지표 + sparkline (병렬 fetch)', async () => {
   const tasks: Array<{ ticker: string; market: 'KR' | 'US' }> = [
     ...krCodes.map((code) => ({ ticker: code, market: 'KR' as const })),
     ...usTickers.map((t) => ({ ticker: t, market: 'US' as const })),
+    ...valueKrCodes.map((code) => ({ ticker: code, market: 'KR' as const })),
   ];
   const results = await Promise.all(
     tasks.map(async ({ ticker, market }) => {
@@ -143,16 +159,39 @@ for (const ticker of usTickers) {
   });
 }
 
+for (const code of valueKrCodes) {
+  test(`Value KR ${code}`, async ({ page }) => {
+    const src = new NaverKrSource();
+    await src.open(page, code);
+    const snap = await src.extractSnapshot(page, code);
+    valueKrSnaps.push(snap);
+    logger.info('Value KR snapshot', {
+      code,
+      name: snap.name,
+      price: snap.price,
+      pos52w: pos(snap),
+    });
+
+    // 가치 후보도 외인/기관 수급 fetch (KR이라 가능)
+    const flow = await new NaverKrFlowSource().fetch(page, code);
+    if (flow) {
+      flowMap.set(code, flow);
+    }
+  });
+}
+
 test.afterAll(async () => {
   if (krSnaps.length === 0 && usSnaps.length === 0) return;
   const builder = new DashboardBuilder();
+  const ctx = { indicators: indicatorMap, closes: closesMap, flows: flowMap };
   const dashboard: DashboardPage = {
     generatedAt: new Date().toISOString(),
     today: todayInSeoul(),
     weather: weatherForecasts,
     macros,
-    kr: builder.build(krSnaps, { indicators: indicatorMap, closes: closesMap, flows: flowMap }),
+    kr: builder.build(krSnaps, ctx),
     us: builder.build(usSnaps, { indicators: indicatorMap, closes: closesMap }),
+    valueKr: valueKrSnaps.length > 0 ? builder.build(valueKrSnaps, ctx) : null,
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });
