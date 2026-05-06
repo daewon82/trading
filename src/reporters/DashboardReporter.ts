@@ -538,14 +538,14 @@ function renderSparkline(closes: number[] | null): string {
         </svg>`;
 }
 
-interface InsightPattern {
+export interface InsightPattern {
   name: string;
   matched: number;
   total: number;
   description: string;
 }
 
-interface InsightResult {
+export interface InsightResult {
   card: DashboardCard;
   market: 'KR' | 'US';
   bullish: string[];
@@ -564,7 +564,7 @@ interface InsightResult {
   reasoning: string;
 }
 
-function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightResult {
+export function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightResult {
   const ind = c.indicators;
   const flow = c.flow;
   const q = c.quartile;

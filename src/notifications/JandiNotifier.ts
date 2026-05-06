@@ -1,4 +1,8 @@
-import type { DashboardPage } from '../reporters/DashboardReporter.js';
+import {
+  evaluateInsight,
+  type DashboardPage,
+  type InsightResult,
+} from '../reporters/DashboardReporter.js';
 import type { StockDashboardSection, Currency } from '../types/stock.js';
 import type { WeatherForecast } from '../types/weather.js';
 
@@ -51,12 +55,12 @@ export class JandiNotifier {
           description: this.summarizeRainOnly(page.weather),
         },
         {
-          title: '🇰🇷 국내 — 매수 참조가',
-          description: this.summarizeBuyRefs(page.kr),
+          title: '🇰🇷 국내 — 매수 우호 우세 순',
+          description: this.summarizeRanked(page.kr, 'KR'),
         },
         {
-          title: '🇺🇸 미국 빅테크 — 매수 참조가',
-          description: this.summarizeBuyRefs(page.us),
+          title: '🇺🇸 미국 빅테크 — 매수 우호 우세 순',
+          description: this.summarizeRanked(page.us, 'US'),
         },
         {
           title: '🔗 대시보드 (상세)',
@@ -91,23 +95,45 @@ export class JandiNotifier {
       .join('\n');
   }
 
-  private summarizeBuyRefs(section: StockDashboardSection): string {
-    return section.cards
-      .map((c) => this.summarizeCardRefs(c, section.currency))
+  private summarizeRanked(section: StockDashboardSection, market: 'KR' | 'US'): string {
+    const insights = section.cards.map((c) => evaluateInsight(c, market));
+    // 정렬: bullish - bearish (net 매수 우호 점수). 동률은 cautious 적은 순.
+    insights.sort((a, b) => {
+      const scoreA = a.bullish.length - a.bearish.length;
+      const scoreB = b.bullish.length - b.bearish.length;
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return a.cautious.length - b.cautious.length;
+    });
+    return insights
+      .map((ins, idx) => this.summarizeRankedLine(ins, idx + 1, section.currency))
       .join('\n');
   }
 
-  private summarizeCardRefs(
-    c: { snapshot: { name: string; code: string; price: number | null }; referenceLines: { q1: number; q2: number; q3: number } | null; indicators: { sma200: number | null } | null },
-    currency: Currency,
-  ): string {
-    const s = c.snapshot;
+  private summarizeRankedLine(ins: InsightResult, rank: number, currency: Currency): string {
+    const s = ins.card.snapshot;
+    const refs = ins.card.referenceLines;
     const cur = formatPrice(s.price, currency);
-    const refs = c.referenceLines;
-    if (!refs) return `• ${s.name} (${s.code}): 현재 ${cur}`;
-    const sma200 = c.indicators?.sma200;
-    const sma200Str = sma200 != null ? ` · 200d ${formatPrice(sma200, currency)}` : '';
-    return `• ${s.name}: 현재 ${cur} | Q1 ${formatPrice(refs.q1, currency)} · Q2 ${formatPrice(refs.q2, currency)}${sma200Str}`;
+    const net = ins.bullish.length - ins.bearish.length;
+    let icon = '◯';
+    let dominantTag = '';
+    if (ins.dominance.dominantLabel === '매수 우호 우세') {
+      icon = '🟢';
+      dominantTag = '매수 우세';
+    } else if (ins.dominance.dominantLabel === '매도 우호 우세') {
+      icon = '🔴';
+      dominantTag = '매도 우세';
+    } else if (ins.dominance.dominantLabel === '신중 우세') {
+      icon = '🟡';
+      dominantTag = '신중';
+    } else {
+      icon = '⚪';
+      dominantTag = '혼합';
+    }
+    const tag = `${dominantTag} (⊕${ins.bullish.length}/⊖${ins.bearish.length}, net ${net >= 0 ? '+' : ''}${net})`;
+    const refStr = refs
+      ? ` | Q1 ${formatPrice(refs.q1, currency)} · Q2 ${formatPrice(refs.q2, currency)}`
+      : '';
+    return `${rank}. ${icon} ${s.name} (${s.code}) ${cur}${refStr}\n   └ ${tag}`;
   }
 
   private formatLinks(opts: JandiNotifierOptions): string {
