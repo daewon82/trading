@@ -5,9 +5,13 @@ import type {
   ReferenceLines,
   StockDashboardSection,
 } from '../types/stock.js';
+import type { IndicatorSet } from '../types/timeseries.js';
 
 export class DashboardBuilder {
-  build(snapshots: StockSnapshot[]): StockDashboardSection {
+  build(
+    snapshots: StockSnapshot[],
+    indicators?: ReadonlyMap<string, IndicatorSet>,
+  ): StockDashboardSection {
     if (snapshots.length === 0) {
       throw new Error('DashboardBuilder.build: empty snapshots');
     }
@@ -18,17 +22,20 @@ export class DashboardBuilder {
       );
     }
     const head = snapshots[0]!;
-    const cards = snapshots.map((s) => this.toCard(s));
+    const cards = snapshots.map((s) =>
+      this.toCard(s, indicators?.get(s.code) ?? null),
+    );
     return { market: head.market, currency: head.currency, cards };
   }
 
-  private toCard(s: StockSnapshot): DashboardCard {
+  private toCard(s: StockSnapshot, indicators: IndicatorSet | null): DashboardCard {
     const position = this.calcPosition(s.price, s.fiftyTwoWeekLow, s.fiftyTwoWeekHigh);
     return {
       snapshot: s,
       fiftyTwoWeekPosition: position,
       quartile: position == null ? null : this.quartile(position),
       referenceLines: this.referenceLines(s.fiftyTwoWeekLow, s.fiftyTwoWeekHigh),
+      indicators,
     };
   }
 

@@ -93,6 +93,7 @@ export interface DashboardCard {
   fiftyTwoWeekPosition: number | null;
   quartile: Quartile | null;
   referenceLines: ReferenceLines | null;
+  indicators: import('./timeseries.js').IndicatorSet | null;
 }
 
 export interface StockDashboardSection {

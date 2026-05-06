@@ -108,7 +108,21 @@ export class JandiNotifier {
       s.changePercent == null
         ? ''
         : ` ${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%`;
-    return `• ${s.name} (${s.code}): ${price}${change} · ${pos}`;
+    const ind = c.indicators;
+    const signals: string[] = [];
+    if (ind?.rsi14 != null) {
+      const note = ind.rsi14 < 30 ? '↓' : ind.rsi14 > 70 ? '↑' : '';
+      signals.push(`RSI ${ind.rsi14.toFixed(0)}${note}`);
+    }
+    if (ind?.pctVsSma200 != null) {
+      signals.push(`200d ${ind.pctVsSma200 >= 0 ? '+' : ''}${ind.pctVsSma200.toFixed(0)}%`);
+    }
+    if (ind?.lastCross) {
+      const tag = ind.lastCross.kind === 'golden' ? '골든' : '데드';
+      signals.push(`${tag} ${ind.lastCross.daysAgo}일전`);
+    }
+    const sigSuffix = signals.length > 0 ? ` · ${signals.join(' · ')}` : '';
+    return `• ${s.name} (${s.code}): ${price}${change} · ${pos}${sigSuffix}`;
   }
 }
 

@@ -6,6 +6,7 @@ import type {
   Currency,
 } from '../types/stock.js';
 import type { WeatherForecast, WeatherDay } from '../types/weather.js';
+import type { IndicatorSet, CrossEvent } from '../types/timeseries.js';
 
 export interface DashboardPage {
   generatedAt: string;
@@ -116,6 +117,7 @@ ${cards}
         <div class="bar-fill" style="left:${c.fiftyTwoWeekPosition.toFixed(2)}%"></div>
       </div>
       <div class="bar-labels"><span>52주 저</span><span>52주 고</span></div>`;
+    const indicatorRows = renderIndicators(c.indicators);
     return `      <article class="card">
         <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span></h3>
         <div class="row"><span class="label">현재가</span><span class="value strong">${price}</span><span class="change">${change}</span></div>
@@ -124,6 +126,7 @@ ${cards}
 ${positionBar}
         <div class="row"><span class="label">참조선</span><span class="value small">${refs}</span></div>
         <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">${per} · ${pbr} · ${div}</span></div>
+${indicatorRows}
       </article>`;
   }
 
@@ -157,6 +160,7 @@ ${positionBar}
       .value.small { font-size: .85em; }
       .change { color: #555; font-size: .85em; min-width: 60px; text-align: right; }
       .quart { color: #888; font-size: .85em; }
+      .dim { color: #aaa; }
       .bar { position: relative; height: 8px; background: #f0f0f0; border-radius: 4px; margin: 8px 0 4px; }
       .bar-q { position: absolute; top: 0; width: 1px; height: 8px; background: #ccc; left: 25%; }
       .bar-fill { position: absolute; top: -3px; width: 3px; height: 14px; background: #1976d2; border-radius: 1px; transform: translateX(-1.5px); }
@@ -171,6 +175,34 @@ function esc(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function renderIndicators(ind: IndicatorSet | null): string {
+  if (!ind) {
+    return `        <div class="row"><span class="label">시계열</span><span class="value small dim">데이터 없음</span></div>`;
+  }
+  const rsi = ind.rsi14 == null ? '—' : ind.rsi14.toFixed(0);
+  const rsiNote =
+    ind.rsi14 == null ? '' : ind.rsi14 < 30 ? ' (30 미만)' : ind.rsi14 > 70 ? ' (70 초과)' : '';
+  const pct200 = ind.pctVsSma200 == null
+    ? '—'
+    : `${ind.pctVsSma200 >= 0 ? '+' : ''}${ind.pctVsSma200.toFixed(1)}%`;
+  const r1 = ind.return1m == null
+    ? '—'
+    : `${ind.return1m >= 0 ? '+' : ''}${ind.return1m.toFixed(1)}%`;
+  const r3 = ind.return3m == null
+    ? '—'
+    : `${ind.return3m >= 0 ? '+' : ''}${ind.return3m.toFixed(1)}%`;
+  const cross = formatCross(ind.lastCross);
+  return `        <div class="row"><span class="label">RSI(14) · 200d 이격</span><span class="value small">${rsi}${rsiNote} · ${pct200}</span></div>
+        <div class="row"><span class="label">수익률 1M / 3M</span><span class="value small">${r1} / ${r3}</span></div>
+        <div class="row"><span class="label">최근 cross</span><span class="value small">${cross}</span></div>`;
+}
+
+function formatCross(c: CrossEvent | null): string {
+  if (!c) return '최근 1년 내 없음';
+  const label = c.kind === 'golden' ? '골든크로스' : '데드크로스';
+  return `${label} · ${c.daysAgo}영업일 전 (${c.date})`;
 }
 
 function formatPrice(v: number | null, currency: Currency): string {

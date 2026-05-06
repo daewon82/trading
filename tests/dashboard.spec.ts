@@ -3,7 +3,12 @@ import { writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { NaverKrSource } from '../src/sources/naver-kr/NaverKrSource.js';
 import { NaverGlobalSource } from '../src/sources/naver-global/NaverGlobalSource.js';
+import {
+  fetchDailyChart,
+  resolveCandidates,
+} from '../src/sources/timeseries/YahooChartSource.js';
 import { DashboardBuilder } from '../src/analyzers/DashboardBuilder.js';
+import { computeIndicators } from '../src/analyzers/TechnicalIndicators.js';
 import {
   DashboardReporter,
   type DashboardPage,
@@ -16,6 +21,7 @@ import {
 } from '../src/sources/weather/openMeteo.js';
 import type { StockSnapshot } from '../src/types/stock.js';
 import type { WeatherForecast } from '../src/types/weather.js';
+import type { IndicatorSet } from '../src/types/timeseries.js';
 import { logger } from '../src/utils/logger.js';
 
 const DEFAULT_KR = '005930,000660'; // 삼성전자, SK하이닉스
@@ -28,6 +34,7 @@ const usTickers = (process.env.US_DASHBOARD_TICKERS ?? DEFAULT_US)
 const krSnaps: StockSnapshot[] = [];
 const usSnaps: StockSnapshot[] = [];
 let weatherForecasts: WeatherForecast[] = [];
+const indicatorMap = new Map<string, IndicatorSet>();
 
 test.describe.configure({ mode: 'serial' });
 
@@ -40,6 +47,25 @@ test('주간 날씨 (서울/고양시)', async () => {
     cities: weatherForecasts.map((f) => f.city),
     days: weatherForecasts[0]?.days.length ?? 0,
   });
+});
+
+test('시계열 + 기술적 지표 (병렬 fetch)', async () => {
+  const tasks: Array<{ ticker: string; market: 'KR' | 'US' }> = [
+    ...krCodes.map((code) => ({ ticker: code, market: 'KR' as const })),
+    ...usTickers.map((t) => ({ ticker: t, market: 'US' as const })),
+  ];
+  const results = await Promise.all(
+    tasks.map(async ({ ticker, market }) => {
+      const ts = await fetchDailyChart(ticker, resolveCandidates(ticker, market));
+      if (ts) {
+        const ind = computeIndicators(ts);
+        indicatorMap.set(ticker, ind);
+        return { ticker, points: ts.points.length, sma200: ind.sma200, rsi14: ind.rsi14 };
+      }
+      return { ticker, points: 0, sma200: null, rsi14: null };
+    }),
+  );
+  logger.info('indicators computed', { count: indicatorMap.size, results });
 });
 
 for (const code of krCodes) {
@@ -79,8 +105,8 @@ test.afterAll(async () => {
     generatedAt: new Date().toISOString(),
     today: todayInSeoul(),
     weather: weatherForecasts,
-    kr: builder.build(krSnaps),
-    us: builder.build(usSnaps),
+    kr: builder.build(krSnaps, indicatorMap),
+    us: builder.build(usSnaps, indicatorMap),
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });

@@ -105,7 +105,17 @@ npm run lint
 npm run report:generate -- reports/from-mcp.json
 ```
 
-## 7. 현재 상태 (v0.3)
+## 7. 현재 상태 (v0.4)
+
+### v0.4 — 시계열 + 사실 기반 시그널 표시
+
+- 데이터 소스: **Yahoo Finance chart API** (`query1.finance.yahoo.com/v8/finance/chart/{symbol}`). JSON, 키 불필요. 1년치 일별. KR은 `{code}.KS`(KOSPI) → `.KQ`(KOSDAQ) 순서로 fallback.
+- 지표: SMA(50), SMA(200), RSI(14), 현재가 vs SMA200 이격(%), 1개월(21영업일) / 3개월(63영업일) 수익률, 마지막 골든/데드크로스(있으면 N영업일 전)
+- 카드/알림에 추가되는 사실 표시: "RSI(14) = 28 — 30 미만", "200일선 대비 −12%", "골든크로스 30영업일 전 발생"
+- **여전히 자동 매수/매도 결론 라벨 없음**. claude.md 10절 룰 유지. 신호의 의미 해석과 매매 결정은 사용자 책임.
+- 시계열은 카드별로 Promise.all 병렬 fetch (8종목 동시). 응답 timeout 10초.
+
+### v0.3 — 통합 대시보드 (국내+미국 주식 + 주간 날씨 + 잔디 알림)
 
 ### v0.3 — 통합 대시보드 (국내+미국 주식 + 주간 날씨 + 잔디 알림)
 
@@ -172,6 +182,12 @@ npm run report:generate -- reports/from-mcp.json
 - `src/types/stock.ts`에 `DashboardCard`, `Quartile`, `ReferenceLines`, `StockDashboardSection` 추가
 - `.github/workflows/daily-dashboard.yml` (매일 08:00 KST = 23:00 UTC GitHub Actions cron, docs/ 자동 갱신·커밋·푸시, 잔디 알림)
 - `docs/index.html` + `docs/history/dashboard-{ts}.html` (GitHub Pages 산출물; reports/는 ignore되지만 docs/는 추적)
+
+### v0.4에서 정식 추가된 화이트리스트 파일
+- `src/types/timeseries.ts` (PricePoint, Timeseries, IndicatorSet, CrossEvent)
+- `src/sources/timeseries/YahooChartSource.ts` (Yahoo chart JSON fetch + KR `.KS`/`.KQ` fallback)
+- `src/analyzers/TechnicalIndicators.ts` (SMA, RSI, 수익률, 골든/데드크로스 탐지)
+- `src/types/stock.ts`에 `DashboardCard.indicators` 필드 추가
 
 ## 11. 빠르게 코드 파악하려면 (5개 파일만 읽는다면)
 
