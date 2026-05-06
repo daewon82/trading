@@ -1,6 +1,6 @@
 {
   "date": "2026-05-06 (수요일)",
-  "generatedAt": "2026-05-06T06:30:31.912Z",
+  "generatedAt": "2026-05-06T10:53:30.898Z",
   "seeds": [
     {
       "code": "005930",
@@ -181,8 +181,8 @@
       "code": "024110",
       "name": "기업은행",
       "section": "Value",
-      "dominantLabel": "매수 우호 우세",
-      "reasoning": "중간 가격대 + 모멘텀 우호"
+      "dominantLabel": "혼합 (동률)",
+      "reasoning": "신호 동률 — 어느 한쪽으로 기울지 않음"
     },
     {
       "code": "267250",

@@ -70,6 +70,119 @@ ${this.renderWeather(page.weather)}
 ${this.renderInsights(page)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
+    // 공통 — 한국 주요 종목 키워드 매핑 (회사명·별칭 → ticker)
+    var KR_KEYWORDS = [
+      { kw: ['삼성전자','samsung electronics','삼전'], sym: '005930.KS' },
+      { kw: ['sk하이닉스','하이닉스','sk hynix'], sym: '000660.KS' },
+      { kw: ['네이버','naver'], sym: '035420.KS' },
+      { kw: ['카카오','kakao'], sym: '035720.KS' },
+      { kw: ['카카오뱅크','카뱅'], sym: '323410.KS' },
+      { kw: ['카카오페이'], sym: '377300.KS' },
+      { kw: ['현대차','현대자동차','hyundai motor'], sym: '005380.KS' },
+      { kw: ['기아','kia'], sym: '000270.KS' },
+      { kw: ['lg에너지솔루션','엘지에너지','엘지엔솔','lg energy','lg엔솔','엔솔'], sym: '373220.KS' },
+      { kw: ['lg화학','엘지화학','lg chem'], sym: '051910.KS' },
+      { kw: ['lg전자','엘지전자','lg electronics'], sym: '066570.KS' },
+      { kw: ['lg유플러스','엘지유플러스','유플러스','u+','lguplus'], sym: '032640.KS' },
+      { kw: ['lg','lg corp','lg지주','엘지'], sym: '003550.KS' },
+      { kw: ['삼성sdi'], sym: '006400.KS' },
+      { kw: ['삼성바이오로직스','삼바','삼성바이오'], sym: '207940.KS' },
+      { kw: ['삼성물산'], sym: '028260.KS' },
+      { kw: ['삼성생명'], sym: '032830.KS' },
+      { kw: ['삼성화재'], sym: '000810.KS' },
+      { kw: ['삼성c&t','삼성씨앤티'], sym: '028260.KS' },
+      { kw: ['셀트리온','celltrion'], sym: '068270.KS' },
+      { kw: ['포스코홀딩스','posco홀딩스','포스코'], sym: '005490.KS' },
+      { kw: ['포스코퓨처엠','퓨처엠'], sym: '003670.KS' },
+      { kw: ['현대모비스','모비스'], sym: '012330.KS' },
+      { kw: ['sk텔레콤','skt','에스케이텔레콤'], sym: '017670.KS' },
+      { kw: ['kt','케이티'], sym: '030200.KS' },
+      { kw: ['kt&g','ktg','케이티앤지'], sym: '033780.KS' },
+      { kw: ['kb금융','kb','kb금융지주','국민은행'], sym: '105560.KS' },
+      { kw: ['하나금융','하나금융지주','하나은행'], sym: '086790.KS' },
+      { kw: ['신한지주','신한금융','신한은행'], sym: '055550.KS' },
+      { kw: ['우리금융','우리금융지주','우리은행'], sym: '316140.KS' },
+      { kw: ['기업은행','ibk'], sym: '024110.KS' },
+      { kw: ['hd현대','현대중공업그룹'], sym: '267250.KS' },
+      { kw: ['hd현대중공업','현대중공업'], sym: '329180.KS' },
+      { kw: ['hd현대일렉트릭','현대일렉트릭','hd일렉'], sym: '267260.KS' },
+      { kw: ['hd현대미포','현대미포'], sym: '010620.KS' },
+      { kw: ['한화에어로스페이스','한화에어로'], sym: '012450.KS' },
+      { kw: ['한화시스템'], sym: '272210.KS' },
+      { kw: ['한국전력','한전','kepco'], sym: '015760.KS' },
+      { kw: ['한미반도체'], sym: '042700.KS' },
+      { kw: ['크래프톤','krafton'], sym: '259960.KS' },
+      { kw: ['엔씨소프트','ncsoft','엔씨'], sym: '036570.KS' },
+      { kw: ['넷마블','netmarble'], sym: '251270.KS' },
+      { kw: ['cj제일제당'], sym: '097950.KS' },
+      { kw: ['cj','씨제이'], sym: '001040.KS' },
+      { kw: ['두산에너빌리티','두산에너','두산중공업'], sym: '034020.KS' },
+      { kw: ['두산','doosan'], sym: '000150.KS' },
+      { kw: ['에코프로비엠','에코프로bm'], sym: '247540.KQ' },
+      { kw: ['에코프로'], sym: '086520.KQ' },
+      { kw: ['알테오젠'], sym: '196170.KQ' },
+      { kw: ['리노공업'], sym: '058470.KQ' },
+      { kw: ['카페24'], sym: '042000.KQ' },
+      { kw: ['컴투스'], sym: '078340.KQ' },
+      { kw: ['펄어비스'], sym: '263750.KQ' },
+      { kw: ['스튜디오드래곤'], sym: '253450.KQ' },
+      { kw: ['하이브','hybe','BTS'], sym: '352820.KS' },
+      { kw: ['에스엠','sm엔터'], sym: '041510.KQ' },
+      { kw: ['jyp엔터','jyp'], sym: '035900.KQ' },
+      { kw: ['와이지엔터','yg'], sym: '122870.KQ' },
+      { kw: ['아모레퍼시픽','아모레'], sym: '090430.KS' },
+      { kw: ['lg생활건강','엘지생건','lg생건'], sym: '051900.KS' },
+      { kw: ['오리온','orion'], sym: '271560.KS' },
+      { kw: ['농심'], sym: '004370.KS' },
+      { kw: ['신세계'], sym: '004170.KS' },
+      { kw: ['이마트','emart'], sym: '139480.KS' },
+      { kw: ['롯데','lotte'], sym: '004990.KS' },
+      { kw: ['현대건설'], sym: '000720.KS' },
+      { kw: ['gs건설','지에스건설'], sym: '006360.KS' },
+      { kw: ['대우건설'], sym: '047040.KS' },
+      { kw: ['gs','지에스'], sym: '078930.KS' },
+      { kw: ['s-oil','에스오일','sk이노베이션'], sym: '010950.KS' },
+      { kw: ['sk이노','sk innovation'], sym: '096770.KS' },
+    ];
+
+    function tradingFindKrSymbol(query) {
+      var q = String(query || '').toLowerCase().replace(/\s/g, '');
+      if (!q) return null;
+      for (var i = 0; i < KR_KEYWORDS.length; i++) {
+        var entry = KR_KEYWORDS[i];
+        for (var j = 0; j < entry.kw.length; j++) {
+          var k = String(entry.kw[j]).toLowerCase().replace(/\s/g, '');
+          if (k === q || k.includes(q) || q.includes(k)) return entry.sym;
+        }
+      }
+      return null;
+    }
+
+    function tradingResolveQuery(rawInput) {
+      var t = String(rawInput || '').trim();
+      if (!t) return Promise.resolve([]);
+      // 6자리 숫자 → KR ticker
+      if (/^[0-9]{6}$/.test(t)) return Promise.resolve([t + '.KS', t + '.KQ']);
+      // 영문 ticker (.KS, .KQ 포함 가능)
+      if (/^[A-Za-z][A-Za-z0-9\.\-=\^]*$/.test(t)) {
+        // 우선 영문 ticker로 시도, 안 되면 search
+        return Promise.resolve([t.toUpperCase()]);
+      }
+      // 한국 매핑 우선
+      var krSym = tradingFindKrSymbol(t);
+      if (krSym) return Promise.resolve([krSym]);
+      // Yahoo search (영문 회사명용)
+      return fetch('https://query2.finance.yahoo.com/v1/finance/search?q=' + encodeURIComponent(t) + '&quotesCount=5')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          if (!j || !j.quotes) return [];
+          var equity = j.quotes.find(function (q) { return q.quoteType === 'EQUITY' && q.symbol; });
+          var first = equity || j.quotes.find(function (q) { return q.symbol; });
+          return first ? [first.symbol] : [];
+        })
+        .catch(function () { return []; });
+    }
+
     (function () {
       var btn = document.getElementById('topBtn');
       if (btn) {
@@ -178,19 +291,15 @@ ${this.renderInsights(page)}
           })
           .catch(function () { return null; });
       }
-      function resolveSymbols(input) {
-        var t = (input || '').trim().toUpperCase();
-        if (!t) return [];
-        if (/^[0-9]{6}$/.test(t)) return [t + '.KS', t + '.KQ'];
-        return [t];
-      }
       function fetchByInput(rawInput) {
-        var syms = resolveSymbols(rawInput);
-        var p = Promise.resolve(null);
-        syms.forEach(function (s) {
-          p = p.then(function (prev) { return prev || fetchChart(s); });
+        return tradingResolveQuery(rawInput).then(function (syms) {
+          if (!syms || syms.length === 0) return null;
+          var p = Promise.resolve(null);
+          syms.forEach(function (s) {
+            p = p.then(function (prev) { return prev || fetchChart(s); });
+          });
+          return p;
         });
-        return p;
       }
 
       function evaluateSell(d, buyPrice) {
@@ -412,14 +521,6 @@ ${this.renderInsights(page)}
             closes: closes,
           };
         }).catch(function () { return null; });
-      }
-
-      function resolveCandidates(input) {
-        var t = input.trim().toUpperCase();
-        if (!t) return [];
-        // 6자리 숫자면 KR (.KS, .KQ)
-        if (/^[0-9]{6}$/.test(t)) return [t + '.KS', t + '.KQ'];
-        return [t];
       }
 
       function fetchTicker(rawInput) {
