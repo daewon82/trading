@@ -43,8 +43,6 @@ export class DashboardReporter {
   </header>
 ${this.renderWeather(page.weather)}
 ${this.renderInsights(page)}
-${this.renderRulesIntro()}
-${this.renderMacro(page.macros)}
 </body>
 </html>
 `;
@@ -83,14 +81,15 @@ ${cells}
     const krInsights = page.kr.cards.map((c) => evaluateInsight(c, 'KR'));
     const usInsights = page.us.cards.map((c) => evaluateInsight(c, 'US'));
     const valueInsights = page.valueKr?.cards.map((c) => evaluateInsight(c, 'KR')) ?? [];
-    const all = [...krInsights, ...usInsights, ...valueInsights];
-    if (all.length === 0) return '';
+    if (krInsights.length === 0 && usInsights.length === 0 && valueInsights.length === 0) return '';
 
-    const renderGroup = (title: string, ins: InsightResult[], currency: Currency): string => {
+    const renderGroup = (title: string, intro: string, ins: InsightResult[], currency: Currency): string => {
       if (ins.length === 0) return '';
       const cards = ins.map((i) => renderInsightCard(i, currency)).join('\n');
+      const introHtml = intro ? `      <p class="group-intro">${intro}</p>` : '';
       return `    <div class="insight-group">
       <h3 class="insight-group-title">${esc(title)}</h3>
+${introHtml}
       <div class="insights-cards">
 ${cards}
       </div>
@@ -98,11 +97,10 @@ ${cards}
     };
 
     return `  <section class="insights">
-    <h2>🔍 매수 시점 신호 종합 — 전문가들이 자주 보는 관점</h2>
-    <p class="insight-intro">아래는 일반적으로 알려진 매수 관점 신호의 <strong>발생 여부와 패턴 매칭 점수</strong>입니다. <strong>매수 결정은 사용자 본인 판단입니다.</strong> 모든 신호가 충족돼도 손실 가능. "외국인+기관 동반 매수" 같은 신호는 통계적 경향이지 보장이 아닙니다.</p>
-${renderGroup(`🇰🇷 국내 주식 (${krInsights.length}종)`, krInsights, 'KRW')}
-${renderGroup(`🇺🇸 미국 빅테크 (${usInsights.length}종)`, usInsights, 'USD')}
-${renderGroup(`📚 가치 평가 기준 후보 (${valueInsights.length}종, KR)`, valueInsights, 'KRW')}
+    <p class="insight-intro"><strong>매수 결정은 사용자 본인 판단입니다.</strong> 신호 발생은 사실 정보이며 매수 권유가 아닙니다. 모든 신호가 충족돼도 손실 가능.</p>
+${renderGroup(`🇰🇷 국내 주식 (${krInsights.length}종)`, '', krInsights, 'KRW')}
+${renderGroup(`🇺🇸 미국 빅테크 (${usInsights.length}종)`, '', usInsights, 'USD')}
+${renderGroup(`📚 저평가 후보 — KOSPI 가치주 시드 (${valueInsights.length}종)`, '저PER · 저PBR · 고배당 등 객관 기준으로 거론되는 가치주 후보입니다. <strong>매수 추천이 아닙니다.</strong> 가치 함정(value trap) 위험 — 산업 사양·실적 악화로 영구 저평가될 수도 있습니다.', valueInsights, 'KRW')}
   </section>`;
   }
 
@@ -220,6 +218,13 @@ ${rows}
       .insight-group { margin-bottom: 24px; }
       .insight-group:last-child { margin-bottom: 0; }
       .insight-group-title { font-size: 1.05em; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 2px solid #f5a623; color: #444; }
+      .group-intro { margin: 0 0 12px; padding: 8px 12px; background: #fff3e0; border-left: 3px solid #ef6c00; border-radius: 4px; font-size: .85em; color: #555; line-height: 1.5; }
+      .eval-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .72em; font-weight: 600; margin-left: 4px; vertical-align: middle; }
+      .eval-badge.badge-low { background: #c8e6c9; color: #1b5e20; }
+      .eval-badge.badge-mid-low { background: #f0f4c3; color: #555; }
+      .eval-badge.badge-mid-high { background: #ffe0b2; color: #6d4c41; }
+      .eval-badge.badge-high { background: #ffcdd2; color: #b71c1c; }
+      .eval-badge.badge-na { background: #eee; color: #999; }
       .ic-head { display: flex; gap: 8px; align-items: baseline; padding: 4px 0 6px; flex-wrap: wrap; }
       .ic-price-current { font-size: 1.1em; font-weight: 700; font-variant-numeric: tabular-nums; }
       .ic-price-change { color: #555; font-size: .88em; font-variant-numeric: tabular-nums; }
@@ -620,9 +625,6 @@ function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightResult {
 function renderInsightCard(ins: InsightResult, currency: Currency): string {
   const c = ins.card;
   const s = c.snapshot;
-  const refs = c.referenceLines;
-  const ind = c.indicators;
-  const flow = c.flow;
 
   // 가격 + 변동률 + 52주 위치
   const price = formatPrice(s.price, currency);
@@ -637,38 +639,6 @@ function renderInsightCard(ins: InsightResult, currency: Currency): string {
 
   // sparkline
   const spark = renderSparkline(c.sparklineCloses);
-
-  // 참조가 행
-  let refsRow = '';
-  if (refs) {
-    const sma200 =
-      ind?.sma200 != null ? ` · 200d ${formatPrice(ind.sma200, currency)}` : '';
-    refsRow = `        <div class="ic-row ic-refs"><span class="ic-tag">참조가</span><span class="ic-val">Q1 ${formatPrice(refs.q1, currency)} · Q2 ${formatPrice(refs.q2, currency)} · Q3 ${formatPrice(refs.q3, currency)}${sma200}</span></div>`;
-  }
-
-  // 펀더멘털 + 거래량
-  const perStr = s.per == null ? '—' : s.per.toFixed(2);
-  const pbrStr = s.pbr == null ? '—' : s.pbr.toFixed(2);
-  const divStr = s.dividendYield == null ? '—' : `${s.dividendYield.toFixed(2)}%`;
-  const volRatioStr =
-    ind?.volumeRatio != null ? ` · 거래량 ${ind.volumeRatio.toFixed(2)}×` : '';
-  const fundRow = `        <div class="ic-row ic-fund"><span class="ic-tag">펀더</span><span class="ic-val">PER ${perStr} · PBR ${pbrStr} · 배당 ${divStr}${volRatioStr}</span></div>`;
-
-  // 수급 (KR만)
-  let flowRow = '';
-  if (flow && (flow.net5dForeigner != null || flow.net5dInstitutional != null)) {
-    const fmt = (v: number | null): string => {
-      if (v == null) return '—';
-      const abs = Math.abs(v);
-      const sign = v >= 0 ? '+' : '−';
-      if (abs >= 1e8) return `${sign}${(abs / 1e8).toFixed(2)}억주`;
-      if (abs >= 1e4) return `${sign}${(abs / 1e4).toFixed(1)}만주`;
-      return `${sign}${abs.toLocaleString('ko-KR')}주`;
-    };
-    const cls = (v: number | null): string =>
-      v == null ? '' : v > 0 ? 'flow-buy' : v < 0 ? 'flow-sell' : '';
-    flowRow = `        <div class="ic-row ic-flow"><span class="ic-tag">수급 5d</span><span class="ic-val">외인 <span class="${cls(flow.net5dForeigner)}">${fmt(flow.net5dForeigner)}</span> · 기관 <span class="${cls(flow.net5dInstitutional)}">${fmt(flow.net5dInstitutional)}</span></span></div>`;
-  }
   const listOf = (arr: string[]) =>
     arr.length === 0
       ? '<li class="empty">해당 신호 없음</li>'
@@ -694,32 +664,36 @@ function renderInsightCard(ins: InsightResult, currency: Currency): string {
     : d.dominantLabel.startsWith('신중') ? 'dom-label-caut'
     : 'dom-label-mix';
 
+  // 평가 배지 (카드 헤더에 색상 강조)
+  const q = c.quartile;
+  let badgeText = '평가 데이터 없음';
+  let badgeCls = 'badge-na';
+  if (q === 1) { badgeText = '💰 저평가 영역 (Q1)'; badgeCls = 'badge-low'; }
+  else if (q === 2) { badgeText = '◐ 중하단 (Q2)'; badgeCls = 'badge-mid-low'; }
+  else if (q === 3) { badgeText = '◑ 중상단 (Q3)'; badgeCls = 'badge-mid-high'; }
+  else if (q === 4) { badgeText = '⚠ 고평가 영역 (Q4)'; badgeCls = 'badge-high'; }
+
   return `      <article class="insight-card">
-        <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span></h3>
+        <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span> <span class="eval-badge ${badgeCls}">${esc(badgeText)}</span></h3>
         <div class="ic-head">
           <span class="ic-price-current">${price}</span>
           <span class="ic-price-change">${change}</span>
           <span class="ic-pos">${pos}</span>
         </div>
 ${spark}
-${refsRow}
-${fundRow}
-${flowRow}
-        <div class="insight-row"><span class="ins-label">평가 대비 주가</span><span class="ins-value">${esc(ins.valuationLabel)}</span></div>
-        <div class="insight-row"><span class="ins-label">현재 추세</span><span class="ins-value">${esc(ins.trendLabel)}</span></div>
+        <div class="insight-row"><span class="ins-label">추세</span><span class="ins-value">${esc(ins.trendLabel)}</span></div>
         <div class="dominance">
-          <div class="dom-title">신호 우세 비율 <span class="dom-note">(단순 카운트 비교, 결정은 본인)</span></div>
           <div class="dom-bar">
             <div class="dom-seg dom-bull" style="width:${bullW}%" title="매수 우호 ${bullW}%"></div>
             <div class="dom-seg dom-caut" style="width:${cautW}%" title="신중 ${cautW}%"></div>
             <div class="dom-seg dom-bear" style="width:${bearW}%" title="매도 우호 ${bearW}%"></div>
           </div>
           <div class="dom-stats">
-            <span class="dom-bull-text">⊕ 매수 우호 ${bullW}% (${ins.bullish.length}건)</span>
-            <span class="dom-caut-text">⚠ 신중 ${cautW}% (${ins.cautious.length}건)</span>
-            <span class="dom-bear-text">⊖ 매도 우호 ${bearW}% (${ins.bearish.length}건)</span>
+            <span class="dom-bull-text">⊕ ${bullW}% (${ins.bullish.length})</span>
+            <span class="dom-caut-text">⚠ ${cautW}% (${ins.cautious.length})</span>
+            <span class="dom-bear-text">⊖ ${bearW}% (${ins.bearish.length})</span>
           </div>
-          <div class="dom-summary">→ <strong class="${dominantCls}">${esc(d.dominantLabel)}</strong> · 총 ${d.total}건</div>
+          <div class="dom-summary">→ <strong class="${dominantCls}">${esc(d.dominantLabel)}</strong></div>
         </div>
         <div class="signal-grid signal-grid-3">
           <div class="bullish">
@@ -735,13 +709,7 @@ ${flowRow}
             <ul>${listOf(ins.bearish)}</ul>
           </div>
         </div>
-        <div class="patterns">
-          <h4>📐 전문가 패턴 매칭</h4>
-          <ul>
-${patternsList}
-          </ul>
-        </div>
-        <p class="insight-note">※ 위 신호 발생과 우세 비율은 <strong>단순 카운트 사실 정보</strong>이며 매수/매도 결정이 아닙니다. 본인 룰에 따라 판단하세요.</p>
+        <p class="insight-note">※ 사실 정보. 매수/매도 결정 아님.</p>
       </article>`;
 }
 
