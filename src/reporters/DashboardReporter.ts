@@ -40,22 +40,227 @@ export class DashboardReporter {
     <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)}</div>
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
+  <section class="search">
+    <h2>🔎 종목 검색 (임시)</h2>
+    <p class="search-hint">티커 입력 (예: <code>005930</code> 삼성전자, <code>AAPL</code> Apple). KR은 6자리 숫자, US는 알파벳. 결과는 페이지에 영구 추가되지 않습니다 — 새로고침하면 사라짐.</p>
+    <form id="searchForm" class="search-form" onsubmit="return false">
+      <input type="text" id="searchInput" placeholder="005930 또는 AAPL" autocomplete="off">
+      <button type="submit" id="searchBtn">검색</button>
+    </form>
+    <div id="searchStatus" class="search-status"></div>
+    <div id="searchResult" class="search-result"></div>
+  </section>
 ${this.renderWeather(page.weather)}
 ${this.renderInsights(page)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
     (function () {
       var btn = document.getElementById('topBtn');
-      if (!btn) return;
-      function onScroll() {
-        if (window.scrollY > 600) btn.classList.add('show');
-        else btn.classList.remove('show');
+      if (btn) {
+        function onScroll() {
+          if (window.scrollY > 600) btn.classList.add('show');
+          else btn.classList.remove('show');
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        btn.addEventListener('click', function () {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        onScroll();
       }
-      window.addEventListener('scroll', onScroll, { passive: true });
-      btn.addEventListener('click', function () {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+    })();
+
+    // 종목 검색 (Yahoo chart API 직접 호출, 클라이언트 측 임시 카드)
+    (function () {
+      var form = document.getElementById('searchForm');
+      var input = document.getElementById('searchInput');
+      var statusEl = document.getElementById('searchStatus');
+      var resultEl = document.getElementById('searchResult');
+      if (!form || !input || !statusEl || !resultEl) return;
+
+      var YAHOO = 'https://query1.finance.yahoo.com/v8/finance/chart';
+
+      function setStatus(msg, cls) {
+        statusEl.textContent = msg || '';
+        statusEl.className = 'search-status' + (cls ? ' ' + cls : '');
+      }
+
+      function escHtml(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function formatPrice(v, currency) {
+        if (v == null) return '—';
+        if (currency === 'KRW') return Math.round(v).toLocaleString('ko-KR') + '원';
+        return '$' + Number(v).toFixed(2);
+      }
+
+      function sma(arr, period) {
+        if (arr.length < period) return null;
+        var sum = 0;
+        for (var i = arr.length - period; i < arr.length; i++) sum += arr[i];
+        return sum / period;
+      }
+
+      function rsi(arr, period) {
+        if (arr.length < period + 1) return null;
+        var g = 0, l = 0;
+        for (var i = arr.length - period; i < arr.length; i++) {
+          var d = arr[i] - arr[i - 1];
+          if (d > 0) g += d; else l += -d;
+        }
+        var ag = g / period, al = l / period;
+        if (al === 0) return ag === 0 ? 50 : 100;
+        if (ag === 0) return 0;
+        return 100 - 100 / (1 + ag / al);
+      }
+
+      function pctReturn(arr, lookback) {
+        if (arr.length < lookback + 1) return null;
+        var r = arr[arr.length - 1], p = arr[arr.length - 1 - lookback];
+        if (p === 0) return null;
+        return ((r - p) / p) * 100;
+      }
+
+      function sparkSvg(closes) {
+        if (!closes || closes.length < 2) return '';
+        var w = 280, h = 50;
+        var min = closes[0], max = closes[0];
+        for (var i = 0; i < closes.length; i++) {
+          if (closes[i] < min) min = closes[i];
+          if (closes[i] > max) max = closes[i];
+        }
+        var range = (max - min) || 1;
+        var pts = closes.map(function (c, i) {
+          var x = (i / (closes.length - 1)) * w;
+          var y = h - ((c - min) / range) * h;
+          return x.toFixed(1) + ',' + y.toFixed(1);
+        }).join(' ');
+        var color = closes[closes.length - 1] >= closes[0] ? '#c62828' : '#2e7d32';
+        return '<svg class="spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><polyline fill="none" stroke="' + color + '" stroke-width="1.5" points="' + pts + '"/></svg>';
+      }
+
+      function tryFetch(symbol) {
+        var period2 = Math.floor(Date.now() / 1000);
+        var period1 = period2 - 365 * 86400;
+        var url = YAHOO + '/' + encodeURIComponent(symbol) + '?period1=' + period1 + '&period2=' + period2 + '&interval=1d';
+        return fetch(url).then(function (r) {
+          if (!r.ok) return null;
+          return r.json();
+        }).then(function (j) {
+          var res = j && j.chart && j.chart.result && j.chart.result[0];
+          if (!res) return null;
+          var ts = res.timestamp || [];
+          var quote = res.indicators && res.indicators.quote && res.indicators.quote[0];
+          if (!quote) return null;
+          var closes = [];
+          for (var i = 0; i < ts.length; i++) {
+            if (quote.close && quote.close[i] != null) closes.push(quote.close[i]);
+          }
+          var meta = res.meta || {};
+          return {
+            symbol: meta.symbol,
+            currency: meta.currency,
+            price: meta.regularMarketPrice,
+            previousClose: meta.chartPreviousClose,
+            high52: meta.fiftyTwoWeekHigh,
+            low52: meta.fiftyTwoWeekLow,
+            longName: meta.longName || meta.shortName || meta.symbol,
+            closes: closes,
+          };
+        }).catch(function () { return null; });
+      }
+
+      function resolveCandidates(input) {
+        var t = input.trim().toUpperCase();
+        if (!t) return [];
+        // 6자리 숫자면 KR (.KS, .KQ)
+        if (/^[0-9]{6}$/.test(t)) return [t + '.KS', t + '.KQ'];
+        return [t];
+      }
+
+      function fetchTicker(rawInput) {
+        var candidates = resolveCandidates(rawInput);
+        var p = Promise.resolve(null);
+        candidates.forEach(function (sym) {
+          p = p.then(function (prev) {
+            if (prev) return prev;
+            return tryFetch(sym);
+          });
+        });
+        return p;
+      }
+
+      function buildCardHtml(d, originalInput) {
+        var change = (d.price != null && d.previousClose != null && d.previousClose !== 0)
+          ? ((d.price - d.previousClose) / d.previousClose) * 100
+          : null;
+        var posPct = null;
+        if (d.price != null && d.high52 != null && d.low52 != null && d.high52 !== d.low52) {
+          posPct = ((d.price - d.low52) / (d.high52 - d.low52)) * 100;
+        }
+        var quart = posPct == null ? null : (posPct < 25 ? 1 : posPct < 50 ? 2 : posPct < 75 ? 3 : 4);
+
+        var badgeText = '평가 데이터 없음', badgeCls = 'badge-na';
+        if (quart === 1) { badgeText = '💰 저평가 영역 (Q1)'; badgeCls = 'badge-low'; }
+        else if (quart === 2) { badgeText = '◐ 중하단 (Q2)'; badgeCls = 'badge-mid-low'; }
+        else if (quart === 3) { badgeText = '◑ 중상단 (Q3)'; badgeCls = 'badge-mid-high'; }
+        else if (quart === 4) { badgeText = '⚠ 고평가 영역 (Q4)'; badgeCls = 'badge-high'; }
+
+        var sma50 = sma(d.closes, 50);
+        var sma200 = sma(d.closes, 200);
+        var rsi14 = rsi(d.closes, 14);
+        var pctVs200 = (d.price != null && sma200 != null && sma200 !== 0)
+          ? ((d.price - sma200) / sma200) * 100 : null;
+        var r1m = pctReturn(d.closes, 21);
+        var r3m = pctReturn(d.closes, 63);
+
+        var trendLabel = '판단 보류';
+        if (sma200 != null && pctVs200 != null) {
+          if (pctVs200 > 5) trendLabel = '상승 추세 (200일선 위 +' + pctVs200.toFixed(1) + '%)';
+          else if (pctVs200 < -5) trendLabel = '하락 추세 (200일선 아래 ' + pctVs200.toFixed(1) + '%)';
+          else trendLabel = '횡보 (200일선 부근)';
+        }
+
+        var changeStr = change == null ? '—' : (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+        var posStr = posPct == null ? '52주 —' : '52주 ' + posPct.toFixed(0) + '% (Q' + quart + ')';
+        var rsiStr = rsi14 == null ? '—' : rsi14.toFixed(0);
+        var rsiNote = rsi14 == null ? '' : (rsi14 > 70 ? ' (과열)' : rsi14 < 30 ? ' (과매도)' : '');
+        var pct200Str = pctVs200 == null ? '—' : (pctVs200 >= 0 ? '+' : '') + pctVs200.toFixed(1) + '%';
+        var r1Str = r1m == null ? '—' : (r1m >= 0 ? '+' : '') + r1m.toFixed(1) + '%';
+        var r3Str = r3m == null ? '—' : (r3m >= 0 ? '+' : '') + r3m.toFixed(1) + '%';
+
+        var sparklineCloses = d.closes.slice(-60);
+
+        return '<article class="insight-card">' +
+          '<h3>' + escHtml(d.longName) + ' <span class="ticker">' + escHtml(d.symbol || originalInput) + '</span> <span class="eval-badge ' + badgeCls + '">' + escHtml(badgeText) + '</span></h3>' +
+          '<div class="ic-head">' +
+            '<span class="ic-price-current">' + formatPrice(d.price, d.currency) + '</span>' +
+            '<span class="ic-price-change">' + changeStr + '</span>' +
+            '<span class="ic-pos">' + posStr + '</span>' +
+          '</div>' +
+          sparkSvg(sparklineCloses) +
+          '<div class="insight-row"><span class="ins-label">추세</span><span class="ins-value">' + escHtml(trendLabel) + '</span></div>' +
+          '<div class="insight-row"><span class="ins-label">RSI(14) · 200d 이격</span><span class="ins-value">' + rsiStr + rsiNote + ' · ' + pct200Str + '</span></div>' +
+          '<div class="insight-row"><span class="ins-label">수익률 1M / 3M</span><span class="ins-value">' + r1Str + ' / ' + r3Str + '</span></div>' +
+          '<p class="insight-note">※ 검색 임시 결과 (Yahoo chart 기반). 외국인/기관 수급·PER/PBR 등은 페이지 영구 카드에서 확인. 매수 결정은 본인.</p>' +
+          '<button class="search-close" onclick="document.getElementById(\\'searchResult\\').innerHTML=\\'\\'">닫기</button>' +
+          '</article>';
+      }
+
+      form.addEventListener('submit', function () {
+        var raw = (input.value || '').trim();
+        if (!raw) { setStatus('티커를 입력해 주세요.', 'err'); return; }
+        setStatus('검색 중…', '');
+        resultEl.innerHTML = '';
+        fetchTicker(raw).then(function (data) {
+          if (!data) {
+            setStatus('데이터 없음 — 티커 형식 확인 (예: 005930, AAPL)', 'err');
+            return;
+          }
+          setStatus('완료: ' + (data.longName || data.symbol), 'ok');
+          resultEl.innerHTML = buildCardHtml(data, raw);
+        });
       });
-      onScroll();
     })();
   </script>
 </body>
@@ -230,6 +435,25 @@ ${rows}
       .dom-bear-text { color: #2e7d32; font-weight: 600; }
       .dom-summary { margin-top: 6px; font-size: .85em; color: #555; }
       .dom-reason { margin-top: 6px; padding: 6px 10px; background: #fff; border-left: 3px solid #1976d2; border-radius: 4px; font-size: .82em; color: #555; line-height: 1.5; }
+      section.search { padding: 16px 24px; background: #f0f4f8; border-bottom: 1px solid #d6dee6; }
+      .search-hint { margin: 0 0 10px; font-size: .85em; color: #555; line-height: 1.5; }
+      .search-hint code { background: #fff; padding: 1px 6px; border-radius: 3px; font-size: .92em; }
+      .search-form { display: flex; gap: 8px; max-width: 480px; }
+      .search-form input { flex: 1; padding: 8px 12px; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; font-variant-numeric: tabular-nums; }
+      .search-form button { padding: 8px 16px; font-size: 1em; background: #1976d2; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
+      .search-form button:hover { background: #1565c0; }
+      .search-status { font-size: .85em; margin: 8px 0; min-height: 1em; color: #555; }
+      .search-status.err { color: #c62828; }
+      .search-status.ok { color: #1b5e20; }
+      .search-result { margin-top: 8px; }
+      .search-result .insight-card { max-width: 480px; }
+      .search-close { margin-top: 10px; padding: 6px 14px; background: #888; color: #fff; border: 0; border-radius: 4px; cursor: pointer; font-size: .85em; }
+      .search-close:hover { background: #666; }
+      @media (max-width: 600px) {
+        section.search { padding: 14px 16px; }
+        .search-form { flex-direction: column; }
+        .search-form input, .search-form button { width: 100%; }
+      }
       .top-btn { position: fixed; right: 20px; bottom: 20px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #1976d2; color: #fff; font-size: 1.4em; line-height: 1; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity .2s, transform .2s; z-index: 1000; }
       .top-btn.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
       .top-btn:hover { background: #1565c0; }
