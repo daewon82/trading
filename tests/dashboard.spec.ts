@@ -33,15 +33,15 @@ import { logger } from '../src/utils/logger.js';
 //   035420 NAVER (플랫폼)
 //   035720 카카오 (플랫폼)
 //   373220 LG에너지솔루션 (2차전지)
+//   003670 포스코퓨처엠 (2차전지 양극재) — 207940 삼성바이오 대체 (52주 데이터 미추출)
 //   005380 현대차 (자동차)
 //   000270 기아 (자동차)
-//   207940 삼성바이오로직스 (바이오)
 //   068270 셀트리온 (바이오)
 //   105560 KB금융 (금융)
 //   066570 LG전자 (가전·전기)
 //   028260 삼성물산 (지주)
 const DEFAULT_KR =
-  '005930,000660,035420,035720,373220,005380,000270,207940,068270,105560,066570,028260';
+  '005930,000660,035420,035720,373220,003670,005380,000270,068270,105560,066570,028260';
 const DEFAULT_US = 'AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA';
 
 // 가치 평가 기준 후보 (스크리닝 시드, 추천 X)
@@ -63,6 +63,7 @@ let weatherForecasts: WeatherForecast[] = [];
 const indicatorMap = new Map<string, IndicatorSet>();
 const closesMap = new Map<string, number[]>();
 const flowMap = new Map<string, FlowSummary>();
+const range52Map = new Map<string, { high: number | null; low: number | null }>();
 let macros: MacroQuote[] = [];
 const SPARKLINE_DAYS = 60;
 const MACRO_SYMBOLS: Array<{ symbol: string; name: string; unit: string }> = [
@@ -109,6 +110,10 @@ test('시계열 + 기술적 지표 + sparkline (병렬 fetch)', async () => {
         indicatorMap.set(ticker, ind);
         const closes = ts.points.map((p) => p.close).slice(-SPARKLINE_DAYS);
         closesMap.set(ticker, closes);
+        range52Map.set(ticker, {
+          high: ts.fiftyTwoWeekHigh,
+          low: ts.fiftyTwoWeekLow,
+        });
         return { ticker, points: ts.points.length, sparkPoints: closes.length };
       }
       return { ticker, points: 0, sparkPoints: 0 };
@@ -182,6 +187,24 @@ for (const code of valueKrCodes) {
 
 test.afterAll(async () => {
   if (krSnaps.length === 0 && usSnaps.length === 0) return;
+
+  // 52주 보정 — NaverKr 정규식이 일부 종목에서 미매칭일 때 Yahoo chart meta로 fallback
+  const fixup52w = (snaps: StockSnapshot[]): void => {
+    for (const snap of snaps) {
+      const range = range52Map.get(snap.code);
+      if (!range) continue;
+      if (snap.fiftyTwoWeekHigh == null && range.high != null) {
+        snap.fiftyTwoWeekHigh = range.high;
+      }
+      if (snap.fiftyTwoWeekLow == null && range.low != null) {
+        snap.fiftyTwoWeekLow = range.low;
+      }
+    }
+  };
+  fixup52w(krSnaps);
+  fixup52w(usSnaps);
+  fixup52w(valueKrSnaps);
+
   const builder = new DashboardBuilder();
   const ctx = { indicators: indicatorMap, closes: closesMap, flows: flowMap };
   const dashboard: DashboardPage = {

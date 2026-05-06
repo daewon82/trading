@@ -4,6 +4,7 @@ import type {
   StockDashboardSection,
   DashboardCard,
   Currency,
+  Quartile,
 } from '../types/stock.js';
 import type { WeatherForecast, WeatherDay } from '../types/weather.js';
 import type { IndicatorSet, CrossEvent } from '../types/timeseries.js';
@@ -97,7 +98,7 @@ ${cards}
     };
 
     return `  <section class="insights">
-    <p class="insight-intro"><strong>매수 결정은 사용자 본인 판단입니다.</strong> 신호 발생은 사실 정보이며 매수 권유가 아닙니다. 모든 신호가 충족돼도 손실 가능.</p>
+    <p class="insight-intro"><strong>매수 결정은 사용자 본인 판단입니다.</strong> 신호 발생은 사실 정보이며 매수 권유가 아닙니다. 모든 신호가 충족돼도 손실 가능.<br><br><strong>📌 평가 배지 vs 우세 비율</strong> — <strong>평가 배지</strong>(저평가/고평가)는 52주 가격 분위 1차원 정보, <strong>우세 비율</strong>은 추세·모멘텀·수급 등 종합 신호 카운트입니다. <strong>"저평가인데 매도 우세"는 모순이 아닌 가치 함정(value trap) 의심 신호</strong>일 수 있음 — 가격이 싸지만 계속 떨어지는 중일 가능성.</p>
 ${renderGroup(`🇰🇷 국내 주식 (${krInsights.length}종)`, '', krInsights, 'KRW')}
 ${renderGroup(`🇺🇸 미국 빅테크 (${usInsights.length}종)`, '', usInsights, 'USD')}
 ${renderGroup(`📚 저평가 후보 — KOSPI 가치주 시드 (${valueInsights.length}종)`, '저PER · 저PBR · 고배당 등 객관 기준으로 거론되는 가치주 후보입니다. <strong>매수 추천이 아닙니다.</strong> 가치 함정(value trap) 위험 — 산업 사양·실적 악화로 영구 저평가될 수도 있습니다.', valueInsights, 'KRW')}
@@ -258,6 +259,7 @@ ${rows}
       .dom-caut-text { color: #b35900; font-weight: 600; }
       .dom-bear-text { color: #2e7d32; font-weight: 600; }
       .dom-summary { margin-top: 6px; font-size: .85em; color: #555; }
+      .dom-reason { margin-top: 6px; padding: 6px 10px; background: #fff; border-left: 3px solid #1976d2; border-radius: 4px; font-size: .82em; color: #555; line-height: 1.5; }
       .dom-label-bull { color: #c62828; }
       .dom-label-bear { color: #2e7d32; }
       .dom-label-caut { color: #b35900; }
@@ -455,6 +457,7 @@ interface InsightResult {
     dominantLabel: string;
     total: number;
   };
+  reasoning: string;
 }
 
 function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightResult {
@@ -618,8 +621,31 @@ function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightResult {
     else dominantLabel = '혼합 (동률)';
   }
   const dominance = { bullishPct, cautiousPct, bearishPct, dominantLabel, total };
+  const reasoning = explainDominance(dominantLabel, q);
 
-  return { card: c, market, bullish, cautious, bearish, patterns, valuationLabel, trendLabel, dominance };
+  return { card: c, market, bullish, cautious, bearish, patterns, valuationLabel, trendLabel, dominance, reasoning };
+}
+
+function explainDominance(dominant: string, quartile: Quartile | null): string {
+  if (dominant === '매수 우호 우세') {
+    if (quartile === 1) return '저평가 + 추세도 양호 — 가치주 회복 신호일 수 있음';
+    if (quartile === 4) return '고평가지만 정배열·수급 등 모멘텀 강함 — 추세 추종형';
+    if (quartile === 2 || quartile === 3) return '중간 가격대 + 모멘텀 우호';
+    return '추세·모멘텀 신호가 우호적';
+  }
+  if (dominant === '매도 우호 우세') {
+    if (quartile === 1) return '⚠️ 저평가지만 역배열·수급 약세 — <strong>가치 함정(value trap) 의심</strong>. 가격이 싼 데는 이유가 있을 수 있음';
+    if (quartile === 4) return '고평가에서 약세 전환 — 차익실현 압력 추정';
+    if (quartile === 2 || quartile === 3) return '약세 신호 다수 — 추세 약화 진행';
+    return '추세 약세 + 수급 약화 동반';
+  }
+  if (dominant === '신중 우세') {
+    if (quartile === 4) return '고평가 + 과열 신호 — 단기 조정 가능성';
+    if (quartile === 1) return '저평가 + 일부 신중 신호 — 진입 타이밍 추가 검토 필요';
+    return '혼합 신호 — 명확한 방향성 부족';
+  }
+  if (dominant === '혼합 (동률)') return '신호 동률 — 어느 한쪽으로 기울지 않음';
+  return '신호 부족';
 }
 
 function renderInsightCard(ins: InsightResult, currency: Currency): string {
@@ -694,6 +720,7 @@ ${spark}
             <span class="dom-bear-text">⊖ ${bearW}% (${ins.bearish.length})</span>
           </div>
           <div class="dom-summary">→ <strong class="${dominantCls}">${esc(d.dominantLabel)}</strong></div>
+          <div class="dom-reason">${ins.reasoning}</div>
         </div>
         <div class="signal-grid signal-grid-3">
           <div class="bullish">

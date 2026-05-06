@@ -11,6 +11,8 @@ export interface Timeseries {
   resolved: string;
   currency: string;
   points: PricePoint[];
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
 }
 
 export type CrossKind = 'golden' | 'death';

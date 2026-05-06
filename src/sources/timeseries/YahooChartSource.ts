@@ -14,6 +14,8 @@ interface YahooMeta {
   symbol: string;
   regularMarketPrice?: number;
   chartPreviousClose?: number;
+  fiftyTwoWeekHigh?: number;
+  fiftyTwoWeekLow?: number;
 }
 
 interface YahooChartResponse {
@@ -93,6 +95,8 @@ export async function fetchDailyChart(
         resolved: symbol,
         currency: result.currency,
         points: result.points,
+        fiftyTwoWeekHigh: result.fiftyTwoWeekHigh,
+        fiftyTwoWeekLow: result.fiftyTwoWeekLow,
       };
     }
   }
@@ -103,7 +107,12 @@ async function tryFetch(
   symbol: string,
   period1: number,
   period2: number,
-): Promise<{ currency: string; points: PricePoint[] } | null> {
+): Promise<{
+  currency: string;
+  points: PricePoint[];
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
+} | null> {
   const url =
     `${YAHOO_BASE}/${encodeURIComponent(symbol)}` +
     `?period1=${period1}&period2=${period2}&interval=1d`;
@@ -136,7 +145,12 @@ async function tryFetch(
       if (v != null) point.volume = v;
       points.push(point);
     }
-    return { currency: result.meta.currency, points };
+    return {
+      currency: result.meta.currency,
+      points,
+      fiftyTwoWeekHigh: result.meta.fiftyTwoWeekHigh ?? null,
+      fiftyTwoWeekLow: result.meta.fiftyTwoWeekLow ?? null,
+    };
   } catch {
     return null;
   } finally {
