@@ -103,9 +103,7 @@ ${cards}
       ? '—'
       : `${c.fiftyTwoWeekPosition.toFixed(1)}%`;
     const quart = c.quartile == null ? '—' : `Q${c.quartile}`;
-    const refs = c.referenceLines == null
-      ? '—'
-      : `Q1 ${formatPrice(c.referenceLines.q1, currency)} · Q2 ${formatPrice(c.referenceLines.q2, currency)} · Q3 ${formatPrice(c.referenceLines.q3, currency)}`;
+    const refTable = renderReferencePrices(c, currency);
     const per = s.per == null ? '—' : s.per.toFixed(2);
     const pbr = s.pbr == null ? '—' : s.pbr.toFixed(2);
     const div = s.dividendYield == null ? '—' : `${s.dividendYield.toFixed(2)}%`;
@@ -124,7 +122,7 @@ ${cards}
         <div class="row"><span class="label">52주 범위</span><span class="value">${lo} ~ ${hi}</span></div>
         <div class="row"><span class="label">위치</span><span class="value">${pos} <span class="quart">(${quart})</span></span></div>
 ${positionBar}
-        <div class="row"><span class="label">참조선</span><span class="value small">${refs}</span></div>
+${refTable}
         <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">${per} · ${pbr} · ${div}</span></div>
 ${indicatorRows}
       </article>`;
@@ -161,6 +159,15 @@ ${indicatorRows}
       .change { color: #555; font-size: .85em; min-width: 60px; text-align: right; }
       .quart { color: #888; font-size: .85em; }
       .dim { color: #aaa; }
+      .ref-block { margin: 6px 0 4px; padding: 6px 8px; background: #f7f9fc; border-radius: 4px; }
+      .ref-title { font-size: .85em; color: #555; margin-bottom: 4px; }
+      .ref-note { color: #999; font-weight: normal; }
+      .ref-table { width: 100%; border-collapse: collapse; font-size: .85em; }
+      .ref-table td { padding: 2px 4px; }
+      .ref-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+      .ref-table td.pct { color: #888; min-width: 60px; }
+      .ref-table tr.below td.pct { color: #2e7d32; }
+      .ref-table tr.above td.pct { color: #c62828; }
       .bar { position: relative; height: 8px; background: #f0f0f0; border-radius: 4px; margin: 8px 0 4px; }
       .bar-q { position: absolute; top: 0; width: 1px; height: 8px; background: #ccc; left: 25%; }
       .bar-fill { position: absolute; top: -3px; width: 3px; height: 14px; background: #1976d2; border-radius: 1px; transform: translateX(-1.5px); }
@@ -175,6 +182,44 @@ function esc(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function renderReferencePrices(c: DashboardCard, currency: Currency): string {
+  const s = c.snapshot;
+  const refs = c.referenceLines;
+  const lo = s.fiftyTwoWeekLow;
+  const hi = s.fiftyTwoWeekHigh;
+  if (refs == null || lo == null || hi == null) {
+    return `        <div class="row"><span class="label">참조 가격대</span><span class="value small dim">데이터 없음</span></div>`;
+  }
+  const cur = s.price;
+  const diff = (target: number): string => {
+    if (cur == null || cur === 0) return '—';
+    const pct = ((target - cur) / cur) * 100;
+    const sign = pct >= 0 ? '+' : '';
+    return `${sign}${pct.toFixed(1)}%`;
+  };
+  const rows: Array<[string, number]> = [
+    ['52주 저', lo],
+    ['Q1 (하위 25%선)', refs.q1],
+    ['Q2 (중간)', refs.q2],
+    ['Q3 (상위 25%선)', refs.q3],
+    ['52주 고', hi],
+  ];
+  const tbody = rows
+    .map(([label, target]) => {
+      const pct = diff(target);
+      const cls =
+        cur != null && target < cur ? ' below' : cur != null && target > cur ? ' above' : '';
+      return `          <tr class="ref${cls}"><td>${esc(label)}</td><td class="num">${formatPrice(target, currency)}</td><td class="num pct">${esc(pct)}</td></tr>`;
+    })
+    .join('\n');
+  return `        <div class="ref-block">
+          <div class="ref-title">참조 가격대 <span class="ref-note">(현재가 대비)</span></div>
+          <table class="ref-table">
+${tbody}
+          </table>
+        </div>`;
 }
 
 function renderIndicators(ind: IndicatorSet | null): string {
