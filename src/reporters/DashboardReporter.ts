@@ -8,6 +8,7 @@ import type {
 } from '../types/stock.js';
 import type { WeatherForecast, WeatherDay } from '../types/weather.js';
 import type { MacroQuote } from '../types/macro.js';
+import type { ChangelogEntry } from '../types/changelog.js';
 
 export interface DashboardPage {
   generatedAt: string;
@@ -17,6 +18,7 @@ export interface DashboardPage {
   kr: StockDashboardSection;
   us: StockDashboardSection;
   valueKr: StockDashboardSection | null;
+  changes: ChangelogEntry | null;
 }
 
 export class DashboardReporter {
@@ -40,6 +42,7 @@ export class DashboardReporter {
     <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)}</div>
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
+${this.renderChanges(page.changes)}
   <section class="search">
     <h2>🔎 종목 검색 (임시)</h2>
     <p class="search-hint">티커 입력 (예: <code>005930</code> 삼성전자, <code>AAPL</code> Apple). KR은 6자리 숫자, US는 알파벳. 결과는 페이지에 영구 추가되지 않습니다 — 새로고침하면 사라짐.</p>
@@ -268,6 +271,47 @@ ${this.renderInsights(page)}
 `;
   }
 
+  private renderChanges(c: ChangelogEntry | null): string {
+    if (!c) return '';
+    if (c.added.length === 0 && c.removed.length === 0) return '';
+    const sectionLabel = (s: 'KR' | 'US' | 'Value'): string =>
+      s === 'KR' ? '🇰🇷 국내' : s === 'US' ? '🇺🇸 미국' : '📚 가치 후보';
+    const removedLis = c.removed
+      .map(
+        (r) => `      <li>
+        <strong>${esc(r.name)}</strong> <span class="ticker">${esc(r.code)}</span> <span class="cl-section">${esc(sectionLabel(r.section))}</span>
+        <div class="cl-detail">직전 평가: <strong>${esc(r.lastDominant)}</strong> — ${r.lastReasoning}</div>
+      </li>`,
+      )
+      .join('\n');
+    const addedLis = c.added
+      .map(
+        (a) => `      <li>
+        <strong>${esc(a.name)}</strong> <span class="ticker">${esc(a.code)}</span> <span class="cl-section">${esc(sectionLabel(a.section))}</span>
+        <div class="cl-detail">현재 평가: <strong>${esc(a.currentDominant)}</strong> — ${a.currentReasoning}</div>
+      </li>`,
+      )
+      .join('\n');
+    return `  <section class="changelog">
+    <h2>📋 어제(${esc(c.fromDate ?? '이력 없음')}) 대비 변동 종목</h2>
+    <div class="cl-grid">
+      ${c.removed.length > 0 ? `<div class="cl-block cl-removed">
+        <h3>− 제거된 종목 (${c.removed.length})</h3>
+        <ul>
+${removedLis}
+        </ul>
+      </div>` : ''}
+      ${c.added.length > 0 ? `<div class="cl-block cl-added">
+        <h3>+ 추가된 종목 (${c.added.length})</h3>
+        <ul>
+${addedLis}
+        </ul>
+      </div>` : ''}
+    </div>
+    <p class="cl-note">※ 변동 사유는 직전 / 현재 자동 평가 라벨입니다. 수동 결정 사유는 commit message 참고.</p>
+  </section>`;
+  }
+
   private renderInsights(page: DashboardPage): string {
     const krInsights = page.kr.cards.map((c) => evaluateInsight(c, 'KR'));
     const usInsights = page.us.cards.map((c) => evaluateInsight(c, 'US'));
@@ -454,6 +498,20 @@ ${rows}
         .search-form { flex-direction: column; }
         .search-form input, .search-form button { width: 100%; }
       }
+      section.changelog { padding: 16px 24px; background: #fff8e1; border-bottom: 1px solid #ffe082; }
+      section.changelog h2 { font-size: 1.05em; margin: 0 0 10px; color: #5d4037; }
+      .cl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+      .cl-block { background: #fff; border-radius: 6px; padding: 10px 14px; }
+      .cl-block.cl-removed { border-left: 4px solid #c62828; }
+      .cl-block.cl-added { border-left: 4px solid #2e7d32; }
+      .cl-block h3 { margin: 0 0 6px; font-size: .95em; }
+      .cl-removed h3 { color: #c62828; }
+      .cl-added h3 { color: #2e7d32; }
+      .cl-block ul { margin: 0; padding-left: 18px; font-size: .9em; }
+      .cl-block li { margin-bottom: 6px; }
+      .cl-section { color: #888; font-size: .82em; }
+      .cl-detail { color: #555; font-size: .82em; margin-top: 2px; line-height: 1.4; }
+      .cl-note { font-size: .8em; color: #888; margin: 8px 0 0; }
       .top-btn { position: fixed; right: 20px; bottom: 20px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #1976d2; color: #fff; font-size: 1.4em; line-height: 1; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity .2s, transform .2s; z-index: 1000; }
       .top-btn.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
       .top-btn:hover { background: #1565c0; }

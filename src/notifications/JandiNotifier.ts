@@ -50,6 +50,12 @@ export class JandiNotifier {
       // 당일 비면 보더 빨강, 평소엔 파랑
       connectColor: todayRainy ? '#C62828' : '#1976D2',
       connectInfo: [
+        ...(page.changes && (page.changes.added.length > 0 || page.changes.removed.length > 0)
+          ? [{
+              title: '📋 어제 대비 변동',
+              description: this.summarizeChanges(page.changes),
+            }]
+          : []),
         {
           title: todayRainy ? '🌧️ 오늘 비 — 우산 챙기세요' : '🌤 이번 주 날씨',
           description: this.summarizeRainOnly(page.weather),
@@ -73,6 +79,19 @@ export class JandiNotifier {
         },
       ],
     };
+  }
+
+  private summarizeChanges(c: { added: Array<{ code: string; name: string; section: string; currentDominant: string }>; removed: Array<{ code: string; name: string; section: string; lastDominant: string }> }): string {
+    const parts: string[] = [];
+    if (c.removed.length > 0) {
+      const list = c.removed.map((r) => `${r.name}(${r.code}) [${r.lastDominant}]`).join(', ');
+      parts.push(`− 제거 ${c.removed.length}: ${list}`);
+    }
+    if (c.added.length > 0) {
+      const list = c.added.map((a) => `${a.name}(${a.code}) [${a.currentDominant}]`).join(', ');
+      parts.push(`+ 추가 ${c.added.length}: ${list}`);
+    }
+    return parts.join('\n');
   }
 
   private summarizeRainOnly(forecasts: WeatherForecast[]): string {

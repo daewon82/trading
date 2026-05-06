@@ -1,5 +1,5 @@
 import { test } from '@playwright/test';
-import { writeFile, mkdir, copyFile } from 'node:fs/promises';
+import { writeFile, mkdir, copyFile, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { NaverKrSource } from '../src/sources/naver-kr/NaverKrSource.js';
 import { NaverGlobalSource } from '../src/sources/naver-global/NaverGlobalSource.js';
@@ -11,6 +11,7 @@ import {
 } from '../src/sources/timeseries/YahooChartSource.js';
 import { DashboardBuilder } from '../src/analyzers/DashboardBuilder.js';
 import { computeIndicators } from '../src/analyzers/TechnicalIndicators.js';
+import { evaluateInsight } from '../src/reporters/DashboardReporter.js';
 import {
   DashboardReporter,
   type DashboardPage,
@@ -26,6 +27,12 @@ import type { WeatherForecast } from '../src/types/weather.js';
 import type { IndicatorSet } from '../src/types/timeseries.js';
 import type { FlowSummary } from '../src/types/flow.js';
 import type { MacroQuote } from '../src/types/macro.js';
+import type {
+  ChangelogEntry,
+  ChangelogMeta,
+  SeedSnapshot,
+  SectionKey,
+} from '../src/types/changelog.js';
 import { logger } from '../src/utils/logger.js';
 
 // 필수: 005930 삼성전자, 000660 SK하이닉스 (반도체)
@@ -209,14 +216,30 @@ test.afterAll(async () => {
 
   const builder = new DashboardBuilder();
   const ctx = { indicators: indicatorMap, closes: closesMap, flows: flowMap };
+  const krSection = builder.build(krSnaps, ctx);
+  const usSection = builder.build(usSnaps, { indicators: indicatorMap, closes: closesMap });
+  const valueSection = valueKrSnaps.length > 0 ? builder.build(valueKrSnaps, ctx) : null;
+
+  // Changelog: 직전 meta와 비교해 추가/삭제 종목 + 평가 사유 추출
+  const today = todayInSeoul();
+  const currentSeeds: SeedSnapshot[] = [
+    ...krSection.cards.map((c) => seedOf(c, 'KR')),
+    ...usSection.cards.map((c) => seedOf(c, 'US')),
+    ...(valueSection?.cards.map((c) => seedOf(c, 'Value')) ?? []),
+  ];
+  const prevMeta = await readPrevMeta();
+  const changes = buildChangelog(prevMeta, today, currentSeeds);
+  await writeMeta({ date: today, generatedAt: new Date().toISOString(), seeds: currentSeeds });
+
   const dashboard: DashboardPage = {
     generatedAt: new Date().toISOString(),
-    today: todayInSeoul(),
+    today,
     weather: weatherForecasts,
     macros,
-    kr: builder.build(krSnaps, ctx),
-    us: builder.build(usSnaps, { indicators: indicatorMap, closes: closesMap }),
-    valueKr: valueKrSnaps.length > 0 ? builder.build(valueKrSnaps, ctx) : null,
+    kr: krSection,
+    us: usSection,
+    valueKr: valueSection,
+    changes,
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });
@@ -272,6 +295,65 @@ function todayInSeoul(): string {
   const parts = fmt.formatToParts(new Date());
   const get = (t: string): string => parts.find((p) => p.type === t)?.value ?? '';
   return `${get('year')}-${get('month')}-${get('day')} (${get('weekday')})`;
+}
+
+function seedOf(card: import('../src/types/stock.js').DashboardCard, section: SectionKey): SeedSnapshot {
+  const market: 'KR' | 'US' = section === 'US' ? 'US' : 'KR';
+  const ins = evaluateInsight(card, market);
+  return {
+    code: card.snapshot.code,
+    name: card.snapshot.name,
+    section,
+    dominantLabel: ins.dominance.dominantLabel,
+    reasoning: ins.reasoning,
+  };
+}
+
+const META_PATH = 'docs/dashboard-meta.json';
+
+async function readPrevMeta(): Promise<ChangelogMeta | null> {
+  try {
+    const raw = await readFile(META_PATH, 'utf8');
+    return JSON.parse(raw) as ChangelogMeta;
+  } catch {
+    return null;
+  }
+}
+
+async function writeMeta(meta: ChangelogMeta): Promise<void> {
+  await mkdir('docs', { recursive: true });
+  await writeFile(META_PATH, JSON.stringify(meta, null, 2), 'utf8');
+}
+
+function buildChangelog(
+  prev: ChangelogMeta | null,
+  today: string,
+  current: SeedSnapshot[],
+): ChangelogEntry {
+  if (!prev) {
+    return { fromDate: null, toDate: today, added: [], removed: [] };
+  }
+  const prevByCode = new Map(prev.seeds.map((s) => [s.code, s]));
+  const curByCode = new Map(current.map((s) => [s.code, s]));
+  const added = current
+    .filter((s) => !prevByCode.has(s.code))
+    .map((s) => ({
+      code: s.code,
+      name: s.name,
+      section: s.section,
+      currentDominant: s.dominantLabel,
+      currentReasoning: s.reasoning,
+    }));
+  const removed = prev.seeds
+    .filter((s) => !curByCode.has(s.code))
+    .map((s) => ({
+      code: s.code,
+      name: s.name,
+      section: s.section,
+      lastDominant: s.dominantLabel,
+      lastReasoning: s.reasoning,
+    }));
+  return { fromDate: prev.date, toDate: today, added, removed };
 }
 
 function pos(s: StockSnapshot): number | null {
