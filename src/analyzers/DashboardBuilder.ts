@@ -6,11 +6,18 @@ import type {
   StockDashboardSection,
 } from '../types/stock.js';
 import type { IndicatorSet } from '../types/timeseries.js';
+import type { FlowSummary } from '../types/flow.js';
+
+export interface BuildContext {
+  indicators?: ReadonlyMap<string, IndicatorSet>;
+  closes?: ReadonlyMap<string, number[]>;
+  flows?: ReadonlyMap<string, FlowSummary>;
+}
 
 export class DashboardBuilder {
   build(
     snapshots: StockSnapshot[],
-    indicators?: ReadonlyMap<string, IndicatorSet>,
+    ctx: BuildContext = {},
   ): StockDashboardSection {
     if (snapshots.length === 0) {
       throw new Error('DashboardBuilder.build: empty snapshots');
@@ -23,12 +30,22 @@ export class DashboardBuilder {
     }
     const head = snapshots[0]!;
     const cards = snapshots.map((s) =>
-      this.toCard(s, indicators?.get(s.code) ?? null),
+      this.toCard(
+        s,
+        ctx.indicators?.get(s.code) ?? null,
+        ctx.closes?.get(s.code) ?? null,
+        ctx.flows?.get(s.code) ?? null,
+      ),
     );
     return { market: head.market, currency: head.currency, cards };
   }
 
-  private toCard(s: StockSnapshot, indicators: IndicatorSet | null): DashboardCard {
+  private toCard(
+    s: StockSnapshot,
+    indicators: IndicatorSet | null,
+    sparklineCloses: number[] | null,
+    flow: FlowSummary | null,
+  ): DashboardCard {
     const position = this.calcPosition(s.price, s.fiftyTwoWeekLow, s.fiftyTwoWeekHigh);
     return {
       snapshot: s,
@@ -36,6 +53,8 @@ export class DashboardBuilder {
       quartile: position == null ? null : this.quartile(position),
       referenceLines: this.referenceLines(s.fiftyTwoWeekLow, s.fiftyTwoWeekHigh),
       indicators,
+      sparklineCloses,
+      flow,
     };
   }
 

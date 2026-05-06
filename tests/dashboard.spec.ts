@@ -3,6 +3,7 @@ import { writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { NaverKrSource } from '../src/sources/naver-kr/NaverKrSource.js';
 import { NaverGlobalSource } from '../src/sources/naver-global/NaverGlobalSource.js';
+import { NaverKrFlowSource } from '../src/sources/naver-kr/NaverKrFlowSource.js';
 import {
   fetchDailyChart,
   resolveCandidates,
@@ -22,6 +23,7 @@ import {
 import type { StockSnapshot } from '../src/types/stock.js';
 import type { WeatherForecast } from '../src/types/weather.js';
 import type { IndicatorSet } from '../src/types/timeseries.js';
+import type { FlowSummary } from '../src/types/flow.js';
 import { logger } from '../src/utils/logger.js';
 
 const DEFAULT_KR = '005930,000660'; // 삼성전자, SK하이닉스
@@ -35,6 +37,9 @@ const krSnaps: StockSnapshot[] = [];
 const usSnaps: StockSnapshot[] = [];
 let weatherForecasts: WeatherForecast[] = [];
 const indicatorMap = new Map<string, IndicatorSet>();
+const closesMap = new Map<string, number[]>();
+const flowMap = new Map<string, FlowSummary>();
+const SPARKLINE_DAYS = 60;
 
 test.describe.configure({ mode: 'serial' });
 
@@ -49,7 +54,7 @@ test('주간 날씨 (서울/고양시)', async () => {
   });
 });
 
-test('시계열 + 기술적 지표 (병렬 fetch)', async () => {
+test('시계열 + 기술적 지표 + sparkline (병렬 fetch)', async () => {
   const tasks: Array<{ ticker: string; market: 'KR' | 'US' }> = [
     ...krCodes.map((code) => ({ ticker: code, market: 'KR' as const })),
     ...usTickers.map((t) => ({ ticker: t, market: 'US' as const })),
@@ -60,12 +65,14 @@ test('시계열 + 기술적 지표 (병렬 fetch)', async () => {
       if (ts) {
         const ind = computeIndicators(ts);
         indicatorMap.set(ticker, ind);
-        return { ticker, points: ts.points.length, sma200: ind.sma200, rsi14: ind.rsi14 };
+        const closes = ts.points.map((p) => p.close).slice(-SPARKLINE_DAYS);
+        closesMap.set(ticker, closes);
+        return { ticker, points: ts.points.length, sparkPoints: closes.length };
       }
-      return { ticker, points: 0, sma200: null, rsi14: null };
+      return { ticker, points: 0, sparkPoints: 0 };
     }),
   );
-  logger.info('indicators computed', { count: indicatorMap.size, results });
+  logger.info('indicators + sparkline computed', { count: indicatorMap.size, results });
 });
 
 for (const code of krCodes) {
@@ -80,6 +87,18 @@ for (const code of krCodes) {
       price: snap.price,
       pos52w: pos(snap),
     });
+
+    // 같은 page로 외국인/기관 매매동향 페이지로 이동해 수급 추출
+    const flow = await new NaverKrFlowSource().fetch(page, code);
+    if (flow) {
+      flowMap.set(code, flow);
+      logger.info('KR flow', {
+        code,
+        net5dForeigner: flow.net5dForeigner,
+        net5dInstitutional: flow.net5dInstitutional,
+        days: flow.daily.length,
+      });
+    }
   });
 }
 
@@ -105,8 +124,8 @@ test.afterAll(async () => {
     generatedAt: new Date().toISOString(),
     today: todayInSeoul(),
     weather: weatherForecasts,
-    kr: builder.build(krSnaps, indicatorMap),
-    us: builder.build(usSnaps, indicatorMap),
+    kr: builder.build(krSnaps, { indicators: indicatorMap, closes: closesMap, flows: flowMap }),
+    us: builder.build(usSnaps, { indicators: indicatorMap, closes: closesMap }),
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });

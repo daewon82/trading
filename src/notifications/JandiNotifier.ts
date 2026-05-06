@@ -131,6 +131,11 @@ export class JandiNotifier {
       const tag = ind.lastCross.kind === 'golden' ? '골든' : '데드';
       signals.push(`${tag} ${ind.lastCross.daysAgo}일전`);
     }
+    const f = c.flow;
+    if (f && (f.net5dForeigner != null || f.net5dInstitutional != null)) {
+      signals.push(`외인5d ${fmtShares(f.net5dForeigner)}`);
+      signals.push(`기관5d ${fmtShares(f.net5dInstitutional)}`);
+    }
     const sigSuffix = signals.length > 0 ? ` · ${signals.join(' · ')}` : '';
     return `• ${s.name} (${s.code}): ${price}${change} · ${pos}${sigSuffix}`;
   }
@@ -140,6 +145,15 @@ function formatPrice(v: number | null, currency: Currency): string {
   if (v == null) return '—';
   if (currency === 'KRW') return `${Math.round(v).toLocaleString('ko-KR')}원`;
   return `$${v.toFixed(2)}`;
+}
+
+function fmtShares(v: number | null): string {
+  if (v == null) return '—';
+  const abs = Math.abs(v);
+  const sign = v >= 0 ? '+' : '−';
+  if (abs >= 1e8) return `${sign}${(abs / 1e8).toFixed(2)}억주`;
+  if (abs >= 1e4) return `${sign}${(abs / 1e4).toFixed(1)}만주`;
+  return `${sign}${abs.toLocaleString('ko-KR')}주`;
 }
 
 function monthDay(isoDate: string): string {

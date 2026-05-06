@@ -94,6 +94,8 @@ export interface DashboardCard {
   quartile: Quartile | null;
   referenceLines: ReferenceLines | null;
   indicators: import('./timeseries.js').IndicatorSet | null;
+  sparklineCloses: number[] | null;
+  flow: import('./flow.js').FlowSummary | null;
 }
 
 export interface StockDashboardSection {

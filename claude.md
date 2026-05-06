@@ -105,7 +105,19 @@ npm run lint
 npm run report:generate -- reports/from-mcp.json
 ```
 
-## 7. 현재 상태 (v0.4)
+## 7. 현재 상태 (v0.5)
+
+### v0.5 — 1년 주가 sparkline + 외국인/기관 수급 (KR)
+
+- **Sparkline**: Yahoo chart에서 받은 시계열의 **최근 60거래일 close 가격**을 SVG polyline으로 카드 헤더에 표시. 한국식 색상(시작점 대비 상승=빨강, 하락=녹색).
+- **외국인/기관 수급(KR 한정)**: 네이버 금융 외국인·기관 매매동향 페이지(`item/frgn.naver?code=...`)에서 일자별 순매매량(주식 수) 추출.
+  - 카드에 5거래일/10거래일 누적 순매수 표시 (양수=매수, 음수=매도)
+  - 매수/매도 색상 강조 (빨/녹)
+  - 잔디 알림 KR 종목 요약 한 줄에도 `외인5d ... 기관5d ...` 추가
+- US 종목은 한국과 동등한 일별 외국인·기관 수급 데이터가 없어 **수급 표시 안 함** (인스티튜셔널 ownership/13F는 v0.6+에서 분리 검토).
+- **여전히 자동 매수/매도 결론 라벨 없음**. 수급은 사실 정보로만 표시되며 매수/매도 시점 판단은 사용자 본인.
+
+### v0.4 — 시계열 + 사실 기반 시그널 표시
 
 ### v0.4 — 시계열 + 사실 기반 시그널 표시
 
@@ -188,6 +200,12 @@ npm run report:generate -- reports/from-mcp.json
 - `src/sources/timeseries/YahooChartSource.ts` (Yahoo chart JSON fetch + KR `.KS`/`.KQ` fallback)
 - `src/analyzers/TechnicalIndicators.ts` (SMA, RSI, 수익률, 골든/데드크로스 탐지)
 - `src/types/stock.ts`에 `DashboardCard.indicators` 필드 추가
+
+### v0.5에서 정식 추가된 화이트리스트 파일
+- `src/types/flow.ts` (DailyFlow, FlowSummary)
+- `src/sources/naver-kr/NaverKrFlowSource.ts` (외국인·기관 매매동향 페이지)
+- `src/types/stock.ts`에 `DashboardCard.sparklineCloses`, `DashboardCard.flow` 필드 추가
+- `src/analyzers/DashboardBuilder.ts`의 `BuildContext` 인터페이스 (indicators/closes/flows 주입)
 
 ## 11. 빠르게 코드 파악하려면 (5개 파일만 읽는다면)
 

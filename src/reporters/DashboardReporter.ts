@@ -7,6 +7,7 @@ import type {
 } from '../types/stock.js';
 import type { WeatherForecast, WeatherDay } from '../types/weather.js';
 import type { IndicatorSet, CrossEvent } from '../types/timeseries.js';
+import type { FlowSummary } from '../types/flow.js';
 
 export interface DashboardPage {
   generatedAt: string;
@@ -119,15 +120,19 @@ ${cards}
       </div>
       <div class="bar-labels"><span>52주 저</span><span>52주 고</span></div>`;
     const indicatorRows = renderIndicators(c.indicators);
+    const sparkline = renderSparkline(c.sparklineCloses);
+    const flowRows = renderFlow(c.flow);
     return `      <article class="card">
         <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span></h3>
         <div class="row"><span class="label">현재가</span><span class="value strong">${price}</span><span class="change">${change}</span></div>
+${sparkline}
         <div class="row"><span class="label">52주 범위</span><span class="value">${lo} ~ ${hi}</span></div>
         <div class="row"><span class="label">위치</span><span class="value">${pos} <span class="quart">(${quart})</span></span></div>
 ${positionBar}
 ${refTable}
         <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">${per} · ${pbr} · ${div}</span></div>
 ${indicatorRows}
+${flowRows}
       </article>`;
   }
 
@@ -174,6 +179,9 @@ ${indicatorRows}
       .ref-table td.pct { color: #888; min-width: 60px; }
       .ref-table tr.below td.pct { color: #2e7d32; }
       .ref-table tr.above td.pct { color: #c62828; }
+      .spark { width: 100%; height: 50px; display: block; margin: 8px 0 4px; }
+      .flow-buy { color: #c62828; font-weight: 600; }
+      .flow-sell { color: #2e7d32; font-weight: 600; }
       .bar { position: relative; height: 8px; background: #f0f0f0; border-radius: 4px; margin: 8px 0 4px; }
       .bar-q { position: absolute; top: 0; width: 1px; height: 8px; background: #ccc; left: 25%; }
       .bar-fill { position: absolute; top: -3px; width: 3px; height: 14px; background: #1976d2; border-radius: 1px; transform: translateX(-1.5px); }
@@ -246,6 +254,49 @@ function renderReferencePrices(c: DashboardCard, currency: Currency): string {
 ${tbody}
           </table>
         </div>`;
+}
+
+function renderSparkline(closes: number[] | null): string {
+  if (!closes || closes.length < 2) return '';
+  const w = 280;
+  const h = 50;
+  let min = closes[0]!;
+  let max = closes[0]!;
+  for (const c of closes) {
+    if (c < min) min = c;
+    if (c > max) max = c;
+  }
+  const range = max - min || 1;
+  const points = closes
+    .map((c, i) => {
+      const x = (i / (closes.length - 1)) * w;
+      const y = h - ((c - min) / range) * h;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+  // 한국식 색상: 종가가 시작점보다 위면 빨강(상승), 아래면 녹색(하락)
+  const first = closes[0]!;
+  const last = closes[closes.length - 1]!;
+  const color = last >= first ? '#c62828' : '#2e7d32';
+  return `        <svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+          <polyline fill="none" stroke="${color}" stroke-width="1.5" points="${points}"/>
+        </svg>`;
+}
+
+function renderFlow(f: FlowSummary | null): string {
+  if (!f) return '';
+  const fmt = (v: number | null): string => {
+    if (v == null) return '—';
+    const abs = Math.abs(v);
+    const sign = v >= 0 ? '+' : '−';
+    if (abs >= 1e8) return `${sign}${(abs / 1e8).toFixed(2)}억주`;
+    if (abs >= 1e4) return `${sign}${(abs / 1e4).toFixed(1)}만주`;
+    return `${sign}${abs.toLocaleString('ko-KR')}주`;
+  };
+  const cls = (v: number | null): string =>
+    v == null ? '' : v > 0 ? ' flow-buy' : v < 0 ? ' flow-sell' : '';
+  return `        <div class="row"><span class="label">외국인 5d / 10d</span><span class="value small"><span class="${cls(f.net5dForeigner)}">${fmt(f.net5dForeigner)}</span> / <span class="${cls(f.net10dForeigner)}">${fmt(f.net10dForeigner)}</span></span></div>
+        <div class="row"><span class="label">기관 5d / 10d</span><span class="value small"><span class="${cls(f.net5dInstitutional)}">${fmt(f.net5dInstitutional)}</span> / <span class="${cls(f.net10dInstitutional)}">${fmt(f.net10dInstitutional)}</span></span></div>`;
 }
 
 function renderIndicators(ind: IndicatorSet | null): string {
