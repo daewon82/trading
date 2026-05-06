@@ -28,7 +28,14 @@ import type { FlowSummary } from '../src/types/flow.js';
 import type { MacroQuote } from '../src/types/macro.js';
 import { logger } from '../src/utils/logger.js';
 
-const DEFAULT_KR = '005930,000660'; // 삼성전자, SK하이닉스
+// 필수: 005930 삼성전자, 000660 SK하이닉스 (반도체)
+// 추가 시드 (섹터 분산, 시총·외국인 보유·유동성 기준):
+//   035420 NAVER (플랫폼)
+//   373220 LG에너지솔루션 (2차전지)
+//   005380 현대차 (자동차/수출)
+//   207940 삼성바이오로직스 (바이오/CDMO)
+//   105560 KB금융 (금융/배당)
+const DEFAULT_KR = '005930,000660,035420,373220,005380,207940,105560';
 const DEFAULT_US = 'AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA';
 const krCodes = (process.env.KR_DASHBOARD_CODES ?? DEFAULT_KR)
   .split(',').map((s) => s.trim()).filter(Boolean);
