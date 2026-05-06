@@ -44,6 +44,7 @@ ${this.renderMacro(page.macros)}
 ${this.renderWeather(page.weather)}
 ${this.renderStockSection('🇰🇷 국내 주식', page.kr)}
 ${this.renderStockSection('🇺🇸 미국 빅테크', page.us)}
+${this.renderInsights(page)}
 ${this.renderRulesFooter()}
 </body>
 </html>
@@ -75,6 +76,21 @@ ${this.renderRulesFooter()}
     <h2>거시 환경</h2>
     <div class="macro-grid">
 ${cells}
+    </div>
+  </section>`;
+  }
+
+  private renderInsights(page: DashboardPage): string {
+    const krInsights = page.kr.cards.map((c) => evaluateInsight(c, 'KR'));
+    const usInsights = page.us.cards.map((c) => evaluateInsight(c, 'US'));
+    const all = [...krInsights, ...usInsights];
+    if (all.length === 0) return '';
+    const cards = all.map((ins) => renderInsightCard(ins, ins.market === 'KR' ? 'KRW' : 'USD')).join('\n');
+    return `  <section class="insights">
+    <h2>🔍 매수 시점 신호 종합 — 전문가들이 자주 보는 관점</h2>
+    <p class="insight-intro">아래는 일반적으로 알려진 매수 관점 신호의 <strong>발생 여부와 패턴 매칭 점수</strong>입니다. <strong>매수 결정은 사용자 본인 판단입니다.</strong> 모든 신호가 충족돼도 손실 가능. "외국인+기관 동반 매수" 같은 신호는 통계적 경향이지 보장이 아닙니다.</p>
+    <div class="insights-cards">
+${cards}
     </div>
   </section>`;
   }
@@ -238,6 +254,28 @@ ${flowRows}
       .macro-change { font-size: .85em; font-variant-numeric: tabular-nums; margin-top: 2px; }
       .macro-change.up { color: #c62828; }
       .macro-change.down { color: #2e7d32; }
+      section.insights { padding: 20px 24px; background: #fffaf3; border-top: 1px solid #f0e0c0; }
+      .insight-intro { font-size: .9em; color: #555; line-height: 1.55; margin: 0 0 14px; padding: 10px 12px; background: #fff; border-left: 3px solid #f5a623; border-radius: 4px; }
+      .insights-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+      .insight-card { background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 14px 16px; font-size: .9em; }
+      .insight-card h3 { margin: 0 0 8px; font-size: 1.05em; }
+      .insight-card h4 { margin: 8px 0 4px; font-size: .9em; color: #555; }
+      .insight-row { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px dashed #f0f0f0; }
+      .ins-label { color: #777; font-size: .9em; }
+      .ins-value { font-weight: 500; text-align: right; }
+      .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+      .signal-grid ul { margin: 0; padding-left: 18px; font-size: .85em; line-height: 1.55; }
+      .bullish h4 { color: #c62828; }
+      .cautious h4 { color: #2e7d32; }
+      .signal-grid li.empty { color: #aaa; list-style: none; margin-left: -18px; }
+      .patterns ul { margin: 0; padding-left: 0; list-style: none; font-size: .85em; }
+      .patterns .pattern { padding: 6px 8px; margin-bottom: 4px; border-radius: 4px; background: #fafafa; }
+      .patterns .pattern.full { background: #fff3e0; border-left: 3px solid #ef6c00; }
+      .patterns .pattern.partial { background: #fafafa; border-left: 3px solid #ccc; }
+      .patterns .pattern.empty { background: #fafafa; border-left: 3px solid transparent; color: #999; }
+      .pattern-head .ratio { color: #888; font-weight: normal; margin-left: 4px; }
+      .pattern-desc { color: #777; font-size: .92em; margin-top: 2px; }
+      .insight-note { margin: 10px 0 0; padding: 8px 10px; font-size: .82em; color: #666; background: #f7f9fc; border-radius: 4px; line-height: 1.5; }
       footer.rules { padding: 20px 24px; background: #f7f9fc; border-top: 1px solid #e6e6e6; }
       footer.rules h2 { font-size: 1em; margin: 0 0 8px; color: #555; }
       footer.rules ul { margin: 0; padding-left: 20px; font-size: .9em; color: #444; line-height: 1.6; }
@@ -395,6 +433,215 @@ function formatCross(c: CrossEvent | null): string {
   if (!c) return '최근 1년 내 없음';
   const label = c.kind === 'golden' ? '골든크로스' : '데드크로스';
   return `${label} · ${c.daysAgo}영업일 전 (${c.date})`;
+}
+
+interface InsightPattern {
+  name: string;
+  matched: number;
+  total: number;
+  description: string;
+}
+
+interface InsightResult {
+  card: DashboardCard;
+  market: 'KR' | 'US';
+  bullish: string[];
+  cautious: string[];
+  patterns: InsightPattern[];
+  valuationLabel: string;
+  trendLabel: string;
+}
+
+function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightResult {
+  const ind = c.indicators;
+  const flow = c.flow;
+  const q = c.quartile;
+  const bullish: string[] = [];
+  const cautious: string[] = [];
+
+  // 추세
+  if (ind?.pctVsSma200 != null) {
+    if (ind.pctVsSma200 > 5) bullish.push(`200일선 +${ind.pctVsSma200.toFixed(1)}% 위`);
+    else if (ind.pctVsSma200 < -5) cautious.push(`200일선 ${ind.pctVsSma200.toFixed(1)}% 아래`);
+  }
+  if (ind?.alignmentBullish === true) bullish.push('5/20/60 정배열');
+  if (ind?.alignmentBullish === false) cautious.push('5/20/60 역배열');
+
+  // 모멘텀
+  if (ind?.rsi14 != null) {
+    if (ind.rsi14 > 70) cautious.push(`RSI ${ind.rsi14.toFixed(0)} (과열, 70 초과)`);
+    else if (ind.rsi14 < 30) bullish.push(`RSI ${ind.rsi14.toFixed(0)} (과매도, 30 미만)`);
+    else if (ind.rsi14 >= 50) bullish.push(`RSI ${ind.rsi14.toFixed(0)} (50 위 모멘텀)`);
+  }
+  if (ind?.return1m != null) {
+    if (ind.return1m > 5) bullish.push(`1M +${ind.return1m.toFixed(1)}%`);
+    else if (ind.return1m < -5) cautious.push(`1M ${ind.return1m.toFixed(1)}%`);
+  }
+  if (ind?.return3m != null) {
+    if (ind.return3m > 10) bullish.push(`3M +${ind.return3m.toFixed(1)}%`);
+    else if (ind.return3m < -10) cautious.push(`3M ${ind.return3m.toFixed(1)}%`);
+  }
+
+  // 거래량
+  if (ind?.volumeRatio != null) {
+    if (ind.volumeRatio > 1.5) bullish.push(`거래량 ${ind.volumeRatio.toFixed(2)}× (20일 평균 대비 급증)`);
+    else if (ind.volumeRatio < 0.5) cautious.push(`거래량 ${ind.volumeRatio.toFixed(2)}× (위축)`);
+  }
+
+  // Cross
+  if (ind?.lastCross && ind.lastCross.daysAgo < 30) {
+    if (ind.lastCross.kind === 'golden') bullish.push(`골든크로스 ${ind.lastCross.daysAgo}영업일 전`);
+    else cautious.push(`데드크로스 ${ind.lastCross.daysAgo}영업일 전`);
+  }
+
+  // 수급 (KR만, 사용자 경험 반영)
+  if (market === 'KR' && flow) {
+    const fNet = flow.net5dForeigner;
+    const iNet = flow.net5dInstitutional;
+    if (fNet != null && iNet != null && fNet > 0 && iNet > 0) {
+      bullish.push('외국인 + 기관 5일 동반 순매수 ★');
+    } else if (fNet != null && iNet != null && fNet < 0 && iNet < 0) {
+      cautious.push('외국인 + 기관 5일 동반 순매도');
+    } else if (fNet != null && fNet > 0) {
+      bullish.push('외국인 5일 순매수 (기관 미동반)');
+    } else if (iNet != null && iNet > 0) {
+      bullish.push('기관 5일 순매수 (외국인 미동반)');
+    }
+  }
+
+  // 52주 위치
+  if (q === 1) bullish.push('52주 Q1 (저평가 영역)');
+  else if (q === 4) cautious.push('52주 Q4 (고평가 영역)');
+
+  // 패턴 매칭
+  const patterns: InsightPattern[] = [];
+
+  // 1. 추세 추종 매수 (정배열형)
+  {
+    let m = 0;
+    const total = market === 'KR' ? 4 : 3;
+    if (ind?.alignmentBullish === true) m++;
+    if (ind?.rsi14 != null && ind.rsi14 >= 50 && ind.rsi14 <= 70) m++;
+    if (ind?.volumeRatio != null && ind.volumeRatio > 1.2) m++;
+    if (
+      market === 'KR' &&
+      flow?.net5dForeigner != null && flow.net5dForeigner > 0 &&
+      flow?.net5dInstitutional != null && flow.net5dInstitutional > 0
+    ) m++;
+    patterns.push({
+      name: '추세 추종 매수 (정배열형)',
+      matched: m,
+      total,
+      description: market === 'KR'
+        ? '정배열 + RSI 50~70 + 거래량 1.2× 초과 + 외국인·기관 동반 순매수'
+        : '정배열 + RSI 50~70 + 거래량 1.2× 초과',
+    });
+  }
+
+  // 2. 저평가 매수 (역추세형)
+  {
+    let m = 0;
+    if (q === 1) m++;
+    if (ind?.rsi14 != null && ind.rsi14 < 30) m++;
+    if (ind?.pctVsSma200 != null && ind.pctVsSma200 < -10) m++;
+    patterns.push({
+      name: '저평가 매수 (역추세형)',
+      matched: m,
+      total: 3,
+      description: '52주 Q1 + RSI 30 미만 + 200일선 −10% 이상 이격',
+    });
+  }
+
+  // 3. 돌파 매수 (브레이크아웃)
+  {
+    let m = 0;
+    if (ind?.pctVsSma200 != null && ind.pctVsSma200 >= 0 && ind.pctVsSma200 < 10) m++;
+    if (ind?.lastCross?.kind === 'golden' && ind.lastCross.daysAgo < 30) m++;
+    if (ind?.volumeRatio != null && ind.volumeRatio > 1.5) m++;
+    patterns.push({
+      name: '돌파 매수 (브레이크아웃)',
+      matched: m,
+      total: 3,
+      description: '200일선 회복(+0~10%) + 최근 30영업일 내 골든크로스 + 거래량 1.5× 초과',
+    });
+  }
+
+  // 4. 수급 동반 매수 (KR만, 사용자 경험)
+  if (market === 'KR') {
+    let m = 0;
+    if (flow?.net5dForeigner != null && flow.net5dForeigner > 0) m++;
+    if (flow?.net5dInstitutional != null && flow.net5dInstitutional > 0) m++;
+    patterns.push({
+      name: '수급 동반 매수 ★',
+      matched: m,
+      total: 2,
+      description: '외국인 5일 순매수 + 기관 5일 순매수 (한국 시장에서 자주 상승과 동행하는 패턴)',
+    });
+  }
+
+  // 가치 평가 라벨
+  let valuationLabel = '데이터 부족';
+  if (q === 1) valuationLabel = '저평가 영역 (52주 Q1)';
+  else if (q === 2) valuationLabel = '중하단 (52주 Q2)';
+  else if (q === 3) valuationLabel = '중상단 (52주 Q3)';
+  else if (q === 4) valuationLabel = '고평가 영역 (52주 Q4)';
+
+  // 추세 라벨
+  let trendLabel = '판단 보류 (데이터 부족)';
+  if (ind?.alignmentBullish === true && ind?.pctVsSma200 != null && ind.pctVsSma200 > 0) {
+    trendLabel = '상승 추세 (정배열 + 200일선 위)';
+  } else if (ind?.alignmentBullish === false && ind?.pctVsSma200 != null && ind.pctVsSma200 < 0) {
+    trendLabel = '하락 추세 (역배열 + 200일선 아래)';
+  } else if (ind?.alignmentBullish != null || ind?.pctVsSma200 != null) {
+    trendLabel = '횡보·전환 (혼합 신호)';
+  }
+
+  return { card: c, market, bullish, cautious, patterns, valuationLabel, trendLabel };
+}
+
+function renderInsightCard(ins: InsightResult, _currency: Currency): string {
+  const s = ins.card.snapshot;
+  const bullishList =
+    ins.bullish.length === 0
+      ? '<li class="empty">해당 신호 없음</li>'
+      : ins.bullish.map((b) => `<li>${esc(b)}</li>`).join('');
+  const cautiousList =
+    ins.cautious.length === 0
+      ? '<li class="empty">해당 신호 없음</li>'
+      : ins.cautious.map((b) => `<li>${esc(b)}</li>`).join('');
+  const patternsList = ins.patterns
+    .map((p) => {
+      const ratio = `${p.matched}/${p.total}`;
+      const cls = p.matched === p.total ? 'full' : p.matched > 0 ? 'partial' : 'empty';
+      return `          <li class="pattern ${cls}">
+            <div class="pattern-head"><strong>${esc(p.name)}</strong> <span class="ratio">${ratio}</span></div>
+            <div class="pattern-desc">${esc(p.description)}</div>
+          </li>`;
+    })
+    .join('\n');
+
+  return `      <article class="insight-card">
+        <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span></h3>
+        <div class="insight-row"><span class="ins-label">평가 대비 주가</span><span class="ins-value">${esc(ins.valuationLabel)}</span></div>
+        <div class="insight-row"><span class="ins-label">현재 추세</span><span class="ins-value">${esc(ins.trendLabel)}</span></div>
+        <div class="signal-grid">
+          <div class="bullish">
+            <h4>⊕ 매수 우호 신호</h4>
+            <ul>${bullishList}</ul>
+          </div>
+          <div class="cautious">
+            <h4>⊖ 신중 신호</h4>
+            <ul>${cautiousList}</ul>
+          </div>
+        </div>
+        <div class="patterns">
+          <h4>📐 전문가 패턴 매칭</h4>
+          <ul>
+${patternsList}
+          </ul>
+        </div>
+        <p class="insight-note">※ 위 신호 발생은 <strong>사실 정보</strong>이며 매수 결정이 아닙니다. 본인 룰에 따라 판단하세요.</p>
+      </article>`;
 }
 
 function formatMacroValue(m: MacroQuote): string {
