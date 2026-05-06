@@ -7,8 +7,6 @@ import type {
   Quartile,
 } from '../types/stock.js';
 import type { WeatherForecast, WeatherDay } from '../types/weather.js';
-import type { IndicatorSet, CrossEvent } from '../types/timeseries.js';
-import type { FlowSummary } from '../types/flow.js';
 import type { MacroQuote } from '../types/macro.js';
 
 export interface DashboardPage {
@@ -44,38 +42,25 @@ export class DashboardReporter {
   </header>
 ${this.renderWeather(page.weather)}
 ${this.renderInsights(page)}
+  <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
+  <script>
+    (function () {
+      var btn = document.getElementById('topBtn');
+      if (!btn) return;
+      function onScroll() {
+        if (window.scrollY > 600) btn.classList.add('show');
+        else btn.classList.remove('show');
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      btn.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      onScroll();
+    })();
+  </script>
 </body>
 </html>
 `;
-  }
-
-  private renderMacro(macros: MacroQuote[]): string {
-    if (macros.length === 0) return '';
-    const cells = macros
-      .map((m) => {
-        const value = formatMacroValue(m);
-        const change = formatMacroChange(m.changePercent);
-        const cls =
-          m.changePercent == null
-            ? ''
-            : m.changePercent > 0
-              ? ' up'
-              : m.changePercent < 0
-                ? ' down'
-                : '';
-        return `      <div class="macro-cell">
-        <div class="macro-name">${esc(m.name)}</div>
-        <div class="macro-value">${esc(value)}</div>
-        <div class="macro-change${cls}">${esc(change)}</div>
-      </div>`;
-      })
-      .join('\n');
-    return `  <section class="macro">
-    <h2>거시 환경</h2>
-    <div class="macro-grid">
-${cells}
-    </div>
-  </section>`;
   }
 
   private renderInsights(page: DashboardPage): string {
@@ -102,21 +87,6 @@ ${cards}
 ${renderGroup(`🇰🇷 국내 주식 (${krInsights.length}종)`, '', krInsights, 'KRW')}
 ${renderGroup(`🇺🇸 미국 빅테크 (${usInsights.length}종)`, '', usInsights, 'USD')}
 ${renderGroup(`📚 저평가 후보 — KOSPI 가치주 시드 (${valueInsights.length}종)`, '저PER · 저PBR · 고배당 등 객관 기준으로 거론되는 가치주 후보입니다. <strong>매수 추천이 아닙니다.</strong> 가치 함정(value trap) 위험 — 산업 사양·실적 악화로 영구 저평가될 수도 있습니다.', valueInsights, 'KRW')}
-  </section>`;
-  }
-
-  private renderRulesIntro(): string {
-    return `  <section class="rules">
-    <h2>참고 — 룰 기반 매매 접근 (정보)</h2>
-    <ul>
-      <li><strong>DCA (분할매수)</strong>: 시점 예측 회피, 매월 일정 금액 매수. 변동성 시장에서 평균단가 하향.</li>
-      <li><strong>밸류에이션 채널</strong>: 자체 5년 PER 분위 25% 미만 → 매수 검토, 75% 이상 → 매도 검토.</li>
-      <li><strong>이격 매수</strong>: 200일선 −20% 이격 시 검토. 카드의 "200d" 행 참고.</li>
-      <li><strong>정배열 모멘텀</strong>: 5일 &gt; 20일 &gt; 60일 정배열 + RSI 50 돌파 + 거래량 1.5× 동반 시 추세 진입.</li>
-      <li><strong>수급 동반 매수 (KR)</strong>: 외국인 + 기관 5일 누적 순매수 동반 시 한국 시장에서 자주 상승과 동행 (사용자 경험).</li>
-      <li><strong>리스크 관리</strong>: 손절선(예: −7%), 한 종목 자산의 5~10% 이하, 목표가÷손절폭 ≥ 2:1.</li>
-    </ul>
-    <p class="rules-disclaimer">※ 본 내용은 공개된 일반 매매 룰의 정리이며 매매 권유나 투자 자문이 아닙니다. 위 룰을 적용하더라도 손실이 날 수 있고, 모든 투자 판단과 결과 책임은 본인에게 있습니다.</p>
   </section>`;
   }
 
@@ -260,6 +230,13 @@ ${rows}
       .dom-bear-text { color: #2e7d32; font-weight: 600; }
       .dom-summary { margin-top: 6px; font-size: .85em; color: #555; }
       .dom-reason { margin-top: 6px; padding: 6px 10px; background: #fff; border-left: 3px solid #1976d2; border-radius: 4px; font-size: .82em; color: #555; line-height: 1.5; }
+      .top-btn { position: fixed; right: 20px; bottom: 20px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #1976d2; color: #fff; font-size: 1.4em; line-height: 1; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity .2s, transform .2s; z-index: 1000; }
+      .top-btn.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+      .top-btn:hover { background: #1565c0; }
+      .top-btn:active { background: #0d47a1; }
+      @media (max-width: 600px) {
+        .top-btn { right: 14px; bottom: 14px; width: 40px; height: 40px; font-size: 1.2em; }
+      }
       .dom-label-bull { color: #c62828; }
       .dom-label-bear { color: #2e7d32; }
       .dom-label-caut { color: #b35900; }
@@ -310,50 +287,6 @@ function esc(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function renderReferencePrices(c: DashboardCard, currency: Currency): string {
-  const s = c.snapshot;
-  const refs = c.referenceLines;
-  const lo = s.fiftyTwoWeekLow;
-  const hi = s.fiftyTwoWeekHigh;
-  if (refs == null || lo == null || hi == null) {
-    return `        <div class="row"><span class="label">참조 가격대</span><span class="value small dim">데이터 없음</span></div>`;
-  }
-  const cur = s.price;
-  const ind = c.indicators;
-  const diff = (target: number): string => {
-    if (cur == null || cur === 0) return '—';
-    const pct = ((target - cur) / cur) * 100;
-    const sign = pct >= 0 ? '+' : '';
-    return `${sign}${pct.toFixed(1)}%`;
-  };
-  const rows: Array<[string, number]> = [
-    ['52주 저', lo],
-    ['Q1 (하위 25%선)', refs.q1],
-    ['Q2 (중간)', refs.q2],
-    ['Q3 (상위 25%선)', refs.q3],
-    ['52주 고', hi],
-  ];
-  if (ind?.sma50 != null) rows.push(['50일선 (중기 추세)', ind.sma50]);
-  if (ind?.sma200 != null) rows.push(['200일선 (장기 추세)', ind.sma200]);
-  // 가격 오름차순 정렬 — 현재가 기준 위/아래 직관적 비교
-  rows.sort((a, b) => a[1] - b[1]);
-
-  const tbody = rows
-    .map(([label, target]) => {
-      const pct = diff(target);
-      const cls =
-        cur != null && target < cur ? ' below' : cur != null && target > cur ? ' above' : '';
-      return `          <tr class="ref${cls}"><td>${esc(label)}</td><td class="num">${formatPrice(target, currency)}</td><td class="num pct">${esc(pct)}</td></tr>`;
-    })
-    .join('\n');
-  return `        <div class="ref-block">
-          <div class="ref-title">참조 가격대 <span class="ref-note">(현재가 대비)</span></div>
-          <table class="ref-table">
-${tbody}
-          </table>
-        </div>`;
-}
-
 function renderSparkline(closes: number[] | null): string {
   if (!closes || closes.length < 2) return '';
   const w = 280;
@@ -379,59 +312,6 @@ function renderSparkline(closes: number[] | null): string {
   return `        <svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
           <polyline fill="none" stroke="${color}" stroke-width="1.5" points="${points}"/>
         </svg>`;
-}
-
-function renderFlow(f: FlowSummary | null): string {
-  if (!f) return '';
-  const fmt = (v: number | null): string => {
-    if (v == null) return '—';
-    const abs = Math.abs(v);
-    const sign = v >= 0 ? '+' : '−';
-    if (abs >= 1e8) return `${sign}${(abs / 1e8).toFixed(2)}억주`;
-    if (abs >= 1e4) return `${sign}${(abs / 1e4).toFixed(1)}만주`;
-    return `${sign}${abs.toLocaleString('ko-KR')}주`;
-  };
-  const cls = (v: number | null): string =>
-    v == null ? '' : v > 0 ? ' flow-buy' : v < 0 ? ' flow-sell' : '';
-  return `        <div class="row"><span class="label">외국인 5d / 10d</span><span class="value small"><span class="${cls(f.net5dForeigner)}">${fmt(f.net5dForeigner)}</span> / <span class="${cls(f.net10dForeigner)}">${fmt(f.net10dForeigner)}</span></span></div>
-        <div class="row"><span class="label">기관 5d / 10d</span><span class="value small"><span class="${cls(f.net5dInstitutional)}">${fmt(f.net5dInstitutional)}</span> / <span class="${cls(f.net10dInstitutional)}">${fmt(f.net10dInstitutional)}</span></span></div>`;
-}
-
-function renderIndicators(ind: IndicatorSet | null): string {
-  if (!ind) {
-    return `        <div class="row"><span class="label">시계열</span><span class="value small dim">데이터 없음</span></div>`;
-  }
-  const rsi = ind.rsi14 == null ? '—' : ind.rsi14.toFixed(0);
-  const rsiNote =
-    ind.rsi14 == null ? '' : ind.rsi14 < 30 ? ' (30 미만)' : ind.rsi14 > 70 ? ' (70 초과)' : '';
-  const pct200 = ind.pctVsSma200 == null
-    ? '—'
-    : `${ind.pctVsSma200 >= 0 ? '+' : ''}${ind.pctVsSma200.toFixed(1)}%`;
-  const r1 = ind.return1m == null
-    ? '—'
-    : `${ind.return1m >= 0 ? '+' : ''}${ind.return1m.toFixed(1)}%`;
-  const r3 = ind.return3m == null
-    ? '—'
-    : `${ind.return3m >= 0 ? '+' : ''}${ind.return3m.toFixed(1)}%`;
-  const cross = formatCross(ind.lastCross);
-  const align =
-    ind.alignmentBullish == null
-      ? '—'
-      : ind.alignmentBullish
-        ? '<span class="bull">정배열 ✓</span>'
-        : '<span class="bear">역배열</span>';
-  const vol = ind.volumeRatio == null ? '—' : `${ind.volumeRatio.toFixed(2)}× (20일 평균)`;
-  return `        <div class="row"><span class="label">RSI(14) · 200d 이격</span><span class="value small">${rsi}${rsiNote} · ${pct200}</span></div>
-        <div class="row"><span class="label">수익률 1M / 3M</span><span class="value small">${r1} / ${r3}</span></div>
-        <div class="row"><span class="label">최근 cross</span><span class="value small">${cross}</span></div>
-        <div class="row"><span class="label">5/20/60 정배열</span><span class="value small">${align}</span></div>
-        <div class="row"><span class="label">거래량 비율</span><span class="value small">${vol}</span></div>`;
-}
-
-function formatCross(c: CrossEvent | null): string {
-  if (!c) return '최근 1년 내 없음';
-  const label = c.kind === 'golden' ? '골든크로스' : '데드크로스';
-  return `${label} · ${c.daysAgo}영업일 전 (${c.date})`;
 }
 
 interface InsightPattern {
@@ -669,16 +549,6 @@ function renderInsightCard(ins: InsightResult, currency: Currency): string {
     arr.length === 0
       ? '<li class="empty">해당 신호 없음</li>'
       : arr.map((b) => `<li>${esc(b)}</li>`).join('');
-  const patternsList = ins.patterns
-    .map((p) => {
-      const ratio = `${p.matched}/${p.total}`;
-      const cls = p.matched === p.total ? 'full' : p.matched > 0 ? 'partial' : 'empty';
-      return `          <li class="pattern ${cls}">
-            <div class="pattern-head"><strong>${esc(p.name)}</strong> <span class="ratio">${ratio}</span></div>
-            <div class="pattern-desc">${esc(p.description)}</div>
-          </li>`;
-    })
-    .join('\n');
 
   const d = ins.dominance;
   const bullW = d.bullishPct.toFixed(1);
@@ -738,20 +608,6 @@ ${spark}
         </div>
         <p class="insight-note">※ 사실 정보. 매수/매도 결정 아님.</p>
       </article>`;
-}
-
-function formatMacroValue(m: MacroQuote): string {
-  if (m.value == null) return '—';
-  const v = m.value;
-  if (m.unit === '%') return `${v.toFixed(2)}%`;
-  if (m.unit === '원') return `${Math.round(v).toLocaleString('ko-KR')}원`;
-  return v.toLocaleString('ko-KR', { maximumFractionDigits: 2 });
-}
-
-function formatMacroChange(pct: number | null): string {
-  if (pct == null) return '—';
-  const sign = pct > 0 ? '+' : '';
-  return `${sign}${pct.toFixed(2)}%`;
 }
 
 function formatPrice(v: number | null, currency: Currency): string {
