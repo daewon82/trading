@@ -105,7 +105,24 @@ npm run lint
 npm run report:generate -- reports/from-mcp.json
 ```
 
-## 7. 현재 상태 (v0.5)
+## 7. 현재 상태 (v0.6)
+
+### v0.6 — 거시 환경 위젯 + 추가 기술지표 + 룰 안내 + 잔디 형식 개편
+
+대시보드 (HTML, Pages):
+- **거시 환경 위젯** (헤더 아래): 코스피(`^KS11`), 원/달러(`KRW=X`), 미국 10년물(`^TNX`). Yahoo chart API meta 필드(regularMarketPrice + chartPreviousClose) 활용. 키 불필요.
+- **추가 기술지표 (카드)**: 5/20/60일선 정배열 여부, 거래량 20일 평균 대비 비율 (예: 1.5×)
+- **룰 안내 푸터**: DCA, 밸류에이션 채널, 이격 매수, 정배열 모멘텀, 리스크 관리 — 정보 카드. **결론 라벨 없음.**
+- 카드의 PricePoint에 volume 필드 추출 추가
+
+잔디 알림 — 사용자 요청에 따라 단순화·재구성:
+- **본문**: 당일 비 예보면 "🌧️ 오늘 비 예보!" 추가, 메시지 보더 색상 빨강
+- **이번 주 날씨**: 비 오는 날만 표시 (`🌧️ 5/8(금) 비 (80%)`). 비 없으면 "이번 주 비 예보 없음 ☀️"
+- **국내·미국 주식**: 매수 참조가만 (`현재가 + Q1 + Q2 + 200d`). RSI/cross/수급 등 상세는 Pages 대시보드에서.
+- **링크**: Pages 최신 + 오늘 스냅샷
+- **면책**: 짧게
+
+### v0.5 — 1년 주가 sparkline + 외국인/기관 수급 (KR)
 
 ### v0.5 — 1년 주가 sparkline + 외국인/기관 수급 (KR)
 
@@ -206,6 +223,13 @@ npm run report:generate -- reports/from-mcp.json
 - `src/sources/naver-kr/NaverKrFlowSource.ts` (외국인·기관 매매동향 페이지)
 - `src/types/stock.ts`에 `DashboardCard.sparklineCloses`, `DashboardCard.flow` 필드 추가
 - `src/analyzers/DashboardBuilder.ts`의 `BuildContext` 인터페이스 (indicators/closes/flows 주입)
+
+### v0.6에서 정식 추가된 화이트리스트 파일
+- `src/types/macro.ts` (MacroQuote — 코스피/원달러/10년물 등 거시 시세)
+- `src/sources/timeseries/YahooChartSource.ts`에 `fetchMacroQuote()` 함수 추가
+- `src/types/timeseries.ts`의 `IndicatorSet`에 `sma5`, `sma20`, `sma60`, `alignmentBullish`, `volumeRatio` 필드 추가
+- `src/reporters/DashboardReporter.ts`의 `DashboardPage`에 `macros` 필드 + `renderMacro()`, `renderRulesFooter()` 메서드 추가
+- `src/notifications/JandiNotifier.ts` 메시지 형식 전면 개편 (날씨 위주 + 매수 참조가)
 
 ## 11. 빠르게 코드 파악하려면 (5개 파일만 읽는다면)
 

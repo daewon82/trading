@@ -9,10 +9,17 @@ interface YahooQuote {
   volume?: Array<number | null>;
 }
 
+interface YahooMeta {
+  currency: string;
+  symbol: string;
+  regularMarketPrice?: number;
+  chartPreviousClose?: number;
+}
+
 interface YahooChartResponse {
   chart: {
     result: Array<{
-      meta: { currency: string; symbol: string };
+      meta: YahooMeta;
       timestamp?: number[];
       indicators: { quote: YahooQuote[] };
     }> | null;
@@ -22,6 +29,45 @@ interface YahooChartResponse {
 
 export interface FetchOptions {
   daysBack?: number;
+}
+
+export async function fetchMacroQuote(
+  symbol: string,
+  displayName: string,
+  unit: string,
+): Promise<import('../../types/macro.js').MacroQuote | null> {
+  const url =
+    `${YAHOO_BASE}/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10_000);
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: ctrl.signal,
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as YahooChartResponse;
+    const meta = json.chart.result?.[0]?.meta;
+    if (!meta) return null;
+    const value = meta.regularMarketPrice ?? null;
+    const prev = meta.chartPreviousClose ?? null;
+    const changePercent =
+      value != null && prev != null && prev !== 0
+        ? ((value - prev) / prev) * 100
+        : null;
+    return {
+      symbol,
+      name: displayName,
+      value,
+      previousClose: prev,
+      changePercent,
+      unit,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export function resolveCandidates(ticker: string, market: 'KR' | 'US'): string[] {
@@ -86,6 +132,8 @@ async function tryFetch(
       const point: PricePoint = { date, close };
       if (highs[i] != null) point.high = highs[i] as number;
       if (lows[i] != null) point.low = lows[i] as number;
+      const v = quote.volume?.[i];
+      if (v != null) point.volume = v;
       points.push(point);
     }
     return { currency: result.meta.currency, points };

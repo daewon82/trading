@@ -1,9 +1,5 @@
 import type { DashboardPage } from '../reporters/DashboardReporter.js';
-import type {
-  DashboardCard,
-  StockDashboardSection,
-  Currency,
-} from '../types/stock.js';
+import type { StockDashboardSection, Currency } from '../types/stock.js';
 import type { WeatherForecast } from '../types/weather.js';
 
 export interface JandiPayload {
@@ -44,119 +40,99 @@ export class JandiNotifier {
   }
 
   buildPayload(page: DashboardPage, opts: JandiNotifierOptions): JandiPayload {
-    const links: string[] = [];
-    if (opts.publicUrl) {
-      links.push(`🌐 최신: ${opts.publicUrl}`);
-    }
-    if (opts.publicHistoryUrl) {
-      links.push(`🕒 오늘 스냅샷: ${opts.publicHistoryUrl}`);
-    }
-    if (!opts.publicUrl) {
-      // publicUrl이 없을 때만 file:// (로컬 수동 실행용). GitHub Actions에선
-      // runner 경로라 사용자 PC에서 못 여니 publicUrl 있으면 file://는 표시 안 함.
-      links.push(`📄 ${`file://${opts.htmlAbsolutePath}`}`);
-    }
-    const linkBlock = links.join('\n');
-
+    const todayRainy = isTodayRainy(page.weather);
     return {
-      body: `📊 오늘의 대시보드 — ${page.today}`,
-      connectColor: '#1976D2',
+      body: `📊 오늘의 대시보드 — ${page.today}${todayRainy ? '   🌧️ 오늘 비 예보!' : ''}`,
+      // 당일 비면 보더 빨강, 평소엔 파랑
+      connectColor: todayRainy ? '#C62828' : '#1976D2',
       connectInfo: [
         {
-          title: '🌤 주간 날씨',
-          description: this.summarizeWeather(page.weather),
+          title: todayRainy ? '🌧️ 오늘 비 — 우산 챙기세요' : '🌤 이번 주 날씨',
+          description: this.summarizeRainOnly(page.weather),
         },
         {
-          title: '🇰🇷 국내 주식',
-          description: this.summarizeSection(page.kr),
+          title: '🇰🇷 국내 — 매수 참조가',
+          description: this.summarizeBuyRefs(page.kr),
         },
         {
-          title: '🇺🇸 미국 빅테크',
-          description: this.summarizeSection(page.us),
+          title: '🇺🇸 미국 빅테크 — 매수 참조가',
+          description: this.summarizeBuyRefs(page.us),
         },
         {
-          title: '🔗 대시보드 링크',
-          description: linkBlock,
+          title: '🔗 대시보드 (상세)',
+          description: this.formatLinks(opts),
         },
         {
           title: '⚠️ 면책',
           description:
-            '본 알림은 정량 지표 정보 제공이며 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 본인에게 있습니다.',
+            '본 알림은 정량 정보 제공용이며 매수/매도 권유나 투자 자문이 아닙니다. 모든 판단과 결과 책임은 본인에게 있습니다.',
         },
       ],
     };
   }
 
-  private summarizeWeather(forecasts: WeatherForecast[]): string {
+  private summarizeRainOnly(forecasts: WeatherForecast[]): string {
     if (forecasts.length === 0) return '데이터 없음';
     return forecasts
       .map((f) => {
-        const rainyDays = f.days.filter((d) => d.rainy);
-        const summary =
-          rainyDays.length === 0
-            ? '비 예보 없음'
-            : `비 예보 ${rainyDays.length}일 (${rainyDays
-                .map((d) => `${monthDay(d.date)} ${d.description}${d.precipitationProbabilityMax != null ? ` ${d.precipitationProbabilityMax}%` : ''}`)
-                .join(', ')})`;
-        return `${f.city}: ${summary}`;
+        const rainy = f.days.filter((d) => d.rainy);
+        if (rainy.length === 0) return `${f.city}: 이번 주 비 예보 없음 ☀️`;
+        const list = rainy
+          .map((d) => {
+            const pop =
+              d.precipitationProbabilityMax != null
+                ? ` (${d.precipitationProbabilityMax}%)`
+                : '';
+            return `🌧️ ${shortDate(d.date)} ${d.description}${pop}`;
+          })
+          .join(', ');
+        return `${f.city}: ${list}`;
       })
       .join('\n');
   }
 
-  private summarizeSection(section: StockDashboardSection): string {
-    return section.cards.map((c) => this.summarizeCard(c, section.currency)).join('\n');
+  private summarizeBuyRefs(section: StockDashboardSection): string {
+    return section.cards
+      .map((c) => this.summarizeCardRefs(c, section.currency))
+      .join('\n');
   }
 
-  private summarizeCard(c: DashboardCard, currency: Currency): string {
+  private summarizeCardRefs(
+    c: { snapshot: { name: string; code: string; price: number | null }; referenceLines: { q1: number; q2: number; q3: number } | null; indicators: { sma200: number | null } | null },
+    currency: Currency,
+  ): string {
     const s = c.snapshot;
-    const price = formatPrice(s.price, currency);
-    const pos =
-      c.fiftyTwoWeekPosition == null
-        ? '52주위치 —'
-        : `52주 ${c.fiftyTwoWeekPosition.toFixed(0)}%${c.quartile ? ` (Q${c.quartile})` : ''}`;
-    const change =
-      s.changePercent == null
-        ? ''
-        : ` ${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%`;
-    const ind = c.indicators;
-    const signals: string[] = [];
-    if (ind?.rsi14 != null) {
-      const note = ind.rsi14 < 30 ? '↓' : ind.rsi14 > 70 ? '↑' : '';
-      signals.push(`RSI ${ind.rsi14.toFixed(0)}${note}`);
-    }
-    if (ind?.pctVsSma200 != null) {
-      signals.push(`200d ${ind.pctVsSma200 >= 0 ? '+' : ''}${ind.pctVsSma200.toFixed(0)}%`);
-    }
-    if (ind?.lastCross) {
-      const tag = ind.lastCross.kind === 'golden' ? '골든' : '데드';
-      signals.push(`${tag} ${ind.lastCross.daysAgo}일전`);
-    }
-    const f = c.flow;
-    if (f && (f.net5dForeigner != null || f.net5dInstitutional != null)) {
-      signals.push(`외인5d ${fmtShares(f.net5dForeigner)}`);
-      signals.push(`기관5d ${fmtShares(f.net5dInstitutional)}`);
-    }
-    const sigSuffix = signals.length > 0 ? ` · ${signals.join(' · ')}` : '';
-    return `• ${s.name} (${s.code}): ${price}${change} · ${pos}${sigSuffix}`;
+    const cur = formatPrice(s.price, currency);
+    const refs = c.referenceLines;
+    if (!refs) return `• ${s.name} (${s.code}): 현재 ${cur}`;
+    const sma200 = c.indicators?.sma200;
+    const sma200Str = sma200 != null ? ` · 200d ${formatPrice(sma200, currency)}` : '';
+    return `• ${s.name}: 현재 ${cur} | Q1 ${formatPrice(refs.q1, currency)} · Q2 ${formatPrice(refs.q2, currency)}${sma200Str}`;
   }
+
+  private formatLinks(opts: JandiNotifierOptions): string {
+    const lines: string[] = [];
+    if (opts.publicUrl) lines.push(`🌐 최신: ${opts.publicUrl}`);
+    if (opts.publicHistoryUrl) lines.push(`🕒 오늘 스냅샷: ${opts.publicHistoryUrl}`);
+    if (!opts.publicUrl) lines.push(`📄 file://${opts.htmlAbsolutePath}`);
+    return lines.join('\n');
+  }
+}
+
+function isTodayRainy(forecasts: WeatherForecast[]): boolean {
+  if (forecasts.length === 0) return false;
+  // 오늘은 forecast의 첫 번째 day
+  return forecasts.some((f) => f.days[0]?.rainy ?? false);
+}
+
+function shortDate(iso: string): string {
+  const d = new Date(`${iso}T00:00:00+09:00`);
+  const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+  return `${d.getMonth() + 1}/${d.getDate()}(${dayNames[d.getDay()]})`;
 }
 
 function formatPrice(v: number | null, currency: Currency): string {
   if (v == null) return '—';
   if (currency === 'KRW') return `${Math.round(v).toLocaleString('ko-KR')}원`;
   return `$${v.toFixed(2)}`;
-}
-
-function fmtShares(v: number | null): string {
-  if (v == null) return '—';
-  const abs = Math.abs(v);
-  const sign = v >= 0 ? '+' : '−';
-  if (abs >= 1e8) return `${sign}${(abs / 1e8).toFixed(2)}억주`;
-  if (abs >= 1e4) return `${sign}${(abs / 1e4).toFixed(1)}만주`;
-  return `${sign}${abs.toLocaleString('ko-KR')}주`;
-}
-
-function monthDay(isoDate: string): string {
-  const [, mm, dd] = isoDate.split('-');
-  return `${Number(mm)}/${Number(dd)}`;
 }

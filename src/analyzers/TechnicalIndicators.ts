@@ -9,7 +9,10 @@ export function computeIndicators(ts: Timeseries): IndicatorSet {
   const closes = ts.points.map((p) => p.close);
   const last = closes[closes.length - 1];
 
+  const sma5 = sma(closes, 5);
+  const sma20 = sma(closes, 20);
   const sma50 = sma(closes, 50);
+  const sma60 = sma(closes, 60);
   const sma200 = sma(closes, 200);
   const rsi14 = rsi(closes, 14);
   const pctVsSma200 =
@@ -17,14 +20,37 @@ export function computeIndicators(ts: Timeseries): IndicatorSet {
       ? ((last - sma200) / sma200) * 100
       : null;
 
+  const alignmentBullish =
+    sma5 != null && sma20 != null && sma60 != null
+      ? sma5 > sma20 && sma20 > sma60
+      : null;
+
+  // 거래량 20일 평균 대비 최근 1일 비율
+  const volumes = ts.points.map((p) => p.volume ?? null);
+  const lastVol = volumes[volumes.length - 1];
+  const last20Vols = volumes.slice(-20).filter((v): v is number => v != null && v > 0);
+  const avgVol =
+    last20Vols.length >= 5
+      ? last20Vols.reduce((a, b) => a + b, 0) / last20Vols.length
+      : null;
+  const volumeRatio =
+    lastVol != null && lastVol > 0 && avgVol != null && avgVol > 0
+      ? lastVol / avgVol
+      : null;
+
   return {
+    sma5,
+    sma20,
     sma50,
+    sma60,
     sma200,
     rsi14,
     pctVsSma200,
     return1m: pctReturn(closes, 21),
     return3m: pctReturn(closes, 63),
     lastCross: findLastCross(ts.points),
+    alignmentBullish,
+    volumeRatio,
   };
 }
 

@@ -8,11 +8,13 @@ import type {
 import type { WeatherForecast, WeatherDay } from '../types/weather.js';
 import type { IndicatorSet, CrossEvent } from '../types/timeseries.js';
 import type { FlowSummary } from '../types/flow.js';
+import type { MacroQuote } from '../types/macro.js';
 
 export interface DashboardPage {
   generatedAt: string;
   today: string;
   weather: WeatherForecast[];
+  macros: MacroQuote[];
   kr: StockDashboardSection;
   us: StockDashboardSection;
 }
@@ -38,12 +40,57 @@ export class DashboardReporter {
     <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)}</div>
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
+${this.renderMacro(page.macros)}
 ${this.renderWeather(page.weather)}
 ${this.renderStockSection('🇰🇷 국내 주식', page.kr)}
 ${this.renderStockSection('🇺🇸 미국 빅테크', page.us)}
+${this.renderRulesFooter()}
 </body>
 </html>
 `;
+  }
+
+  private renderMacro(macros: MacroQuote[]): string {
+    if (macros.length === 0) return '';
+    const cells = macros
+      .map((m) => {
+        const value = formatMacroValue(m);
+        const change = formatMacroChange(m.changePercent);
+        const cls =
+          m.changePercent == null
+            ? ''
+            : m.changePercent > 0
+              ? ' up'
+              : m.changePercent < 0
+                ? ' down'
+                : '';
+        return `      <div class="macro-cell">
+        <div class="macro-name">${esc(m.name)}</div>
+        <div class="macro-value">${esc(value)}</div>
+        <div class="macro-change${cls}">${esc(change)}</div>
+      </div>`;
+      })
+      .join('\n');
+    return `  <section class="macro">
+    <h2>거시 환경</h2>
+    <div class="macro-grid">
+${cells}
+    </div>
+  </section>`;
+  }
+
+  private renderRulesFooter(): string {
+    return `  <footer class="rules">
+    <h2>참고 — 룰 기반 매매 접근 (정보)</h2>
+    <ul>
+      <li><strong>DCA (분할매수)</strong>: 시점 예측 회피, 매월 일정 금액 매수. 변동성 시장에서 평균단가 하향.</li>
+      <li><strong>밸류에이션 채널</strong>: 자체 5년 PER 분위 25% 미만 → 매수 검토, 75% 이상 → 매도 검토.</li>
+      <li><strong>이격 매수</strong>: 200일선 −20% 이격 시 검토. 카드의 "200d" 행 참고.</li>
+      <li><strong>정배열 모멘텀</strong>: 5일 &gt; 20일 &gt; 60일 정배열 + RSI 50 돌파 + 거래량 1.5× 동반 시 추세 진입.</li>
+      <li><strong>리스크 관리</strong>: 손절선(예: −7%), 한 종목 자산의 5~10% 이하, 목표가÷손절폭 ≥ 2:1.</li>
+    </ul>
+    <p class="rules-disclaimer">※ 본 내용은 공개된 일반 매매 룰의 정리이며 매매 권유나 투자 자문이 아닙니다. 위 룰을 적용하더라도 손실이 날 수 있고, 모든 투자 판단과 결과 책임은 본인에게 있습니다.</p>
+  </footer>`;
   }
 
   private renderWeather(forecasts: WeatherForecast[]): string {
@@ -182,6 +229,20 @@ ${flowRows}
       .spark { width: 100%; height: 50px; display: block; margin: 8px 0 4px; }
       .flow-buy { color: #c62828; font-weight: 600; }
       .flow-sell { color: #2e7d32; font-weight: 600; }
+      .bull { color: #c62828; font-weight: 600; }
+      .bear { color: #2e7d32; font-weight: 600; }
+      .macro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+      .macro-cell { background: #fff; border: 1px solid #e6e6e6; padding: 10px 12px; border-radius: 6px; }
+      .macro-name { font-size: .85em; color: #888; }
+      .macro-value { font-size: 1.1em; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
+      .macro-change { font-size: .85em; font-variant-numeric: tabular-nums; margin-top: 2px; }
+      .macro-change.up { color: #c62828; }
+      .macro-change.down { color: #2e7d32; }
+      footer.rules { padding: 20px 24px; background: #f7f9fc; border-top: 1px solid #e6e6e6; }
+      footer.rules h2 { font-size: 1em; margin: 0 0 8px; color: #555; }
+      footer.rules ul { margin: 0; padding-left: 20px; font-size: .9em; color: #444; line-height: 1.6; }
+      footer.rules li { margin-bottom: 4px; }
+      .rules-disclaimer { margin-top: 10px; font-size: .85em; color: #888; line-height: 1.5; }
       .bar { position: relative; height: 8px; background: #f0f0f0; border-radius: 4px; margin: 8px 0 4px; }
       .bar-q { position: absolute; top: 0; width: 1px; height: 8px; background: #ccc; left: 25%; }
       .bar-fill { position: absolute; top: -3px; width: 3px; height: 14px; background: #1976d2; border-radius: 1px; transform: translateX(-1.5px); }
@@ -316,15 +377,38 @@ function renderIndicators(ind: IndicatorSet | null): string {
     ? '—'
     : `${ind.return3m >= 0 ? '+' : ''}${ind.return3m.toFixed(1)}%`;
   const cross = formatCross(ind.lastCross);
+  const align =
+    ind.alignmentBullish == null
+      ? '—'
+      : ind.alignmentBullish
+        ? '<span class="bull">정배열 ✓</span>'
+        : '<span class="bear">역배열</span>';
+  const vol = ind.volumeRatio == null ? '—' : `${ind.volumeRatio.toFixed(2)}× (20일 평균)`;
   return `        <div class="row"><span class="label">RSI(14) · 200d 이격</span><span class="value small">${rsi}${rsiNote} · ${pct200}</span></div>
         <div class="row"><span class="label">수익률 1M / 3M</span><span class="value small">${r1} / ${r3}</span></div>
-        <div class="row"><span class="label">최근 cross</span><span class="value small">${cross}</span></div>`;
+        <div class="row"><span class="label">최근 cross</span><span class="value small">${cross}</span></div>
+        <div class="row"><span class="label">5/20/60 정배열</span><span class="value small">${align}</span></div>
+        <div class="row"><span class="label">거래량 비율</span><span class="value small">${vol}</span></div>`;
 }
 
 function formatCross(c: CrossEvent | null): string {
   if (!c) return '최근 1년 내 없음';
   const label = c.kind === 'golden' ? '골든크로스' : '데드크로스';
   return `${label} · ${c.daysAgo}영업일 전 (${c.date})`;
+}
+
+function formatMacroValue(m: MacroQuote): string {
+  if (m.value == null) return '—';
+  const v = m.value;
+  if (m.unit === '%') return `${v.toFixed(2)}%`;
+  if (m.unit === '원') return `${Math.round(v).toLocaleString('ko-KR')}원`;
+  return v.toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+}
+
+function formatMacroChange(pct: number | null): string {
+  if (pct == null) return '—';
+  const sign = pct > 0 ? '+' : '';
+  return `${sign}${pct.toFixed(2)}%`;
 }
 
 function formatPrice(v: number | null, currency: Currency): string {

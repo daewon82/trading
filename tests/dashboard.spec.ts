@@ -7,6 +7,7 @@ import { NaverKrFlowSource } from '../src/sources/naver-kr/NaverKrFlowSource.js'
 import {
   fetchDailyChart,
   resolveCandidates,
+  fetchMacroQuote,
 } from '../src/sources/timeseries/YahooChartSource.js';
 import { DashboardBuilder } from '../src/analyzers/DashboardBuilder.js';
 import { computeIndicators } from '../src/analyzers/TechnicalIndicators.js';
@@ -24,6 +25,7 @@ import type { StockSnapshot } from '../src/types/stock.js';
 import type { WeatherForecast } from '../src/types/weather.js';
 import type { IndicatorSet } from '../src/types/timeseries.js';
 import type { FlowSummary } from '../src/types/flow.js';
+import type { MacroQuote } from '../src/types/macro.js';
 import { logger } from '../src/utils/logger.js';
 
 const DEFAULT_KR = '005930,000660'; // 삼성전자, SK하이닉스
@@ -39,7 +41,13 @@ let weatherForecasts: WeatherForecast[] = [];
 const indicatorMap = new Map<string, IndicatorSet>();
 const closesMap = new Map<string, number[]>();
 const flowMap = new Map<string, FlowSummary>();
+let macros: MacroQuote[] = [];
 const SPARKLINE_DAYS = 60;
+const MACRO_SYMBOLS: Array<{ symbol: string; name: string; unit: string }> = [
+  { symbol: '^KS11', name: '코스피', unit: '' },
+  { symbol: 'KRW=X', name: '원/달러', unit: '원' },
+  { symbol: '^TNX', name: '미 10년물', unit: '%' },
+];
 
 test.describe.configure({ mode: 'serial' });
 
@@ -51,6 +59,17 @@ test('주간 날씨 (서울/고양시)', async () => {
   logger.info('weather fetched', {
     cities: weatherForecasts.map((f) => f.city),
     days: weatherForecasts[0]?.days.length ?? 0,
+  });
+});
+
+test('거시 환경 (KOSPI / 원/달러 / 미국 10년물)', async () => {
+  const results = await Promise.all(
+    MACRO_SYMBOLS.map((m) => fetchMacroQuote(m.symbol, m.name, m.unit)),
+  );
+  macros = results.filter((q): q is MacroQuote => q != null);
+  logger.info('macros fetched', {
+    count: macros.length,
+    quotes: macros.map((m) => ({ name: m.name, value: m.value, pct: m.changePercent })),
   });
 });
 
@@ -124,6 +143,7 @@ test.afterAll(async () => {
     generatedAt: new Date().toISOString(),
     today: todayInSeoul(),
     weather: weatherForecasts,
+    macros,
     kr: builder.build(krSnaps, { indicators: indicatorMap, closes: closesMap, flows: flowMap }),
     us: builder.build(usSnaps, { indicators: indicatorMap, closes: closesMap }),
   };
