@@ -45,9 +45,6 @@ ${this.renderWeather(page.weather)}
 ${this.renderInsights(page)}
 ${this.renderRulesIntro()}
 ${this.renderMacro(page.macros)}
-${this.renderStockSection('🇰🇷 국내 주식', page.kr)}
-${this.renderStockSection('🇺🇸 미국 빅테크', page.us)}
-${this.renderValueSection(page.valueKr)}
 </body>
 </html>
 `;
@@ -82,33 +79,30 @@ ${cells}
   </section>`;
   }
 
-  private renderValueSection(section: StockDashboardSection | null): string {
-    if (!section || section.cards.length === 0) return '';
-    const cards = section.cards
-      .map((c) => this.renderCard(c, section.currency))
-      .join('\n');
-    return `  <section class="value-candidates">
-    <h2>📚 가치 평가 기준 후보 — 스크리닝 시드 <span class="meta">(${esc(section.currency)})</span></h2>
-    <p class="value-intro">아래 종목은 한국 시장에서 일반적으로 <strong>저PER / 저PBR / 고배당</strong> 같은 객관 기준으로 거론되는 시드입니다. <strong>매수 추천이 아닙니다.</strong> 단순 저평가가 가치 함정(value trap)일 수 있으며, 산업 사양·실적 악화로 영구 저평가될 위험이 있습니다. 본인이 추가 검증 후 판단하세요. 빼거나 다른 종목으로 바꾸려면 <code>KR_VALUE_CANDIDATES</code> 환경변수로 조정.</p>
-    <div class="cards">
-${cards}
-    </div>
-  </section>`;
-  }
-
   private renderInsights(page: DashboardPage): string {
     const krInsights = page.kr.cards.map((c) => evaluateInsight(c, 'KR'));
     const usInsights = page.us.cards.map((c) => evaluateInsight(c, 'US'));
     const valueInsights = page.valueKr?.cards.map((c) => evaluateInsight(c, 'KR')) ?? [];
     const all = [...krInsights, ...usInsights, ...valueInsights];
     if (all.length === 0) return '';
-    const cards = all.map((ins) => renderInsightCard(ins, ins.market === 'KR' ? 'KRW' : 'USD')).join('\n');
+
+    const renderGroup = (title: string, ins: InsightResult[], currency: Currency): string => {
+      if (ins.length === 0) return '';
+      const cards = ins.map((i) => renderInsightCard(i, currency)).join('\n');
+      return `    <div class="insight-group">
+      <h3 class="insight-group-title">${esc(title)}</h3>
+      <div class="insights-cards">
+${cards}
+      </div>
+    </div>`;
+    };
+
     return `  <section class="insights">
     <h2>🔍 매수 시점 신호 종합 — 전문가들이 자주 보는 관점</h2>
     <p class="insight-intro">아래는 일반적으로 알려진 매수 관점 신호의 <strong>발생 여부와 패턴 매칭 점수</strong>입니다. <strong>매수 결정은 사용자 본인 판단입니다.</strong> 모든 신호가 충족돼도 손실 가능. "외국인+기관 동반 매수" 같은 신호는 통계적 경향이지 보장이 아닙니다.</p>
-    <div class="insights-cards">
-${cards}
-    </div>
+${renderGroup(`🇰🇷 국내 주식 (${krInsights.length}종)`, krInsights, 'KRW')}
+${renderGroup(`🇺🇸 미국 빅테크 (${usInsights.length}종)`, usInsights, 'USD')}
+${renderGroup(`📚 가치 평가 기준 후보 (${valueInsights.length}종, KR)`, valueInsights, 'KRW')}
   </section>`;
   }
 
@@ -163,58 +157,6 @@ ${rows}
       ? ''
       : `<div class="pop">강수 ${d.precipitationProbabilityMax}%</div>`;
     return `<td${cls}><div class="day-desc">${esc(d.description)}</div><div class="temp">${tmax} / ${tmin}</div>${pop}</td>`;
-  }
-
-  private renderStockSection(title: string, section: StockDashboardSection): string {
-    const cards = section.cards.map((c) => this.renderCard(c, section.currency)).join('\n');
-    return `  <section class="stocks">
-    <h2>${esc(title)} <span class="meta">${esc(section.currency)}</span></h2>
-    <div class="cards">
-${cards}
-    </div>
-  </section>`;
-  }
-
-  private renderCard(c: DashboardCard, currency: Currency): string {
-    const s = c.snapshot;
-    const price = formatPrice(s.price, currency);
-    const change =
-      s.changePercent == null
-        ? '—'
-        : `${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%`;
-    const lo = s.fiftyTwoWeekLow == null ? '—' : formatPrice(s.fiftyTwoWeekLow, currency);
-    const hi = s.fiftyTwoWeekHigh == null ? '—' : formatPrice(s.fiftyTwoWeekHigh, currency);
-    const pos = c.fiftyTwoWeekPosition == null
-      ? '—'
-      : `${c.fiftyTwoWeekPosition.toFixed(1)}%`;
-    const quart = c.quartile == null ? '—' : `Q${c.quartile}`;
-    const refTable = renderReferencePrices(c, currency);
-    const per = s.per == null ? '—' : s.per.toFixed(2);
-    const pbr = s.pbr == null ? '—' : s.pbr.toFixed(2);
-    const div = s.dividendYield == null ? '—' : `${s.dividendYield.toFixed(2)}%`;
-    const positionBar =
-      c.fiftyTwoWeekPosition == null
-        ? ''
-        : `      <div class="bar">
-        <div class="bar-q"></div><div class="bar-q" style="left:50%"></div><div class="bar-q" style="left:75%"></div>
-        <div class="bar-fill" style="left:${c.fiftyTwoWeekPosition.toFixed(2)}%"></div>
-      </div>
-      <div class="bar-labels"><span>52주 저</span><span>52주 고</span></div>`;
-    const indicatorRows = renderIndicators(c.indicators);
-    const sparkline = renderSparkline(c.sparklineCloses);
-    const flowRows = renderFlow(c.flow);
-    return `      <article class="card">
-        <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span></h3>
-        <div class="row"><span class="label">현재가</span><span class="value strong">${price}</span><span class="change">${change}</span></div>
-${sparkline}
-        <div class="row"><span class="label">52주 범위</span><span class="value">${lo} ~ ${hi}</span></div>
-        <div class="row"><span class="label">위치</span><span class="value">${pos} <span class="quart">(${quart})</span></span></div>
-${positionBar}
-${refTable}
-        <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">${per} · ${pbr} · ${div}</span></div>
-${indicatorRows}
-${flowRows}
-      </article>`;
   }
 
   private css(): string {
@@ -275,6 +217,16 @@ ${flowRows}
       section.insights { padding: 20px 24px; background: #fffaf3; border-top: 1px solid #f0e0c0; }
       .insight-intro { font-size: .9em; color: #555; line-height: 1.55; margin: 0 0 14px; padding: 10px 12px; background: #fff; border-left: 3px solid #f5a623; border-radius: 4px; }
       .insights-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+      .insight-group { margin-bottom: 24px; }
+      .insight-group:last-child { margin-bottom: 0; }
+      .insight-group-title { font-size: 1.05em; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 2px solid #f5a623; color: #444; }
+      .ic-head { display: flex; gap: 8px; align-items: baseline; padding: 4px 0 6px; flex-wrap: wrap; }
+      .ic-price-current { font-size: 1.1em; font-weight: 700; font-variant-numeric: tabular-nums; }
+      .ic-price-change { color: #555; font-size: .88em; font-variant-numeric: tabular-nums; }
+      .ic-pos { color: #888; font-size: .82em; margin-left: auto; }
+      .ic-row { font-size: .82em; padding: 4px 8px; background: #f7f9fc; border-radius: 4px; margin: 3px 0; line-height: 1.5; display: flex; gap: 6px; align-items: baseline; }
+      .ic-tag { color: #888; font-weight: 500; min-width: 56px; flex-shrink: 0; }
+      .ic-val { flex: 1; font-variant-numeric: tabular-nums; }
       .insight-card { background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 14px 16px; font-size: .9em; }
       .insight-card h3 { margin: 0 0 8px; font-size: 1.05em; }
       .insight-card h4 { margin: 8px 0 4px; font-size: .9em; color: #555; }
@@ -665,8 +617,58 @@ function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightResult {
   return { card: c, market, bullish, cautious, bearish, patterns, valuationLabel, trendLabel, dominance };
 }
 
-function renderInsightCard(ins: InsightResult, _currency: Currency): string {
-  const s = ins.card.snapshot;
+function renderInsightCard(ins: InsightResult, currency: Currency): string {
+  const c = ins.card;
+  const s = c.snapshot;
+  const refs = c.referenceLines;
+  const ind = c.indicators;
+  const flow = c.flow;
+
+  // 가격 + 변동률 + 52주 위치
+  const price = formatPrice(s.price, currency);
+  const change =
+    s.changePercent == null
+      ? '—'
+      : `${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%`;
+  const pos =
+    c.fiftyTwoWeekPosition == null
+      ? '52주 —'
+      : `52주 ${c.fiftyTwoWeekPosition.toFixed(0)}%${c.quartile ? ` (Q${c.quartile})` : ''}`;
+
+  // sparkline
+  const spark = renderSparkline(c.sparklineCloses);
+
+  // 참조가 행
+  let refsRow = '';
+  if (refs) {
+    const sma200 =
+      ind?.sma200 != null ? ` · 200d ${formatPrice(ind.sma200, currency)}` : '';
+    refsRow = `        <div class="ic-row ic-refs"><span class="ic-tag">참조가</span><span class="ic-val">Q1 ${formatPrice(refs.q1, currency)} · Q2 ${formatPrice(refs.q2, currency)} · Q3 ${formatPrice(refs.q3, currency)}${sma200}</span></div>`;
+  }
+
+  // 펀더멘털 + 거래량
+  const perStr = s.per == null ? '—' : s.per.toFixed(2);
+  const pbrStr = s.pbr == null ? '—' : s.pbr.toFixed(2);
+  const divStr = s.dividendYield == null ? '—' : `${s.dividendYield.toFixed(2)}%`;
+  const volRatioStr =
+    ind?.volumeRatio != null ? ` · 거래량 ${ind.volumeRatio.toFixed(2)}×` : '';
+  const fundRow = `        <div class="ic-row ic-fund"><span class="ic-tag">펀더</span><span class="ic-val">PER ${perStr} · PBR ${pbrStr} · 배당 ${divStr}${volRatioStr}</span></div>`;
+
+  // 수급 (KR만)
+  let flowRow = '';
+  if (flow && (flow.net5dForeigner != null || flow.net5dInstitutional != null)) {
+    const fmt = (v: number | null): string => {
+      if (v == null) return '—';
+      const abs = Math.abs(v);
+      const sign = v >= 0 ? '+' : '−';
+      if (abs >= 1e8) return `${sign}${(abs / 1e8).toFixed(2)}억주`;
+      if (abs >= 1e4) return `${sign}${(abs / 1e4).toFixed(1)}만주`;
+      return `${sign}${abs.toLocaleString('ko-KR')}주`;
+    };
+    const cls = (v: number | null): string =>
+      v == null ? '' : v > 0 ? 'flow-buy' : v < 0 ? 'flow-sell' : '';
+    flowRow = `        <div class="ic-row ic-flow"><span class="ic-tag">수급 5d</span><span class="ic-val">외인 <span class="${cls(flow.net5dForeigner)}">${fmt(flow.net5dForeigner)}</span> · 기관 <span class="${cls(flow.net5dInstitutional)}">${fmt(flow.net5dInstitutional)}</span></span></div>`;
+  }
   const listOf = (arr: string[]) =>
     arr.length === 0
       ? '<li class="empty">해당 신호 없음</li>'
@@ -694,6 +696,15 @@ function renderInsightCard(ins: InsightResult, _currency: Currency): string {
 
   return `      <article class="insight-card">
         <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span></h3>
+        <div class="ic-head">
+          <span class="ic-price-current">${price}</span>
+          <span class="ic-price-change">${change}</span>
+          <span class="ic-pos">${pos}</span>
+        </div>
+${spark}
+${refsRow}
+${fundRow}
+${flowRow}
         <div class="insight-row"><span class="ins-label">평가 대비 주가</span><span class="ins-value">${esc(ins.valuationLabel)}</span></div>
         <div class="insight-row"><span class="ins-label">현재 추세</span><span class="ins-value">${esc(ins.trendLabel)}</span></div>
         <div class="dominance">
