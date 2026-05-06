@@ -40,12 +40,12 @@ export class DashboardReporter {
     <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)}</div>
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
+${this.renderRulesIntro()}
 ${this.renderMacro(page.macros)}
 ${this.renderWeather(page.weather)}
 ${this.renderStockSection('🇰🇷 국내 주식', page.kr)}
 ${this.renderStockSection('🇺🇸 미국 빅테크', page.us)}
 ${this.renderInsights(page)}
-${this.renderRulesFooter()}
 </body>
 </html>
 `;
@@ -95,18 +95,19 @@ ${cards}
   </section>`;
   }
 
-  private renderRulesFooter(): string {
-    return `  <footer class="rules">
+  private renderRulesIntro(): string {
+    return `  <section class="rules">
     <h2>참고 — 룰 기반 매매 접근 (정보)</h2>
     <ul>
       <li><strong>DCA (분할매수)</strong>: 시점 예측 회피, 매월 일정 금액 매수. 변동성 시장에서 평균단가 하향.</li>
       <li><strong>밸류에이션 채널</strong>: 자체 5년 PER 분위 25% 미만 → 매수 검토, 75% 이상 → 매도 검토.</li>
       <li><strong>이격 매수</strong>: 200일선 −20% 이격 시 검토. 카드의 "200d" 행 참고.</li>
       <li><strong>정배열 모멘텀</strong>: 5일 &gt; 20일 &gt; 60일 정배열 + RSI 50 돌파 + 거래량 1.5× 동반 시 추세 진입.</li>
+      <li><strong>수급 동반 매수 (KR)</strong>: 외국인 + 기관 5일 누적 순매수 동반 시 한국 시장에서 자주 상승과 동행 (사용자 경험).</li>
       <li><strong>리스크 관리</strong>: 손절선(예: −7%), 한 종목 자산의 5~10% 이하, 목표가÷손절폭 ≥ 2:1.</li>
     </ul>
     <p class="rules-disclaimer">※ 본 내용은 공개된 일반 매매 룰의 정리이며 매매 권유나 투자 자문이 아닙니다. 위 룰을 적용하더라도 손실이 날 수 있고, 모든 투자 판단과 결과 책임은 본인에게 있습니다.</p>
-  </footer>`;
+  </section>`;
   }
 
   private renderWeather(forecasts: WeatherForecast[]): string {
@@ -264,10 +265,29 @@ ${flowRows}
       .ins-label { color: #777; font-size: .9em; }
       .ins-value { font-weight: 500; text-align: right; }
       .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+      .signal-grid.signal-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
       .signal-grid ul { margin: 0; padding-left: 18px; font-size: .85em; line-height: 1.55; }
       .bullish h4 { color: #c62828; }
-      .cautious h4 { color: #2e7d32; }
+      .cautious h4 { color: #b35900; }
+      .bearish h4 { color: #2e7d32; }
       .signal-grid li.empty { color: #aaa; list-style: none; margin-left: -18px; }
+      .dominance { margin: 10px 0 8px; padding: 10px 12px; background: #f7f9fc; border-radius: 6px; }
+      .dom-title { font-size: .82em; color: #555; margin-bottom: 6px; }
+      .dom-note { color: #999; font-weight: normal; }
+      .dom-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: #eee; margin-bottom: 6px; }
+      .dom-seg { height: 100%; }
+      .dom-seg.dom-bull { background: #c62828; }
+      .dom-seg.dom-caut { background: #f5a623; }
+      .dom-seg.dom-bear { background: #2e7d32; }
+      .dom-stats { display: flex; justify-content: space-between; gap: 6px; font-size: .78em; flex-wrap: wrap; }
+      .dom-bull-text { color: #c62828; font-weight: 600; }
+      .dom-caut-text { color: #b35900; font-weight: 600; }
+      .dom-bear-text { color: #2e7d32; font-weight: 600; }
+      .dom-summary { margin-top: 6px; font-size: .85em; color: #555; }
+      .dom-label-bull { color: #c62828; }
+      .dom-label-bear { color: #2e7d32; }
+      .dom-label-caut { color: #b35900; }
+      .dom-label-mix { color: #666; }
       .patterns ul { margin: 0; padding-left: 0; list-style: none; font-size: .85em; }
       .patterns .pattern { padding: 6px 8px; margin-bottom: 4px; border-radius: 4px; background: #fafafa; }
       .patterns .pattern.full { background: #fff3e0; border-left: 3px solid #ef6c00; }
@@ -447,9 +467,17 @@ interface InsightResult {
   market: 'KR' | 'US';
   bullish: string[];
   cautious: string[];
+  bearish: string[];
   patterns: InsightPattern[];
   valuationLabel: string;
   trendLabel: string;
+  dominance: {
+    bullishPct: number;
+    cautiousPct: number;
+    bearishPct: number;
+    dominantLabel: string;
+    total: number;
+  };
 }
 
 function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightResult {
@@ -458,27 +486,31 @@ function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightResult {
   const q = c.quartile;
   const bullish: string[] = [];
   const cautious: string[] = [];
+  const bearish: string[] = [];
 
   // 추세
   if (ind?.pctVsSma200 != null) {
     if (ind.pctVsSma200 > 5) bullish.push(`200일선 +${ind.pctVsSma200.toFixed(1)}% 위`);
+    else if (ind.pctVsSma200 < -10) bearish.push(`200일선 ${ind.pctVsSma200.toFixed(1)}% 아래 (강한 하락)`);
     else if (ind.pctVsSma200 < -5) cautious.push(`200일선 ${ind.pctVsSma200.toFixed(1)}% 아래`);
   }
   if (ind?.alignmentBullish === true) bullish.push('5/20/60 정배열');
-  if (ind?.alignmentBullish === false) cautious.push('5/20/60 역배열');
+  if (ind?.alignmentBullish === false) bearish.push('5/20/60 역배열');
 
   // 모멘텀
   if (ind?.rsi14 != null) {
     if (ind.rsi14 > 70) cautious.push(`RSI ${ind.rsi14.toFixed(0)} (과열, 70 초과)`);
-    else if (ind.rsi14 < 30) bullish.push(`RSI ${ind.rsi14.toFixed(0)} (과매도, 30 미만)`);
+    else if (ind.rsi14 < 30) bullish.push(`RSI ${ind.rsi14.toFixed(0)} (과매도, 반등 가능)`);
     else if (ind.rsi14 >= 50) bullish.push(`RSI ${ind.rsi14.toFixed(0)} (50 위 모멘텀)`);
   }
   if (ind?.return1m != null) {
     if (ind.return1m > 5) bullish.push(`1M +${ind.return1m.toFixed(1)}%`);
+    else if (ind.return1m < -10) bearish.push(`1M ${ind.return1m.toFixed(1)}% (큰 폭 하락)`);
     else if (ind.return1m < -5) cautious.push(`1M ${ind.return1m.toFixed(1)}%`);
   }
   if (ind?.return3m != null) {
     if (ind.return3m > 10) bullish.push(`3M +${ind.return3m.toFixed(1)}%`);
+    else if (ind.return3m < -15) bearish.push(`3M ${ind.return3m.toFixed(1)}% (큰 폭 하락)`);
     else if (ind.return3m < -10) cautious.push(`3M ${ind.return3m.toFixed(1)}%`);
   }
 
@@ -491,7 +523,7 @@ function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightResult {
   // Cross
   if (ind?.lastCross && ind.lastCross.daysAgo < 30) {
     if (ind.lastCross.kind === 'golden') bullish.push(`골든크로스 ${ind.lastCross.daysAgo}영업일 전`);
-    else cautious.push(`데드크로스 ${ind.lastCross.daysAgo}영업일 전`);
+    else bearish.push(`데드크로스 ${ind.lastCross.daysAgo}영업일 전`);
   }
 
   // 수급 (KR만, 사용자 경험 반영)
@@ -501,7 +533,7 @@ function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightResult {
     if (fNet != null && iNet != null && fNet > 0 && iNet > 0) {
       bullish.push('외국인 + 기관 5일 동반 순매수 ★');
     } else if (fNet != null && iNet != null && fNet < 0 && iNet < 0) {
-      cautious.push('외국인 + 기관 5일 동반 순매도');
+      bearish.push('외국인 + 기관 5일 동반 순매도 ★');
     } else if (fNet != null && fNet > 0) {
       bullish.push('외국인 5일 순매수 (기관 미동반)');
     } else if (iNet != null && iNet > 0) {
@@ -596,19 +628,29 @@ function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightResult {
     trendLabel = '횡보·전환 (혼합 신호)';
   }
 
-  return { card: c, market, bullish, cautious, patterns, valuationLabel, trendLabel };
+  // 우세 비율 산출 — 단순 카운트 비교 (가중치 없음)
+  const total = bullish.length + cautious.length + bearish.length;
+  const bullishPct = total > 0 ? (bullish.length / total) * 100 : 0;
+  const cautiousPct = total > 0 ? (cautious.length / total) * 100 : 0;
+  const bearishPct = total > 0 ? (bearish.length / total) * 100 : 0;
+  let dominantLabel = '신호 없음';
+  if (total > 0) {
+    if (bullish.length > cautious.length && bullish.length > bearish.length) dominantLabel = '매수 우호 우세';
+    else if (bearish.length > bullish.length && bearish.length > cautious.length) dominantLabel = '매도 우호 우세';
+    else if (cautious.length > bullish.length && cautious.length > bearish.length) dominantLabel = '신중 우세';
+    else dominantLabel = '혼합 (동률)';
+  }
+  const dominance = { bullishPct, cautiousPct, bearishPct, dominantLabel, total };
+
+  return { card: c, market, bullish, cautious, bearish, patterns, valuationLabel, trendLabel, dominance };
 }
 
 function renderInsightCard(ins: InsightResult, _currency: Currency): string {
   const s = ins.card.snapshot;
-  const bullishList =
-    ins.bullish.length === 0
+  const listOf = (arr: string[]) =>
+    arr.length === 0
       ? '<li class="empty">해당 신호 없음</li>'
-      : ins.bullish.map((b) => `<li>${esc(b)}</li>`).join('');
-  const cautiousList =
-    ins.cautious.length === 0
-      ? '<li class="empty">해당 신호 없음</li>'
-      : ins.cautious.map((b) => `<li>${esc(b)}</li>`).join('');
+      : arr.map((b) => `<li>${esc(b)}</li>`).join('');
   const patternsList = ins.patterns
     .map((p) => {
       const ratio = `${p.matched}/${p.total}`;
@@ -620,18 +662,46 @@ function renderInsightCard(ins: InsightResult, _currency: Currency): string {
     })
     .join('\n');
 
+  const d = ins.dominance;
+  const bullW = d.bullishPct.toFixed(1);
+  const cautW = d.cautiousPct.toFixed(1);
+  const bearW = d.bearishPct.toFixed(1);
+  const dominantCls =
+    d.dominantLabel.startsWith('매수') ? 'dom-label-bull'
+    : d.dominantLabel.startsWith('매도') ? 'dom-label-bear'
+    : d.dominantLabel.startsWith('신중') ? 'dom-label-caut'
+    : 'dom-label-mix';
+
   return `      <article class="insight-card">
         <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span></h3>
         <div class="insight-row"><span class="ins-label">평가 대비 주가</span><span class="ins-value">${esc(ins.valuationLabel)}</span></div>
         <div class="insight-row"><span class="ins-label">현재 추세</span><span class="ins-value">${esc(ins.trendLabel)}</span></div>
-        <div class="signal-grid">
+        <div class="dominance">
+          <div class="dom-title">신호 우세 비율 <span class="dom-note">(단순 카운트 비교, 결정은 본인)</span></div>
+          <div class="dom-bar">
+            <div class="dom-seg dom-bull" style="width:${bullW}%" title="매수 우호 ${bullW}%"></div>
+            <div class="dom-seg dom-caut" style="width:${cautW}%" title="신중 ${cautW}%"></div>
+            <div class="dom-seg dom-bear" style="width:${bearW}%" title="매도 우호 ${bearW}%"></div>
+          </div>
+          <div class="dom-stats">
+            <span class="dom-bull-text">⊕ 매수 우호 ${bullW}% (${ins.bullish.length}건)</span>
+            <span class="dom-caut-text">⚠ 신중 ${cautW}% (${ins.cautious.length}건)</span>
+            <span class="dom-bear-text">⊖ 매도 우호 ${bearW}% (${ins.bearish.length}건)</span>
+          </div>
+          <div class="dom-summary">→ <strong class="${dominantCls}">${esc(d.dominantLabel)}</strong> · 총 ${d.total}건</div>
+        </div>
+        <div class="signal-grid signal-grid-3">
           <div class="bullish">
-            <h4>⊕ 매수 우호 신호</h4>
-            <ul>${bullishList}</ul>
+            <h4>⊕ 매수 우호</h4>
+            <ul>${listOf(ins.bullish)}</ul>
           </div>
           <div class="cautious">
-            <h4>⊖ 신중 신호</h4>
-            <ul>${cautiousList}</ul>
+            <h4>⚠ 신중</h4>
+            <ul>${listOf(ins.cautious)}</ul>
+          </div>
+          <div class="bearish">
+            <h4>⊖ 매도 우호</h4>
+            <ul>${listOf(ins.bearish)}</ul>
           </div>
         </div>
         <div class="patterns">
@@ -640,7 +710,7 @@ function renderInsightCard(ins: InsightResult, _currency: Currency): string {
 ${patternsList}
           </ul>
         </div>
-        <p class="insight-note">※ 위 신호 발생은 <strong>사실 정보</strong>이며 매수 결정이 아닙니다. 본인 룰에 따라 판단하세요.</p>
+        <p class="insight-note">※ 위 신호 발생과 우세 비율은 <strong>단순 카운트 사실 정보</strong>이며 매수/매도 결정이 아닙니다. 본인 룰에 따라 판단하세요.</p>
       </article>`;
 }
 
