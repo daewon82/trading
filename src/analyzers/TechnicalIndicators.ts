@@ -46,12 +46,75 @@ export function computeIndicators(ts: Timeseries): IndicatorSet {
     sma200,
     rsi14,
     pctVsSma200,
+    return1w: pctReturn(closes, 5),
     return1m: pctReturn(closes, 21),
     return3m: pctReturn(closes, 63),
+    return6m: pctReturn(closes, 126),
+    return12m: pctReturn(closes, 252),
     lastCross: findLastCross(ts.points),
     alignmentBullish,
     volumeRatio,
+    volatility20d: annualizedVolatility(closes, 20),
+    atr14: averageTrueRange(ts.points, 14),
+    recent20High: recentExtreme(closes, 20, 'high'),
+    recent20Low: recentExtreme(closes, 20, 'low'),
   };
+}
+
+function annualizedVolatility(closes: number[], period: number): number | null {
+  if (closes.length < period + 1) return null;
+  const tail = closes.slice(-(period + 1));
+  const returns: number[] = [];
+  for (let i = 1; i < tail.length; i++) {
+    const prev = tail[i - 1]!;
+    const cur = tail[i]!;
+    if (prev <= 0) return null;
+    returns.push(Math.log(cur / prev));
+  }
+  const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+  const variance =
+    returns.reduce((s, r) => s + (r - mean) * (r - mean), 0) / returns.length;
+  return Math.sqrt(variance) * Math.sqrt(252) * 100;
+}
+
+function averageTrueRange(
+  points: Array<{ close: number; high?: number; low?: number }>,
+  period: number,
+): number | null {
+  if (points.length < period + 1) return null;
+  const tail = points.slice(-(period + 1));
+  let sum = 0;
+  let count = 0;
+  for (let i = 1; i <= period; i++) {
+    const cur = tail[i]!;
+    const prev = tail[i - 1]!;
+    if (cur.high == null || cur.low == null) continue;
+    const tr = Math.max(
+      cur.high - cur.low,
+      Math.abs(cur.high - prev.close),
+      Math.abs(cur.low - prev.close),
+    );
+    sum += tr;
+    count++;
+  }
+  return count > 0 ? sum / count : null;
+}
+
+function recentExtreme(
+  closes: number[],
+  period: number,
+  kind: 'high' | 'low',
+): number | null {
+  if (closes.length < period) return null;
+  const tail = closes.slice(-period);
+  if (kind === 'high') {
+    let max = tail[0]!;
+    for (const v of tail) if (v > max) max = v;
+    return max;
+  }
+  let min = tail[0]!;
+  for (const v of tail) if (v < min) min = v;
+  return min;
 }
 
 function sma(values: number[], period: number): number | null {

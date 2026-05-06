@@ -511,6 +511,26 @@ function esc(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
+function renderRiskRow(ins: InsightResult, currency: Currency): string {
+  const ind = ins.card.indicators;
+  const price = ins.card.snapshot.price;
+  if (!ind) return '';
+  const parts: string[] = [];
+  if (ind.volatility20d != null) {
+    let label = '낮음';
+    if (ind.volatility20d > 50) label = '매우 높음';
+    else if (ind.volatility20d > 35) label = '높음';
+    else if (ind.volatility20d > 20) label = '중간';
+    parts.push(`변동성 ${ind.volatility20d.toFixed(0)}% (${label})`);
+  }
+  if (ind.atr14 != null && price != null) {
+    const stop = price - ind.atr14 * 2;
+    parts.push(`손절 참고 ${formatPrice(stop, currency)} (현재 −${formatPrice(ind.atr14 * 2, currency)} = ATR×2)`);
+  }
+  if (parts.length === 0) return '';
+  return `        <div class="insight-row"><span class="ins-label">리스크</span><span class="ins-value small">${parts.join(' · ')}</span></div>`;
+}
+
 function renderSparkline(closes: number[] | null): string {
   if (!closes || closes.length < 2) return '';
   const w = 280;
@@ -596,6 +616,37 @@ export function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightR
     if (ind.return3m > 10) bullish.push(`3M +${ind.return3m.toFixed(1)}%`);
     else if (ind.return3m < -15) bearish.push(`3M ${ind.return3m.toFixed(1)}% (큰 폭 하락)`);
     else if (ind.return3m < -10) cautious.push(`3M ${ind.return3m.toFixed(1)}%`);
+  }
+  // 12M 모멘텀 (Jegadeesh-Titman 효과)
+  if (ind?.return12m != null) {
+    if (ind.return12m > 20) bullish.push(`12M +${ind.return12m.toFixed(1)}% (장기 모멘텀 ↑)`);
+    else if (ind.return12m < -20) bearish.push(`12M ${ind.return12m.toFixed(1)}% (장기 부진)`);
+  }
+  // 단기 mean reversion (1주 -5% 이상 + RSI 50 이하)
+  if (
+    ind?.return1w != null && ind.return1w < -5 &&
+    ind?.rsi14 != null && ind.rsi14 < 50
+  ) {
+    bullish.push(`1주 ${ind.return1w.toFixed(1)}% (단기 반전 가능)`);
+  }
+  // 변동성 위험
+  if (ind?.volatility20d != null) {
+    if (ind.volatility20d > 50) cautious.push(`변동성 ${ind.volatility20d.toFixed(0)}% (매우 높음)`);
+    else if (ind.volatility20d > 35) cautious.push(`변동성 ${ind.volatility20d.toFixed(0)}% (높음)`);
+  }
+  // 단기 지지선 테스트 (최근 20일 저점 ±3%)
+  if (c.snapshot.price != null && ind?.recent20Low != null && ind.recent20Low > 0) {
+    const distLow = ((c.snapshot.price - ind.recent20Low) / ind.recent20Low) * 100;
+    if (distLow >= 0 && distLow < 3) {
+      bullish.push(`최근 20일 저점 +${distLow.toFixed(1)}% (단기 지지선 테스트)`);
+    }
+  }
+  // 단기 저항선 (최근 20일 고점 ±3%)
+  if (c.snapshot.price != null && ind?.recent20High != null && ind.recent20High > 0) {
+    const distHigh = ((c.snapshot.price - ind.recent20High) / ind.recent20High) * 100;
+    if (distHigh > -3 && distHigh <= 0) {
+      cautious.push(`최근 20일 고점 ${distHigh.toFixed(1)}% (단기 저항선)`);
+    }
   }
 
   // 거래량
@@ -802,6 +853,7 @@ function renderInsightCard(ins: InsightResult, currency: Currency): string {
         </div>
 ${spark}
         <div class="insight-row"><span class="ins-label">추세</span><span class="ins-value">${esc(ins.trendLabel)}</span></div>
+${renderRiskRow(ins, currency)}
         <div class="dominance">
           <div class="dom-bar">
             <div class="dom-seg dom-bull" style="width:${bullW}%" title="매수 우호 ${bullW}%"></div>
