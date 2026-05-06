@@ -27,6 +27,7 @@ export class DashboardReporter {
 <html lang="ko">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>대시보드 ${esc(page.today)}</title>
   <style>${this.css()}</style>
 </head>
@@ -60,12 +61,14 @@ ${this.renderStockSection('🇺🇸 미국 빅테크', page.us)}
       .join('\n');
     return `  <section class="weather">
     <h2>주간 날씨 — open-meteo</h2>
-    <table class="weather-table">
-      <thead><tr><th class="city">도시</th>${dateHeaders}</tr></thead>
-      <tbody>
+    <div class="weather-wrap">
+      <table class="weather-table">
+        <thead><tr><th class="city">도시</th>${dateHeaders}</tr></thead>
+        <tbody>
 ${rows}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
     <p class="legend"><span class="rainy-legend">빨강</span> = 비/소나기/천둥번개 예보</p>
   </section>`;
   }
@@ -130,6 +133,8 @@ ${indicatorRows}
 
   private css(): string {
     return `
+      *, *::before, *::after { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
       body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", sans-serif; margin: 0; color: #222; background: #fafafa; }
       header { padding: 24px; background: #fff; border-bottom: 1px solid #eee; }
       h1 { margin: 0 0 4px; font-size: 1.6em; }
@@ -137,7 +142,8 @@ ${indicatorRows}
       .disclaimer { background: #fff7e6; border-left: 4px solid #f5a623; padding: 10px 14px; margin: 14px 0 0; font-size: .9em; color: #555; line-height: 1.5; }
       section { padding: 20px 24px; }
       h2 { margin: 0 0 12px; font-size: 1.2em; }
-      table.weather-table { border-collapse: collapse; width: 100%; background: #fff; }
+      .weather-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      table.weather-table { border-collapse: collapse; width: 100%; min-width: 560px; background: #fff; }
       table.weather-table th, table.weather-table td { border: 1px solid #e6e6e6; padding: 8px 10px; font-size: .85em; text-align: center; vertical-align: top; }
       table.weather-table thead th { background: #f4f4f4; }
       table.weather-table tbody th.city { background: #fafafa; text-align: left; }
@@ -172,6 +178,20 @@ ${indicatorRows}
       .bar-q { position: absolute; top: 0; width: 1px; height: 8px; background: #ccc; left: 25%; }
       .bar-fill { position: absolute; top: -3px; width: 3px; height: 14px; background: #1976d2; border-radius: 1px; transform: translateX(-1.5px); }
       .bar-labels { display: flex; justify-content: space-between; color: #999; font-size: .75em; }
+      @media (max-width: 600px) {
+        header { padding: 16px; }
+        section { padding: 14px 16px; }
+        h1 { font-size: 1.3em; }
+        h2 { font-size: 1.05em; }
+        .cards { grid-template-columns: 1fr; gap: 10px; }
+        .card { padding: 12px 14px; font-size: .9em; }
+        .card h3 { font-size: 1em; }
+        table.weather-table th, table.weather-table td { padding: 6px 4px; font-size: .78em; }
+        .ref-table td { padding: 2px 3px; font-size: .8em; }
+        .label { font-size: .82em; }
+        .row { padding: 2px 0; }
+        .disclaimer { font-size: .82em; padding: 8px 10px; }
+      }
     `;
   }
 }

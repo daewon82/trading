@@ -132,13 +132,17 @@ test.afterAll(async () => {
   const webhook = process.env.JANDI_WEBHOOK_URL;
   if (webhook) {
     const publicUrl = process.env.DASHBOARD_PUBLIC_URL ?? null;
+    const publicHistoryUrl = publicUrl
+      ? `${publicUrl.replace(/\/$/, '')}/history/dashboard-${ts}.html`
+      : null;
     try {
       await new JandiNotifier().send(dashboard, {
         webhookUrl: webhook,
         htmlAbsolutePath: htmlPath,
         publicUrl,
+        publicHistoryUrl,
       });
-      logger.info('jandi notification sent');
+      logger.info('jandi notification sent', { publicUrl, publicHistoryUrl });
     } catch (err) {
       logger.error('jandi notification failed', { err: String(err) });
     }

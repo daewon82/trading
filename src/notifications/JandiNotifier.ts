@@ -16,6 +16,7 @@ export interface JandiNotifierOptions {
   webhookUrl: string;
   htmlAbsolutePath: string;
   publicUrl?: string | null;
+  publicHistoryUrl?: string | null;
 }
 
 export class JandiNotifier {
@@ -43,10 +44,19 @@ export class JandiNotifier {
   }
 
   buildPayload(page: DashboardPage, opts: JandiNotifierOptions): JandiPayload {
-    const fileUrl = `file://${opts.htmlAbsolutePath}`;
-    const linkBlock = opts.publicUrl
-      ? `🌐 ${opts.publicUrl}\n📄 ${fileUrl}`
-      : `📄 ${fileUrl}`;
+    const links: string[] = [];
+    if (opts.publicUrl) {
+      links.push(`🌐 최신: ${opts.publicUrl}`);
+    }
+    if (opts.publicHistoryUrl) {
+      links.push(`🕒 오늘 스냅샷: ${opts.publicHistoryUrl}`);
+    }
+    if (!opts.publicUrl) {
+      // publicUrl이 없을 때만 file:// (로컬 수동 실행용). GitHub Actions에선
+      // runner 경로라 사용자 PC에서 못 여니 publicUrl 있으면 file://는 표시 안 함.
+      links.push(`📄 ${`file://${opts.htmlAbsolutePath}`}`);
+    }
+    const linkBlock = links.join('\n');
 
     return {
       body: `📊 오늘의 대시보드 — ${page.today}`,

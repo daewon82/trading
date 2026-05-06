@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>대시보드 2026-05-06 (수요일)</title>
+  <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", sans-serif; margin: 0; color: #222; background: #fafafa; }
+      header { padding: 24px; background: #fff; border-bottom: 1px solid #eee; }
+      h1 { margin: 0 0 4px; font-size: 1.6em; }
+      .meta { color: #888; font-size: .9em; }
+      .disclaimer { background: #fff7e6; border-left: 4px solid #f5a623; padding: 10px 14px; margin: 14px 0 0; font-size: .9em; color: #555; line-height: 1.5; }
+      section { padding: 20px 24px; }
+      h2 { margin: 0 0 12px; font-size: 1.2em; }
+      .weather-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      table.weather-table { border-collapse: collapse; width: 100%; min-width: 560px; background: #fff; }
+      table.weather-table th, table.weather-table td { border: 1px solid #e6e6e6; padding: 8px 10px; font-size: .85em; text-align: center; vertical-align: top; }
+      table.weather-table thead th { background: #f4f4f4; }
+      table.weather-table tbody th.city { background: #fafafa; text-align: left; }
+      table.weather-table td.rainy { background: #ffecec; color: #c62828; font-weight: 600; }
+      .day-desc { font-weight: 500; margin-bottom: 4px; }
+      .temp { color: #555; font-size: .92em; }
+      .pop { color: #888; font-size: .85em; margin-top: 2px; }
+      .legend { font-size: .85em; color: #555; margin-top: 8px; }
+      .rainy-legend { color: #c62828; font-weight: 600; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+      .card { background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 14px 16px; font-size: .92em; }
+      .card h3 { margin: 0 0 10px; font-size: 1.05em; }
+      .ticker { color: #888; font-weight: normal; font-size: .85em; }
+      .row { display: flex; justify-content: space-between; align-items: baseline; padding: 3px 0; gap: 8px; }
+      .label { color: #777; font-size: .9em; flex-shrink: 0; }
+      .value { text-align: right; font-variant-numeric: tabular-nums; }
+      .value.strong { font-weight: 700; font-size: 1.05em; }
+      .value.small { font-size: .85em; }
+      .change { color: #555; font-size: .85em; min-width: 60px; text-align: right; }
+      .quart { color: #888; font-size: .85em; }
+      .dim { color: #aaa; }
+      .ref-block { margin: 6px 0 4px; padding: 6px 8px; background: #f7f9fc; border-radius: 4px; }
+      .ref-title { font-size: .85em; color: #555; margin-bottom: 4px; }
+      .ref-note { color: #999; font-weight: normal; }
+      .ref-table { width: 100%; border-collapse: collapse; font-size: .85em; }
+      .ref-table td { padding: 2px 4px; }
+      .ref-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+      .ref-table td.pct { color: #888; min-width: 60px; }
+      .ref-table tr.below td.pct { color: #2e7d32; }
+      .ref-table tr.above td.pct { color: #c62828; }
+      .bar { position: relative; height: 8px; background: #f0f0f0; border-radius: 4px; margin: 8px 0 4px; }
+      .bar-q { position: absolute; top: 0; width: 1px; height: 8px; background: #ccc; left: 25%; }
+      .bar-fill { position: absolute; top: -3px; width: 3px; height: 14px; background: #1976d2; border-radius: 1px; transform: translateX(-1.5px); }
+      .bar-labels { display: flex; justify-content: space-between; color: #999; font-size: .75em; }
+      @media (max-width: 600px) {
+        header { padding: 16px; }
+        section { padding: 14px 16px; }
+        h1 { font-size: 1.3em; }
+        h2 { font-size: 1.05em; }
+        .cards { grid-template-columns: 1fr; gap: 10px; }
+        .card { padding: 12px 14px; font-size: .9em; }
+        .card h3 { font-size: 1em; }
+        table.weather-table th, table.weather-table td { padding: 6px 4px; font-size: .78em; }
+        .ref-table td { padding: 2px 3px; font-size: .8em; }
+        .label { font-size: .82em; }
+        .row { padding: 2px 0; }
+        .disclaimer { font-size: .82em; padding: 8px 10px; }
+      }
+    </style>
+</head>
+<body>
+  <header>
+    <h1>오늘의 대시보드</h1>
+    <div class="meta">2026-05-06 (수요일) · 생성 2026-05-06T01:34:02.190Z</div>
+    <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
+  </header>
+  <section class="weather">
+    <h2>주간 날씨 — open-meteo</h2>
+    <div class="weather-wrap">
+      <table class="weather-table">
+        <thead><tr><th class="city">도시</th><th>5/6 (수)</th><th>5/7 (목)</th><th>5/8 (금)</th><th>5/9 (토)</th><th>5/10 (일)</th><th>5/11 (월)</th><th>5/12 (화)</th></tr></thead>
+        <tbody>
+      <tr><th class="city">서울</th><td><div class="day-desc">구름 조금</div><div class="temp">22° / 8°</div><div class="pop">강수 0%</div></td><td class="rainy"><div class="day-desc">이슬비</div><div class="temp">18° / 11°</div><div class="pop">강수 76%</div></td><td><div class="day-desc">흐림</div><div class="temp">20° / 10°</div><div class="pop">강수 0%</div></td><td><div class="day-desc">흐림</div><div class="temp">23° / 9°</div><div class="pop">강수 0%</div></td><td><div class="day-desc">흐림</div><div class="temp">25° / 10°</div><div class="pop">강수 0%</div></td><td class="rainy"><div class="day-desc">이슬비 약</div><div class="temp">24° / 14°</div><div class="pop">강수 29%</div></td><td class="rainy"><div class="day-desc">비 약</div><div class="temp">22° / 16°</div><div class="pop">강수 15%</div></td></tr>
+      <tr><th class="city">고양시</th><td><div class="day-desc">대체로 맑음</div><div class="temp">21° / 7°</div><div class="pop">강수 0%</div></td><td class="rainy"><div class="day-desc">이슬비</div><div class="temp">16° / 10°</div><div class="pop">강수 90%</div></td><td><div class="day-desc">구름 조금</div><div class="temp">20° / 8°</div><div class="pop">강수 0%</div></td><td><div class="day-desc">흐림</div><div class="temp">23° / 8°</div><div class="pop">강수 0%</div></td><td><div class="day-desc">흐림</div><div class="temp">25° / 10°</div><div class="pop">강수 0%</div></td><td class="rainy"><div class="day-desc">이슬비 약</div><div class="temp">23° / 13°</div><div class="pop">강수 30%</div></td><td class="rainy"><div class="day-desc">비 약</div><div class="temp">23° / 15°</div><div class="pop">강수 12%</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="legend"><span class="rainy-legend">빨강</span> = 비/소나기/천둥번개 예보</p>
+  </section>
+  <section class="stocks">
+    <h2>🇰🇷 국내 주식 <span class="meta">KRW</span></h2>
+    <div class="cards">
+      <article class="card">
+        <h3>삼성전자 <span class="ticker">005930</span></h3>
+        <div class="row"><span class="label">현재가</span><span class="value strong">259,000원</span><span class="change">+11.40%</span></div>
+        <div class="row"><span class="label">52주 범위</span><span class="value">53,700원 ~ 261,500원</span></div>
+        <div class="row"><span class="label">위치</span><span class="value">98.8% <span class="quart">(Q4)</span></span></div>
+      <div class="bar">
+        <div class="bar-q"></div><div class="bar-q" style="left:50%"></div><div class="bar-q" style="left:75%"></div>
+        <div class="bar-fill" style="left:98.80%"></div>
+      </div>
+      <div class="bar-labels"><span>52주 저</span><span>52주 고</span></div>
+        <div class="ref-block">
+          <div class="ref-title">참조 가격대 <span class="ref-note">(현재가 대비)</span></div>
+          <table class="ref-table">
+          <tr class="ref below"><td>52주 저</td><td class="num">53,700원</td><td class="num pct">-79.3%</td></tr>
+          <tr class="ref below"><td>Q1 (하위 25%선)</td><td class="num">105,650원</td><td class="num pct">-59.2%</td></tr>
+          <tr class="ref below"><td>Q2 (중간)</td><td class="num">157,600원</td><td class="num pct">-39.2%</td></tr>
+          <tr class="ref below"><td>Q3 (상위 25%선)</td><td class="num">209,550원</td><td class="num pct">-19.1%</td></tr>
+          <tr class="ref above"><td>52주 고</td><td class="num">261,500원</td><td class="num pct">+1.0%</td></tr>
+          </table>
+        </div>
+        <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">28.90 · — · —</span></div>
+        <div class="row"><span class="label">RSI(14) · 200d 이격</span><span class="value small">80 (70 초과) · +104.1%</span></div>
+        <div class="row"><span class="label">수익률 1M / 3M</span><span class="value small">+39.1% / +61.2%</span></div>
+        <div class="row"><span class="label">최근 cross</span><span class="value small">최근 1년 내 없음</span></div>
+      </article>
+      <article class="card">
+        <h3>SK하이닉스 <span class="ticker">000660</span></h3>
+        <div class="row"><span class="label">현재가</span><span class="value strong">1,594,000원</span><span class="change">+10.16%</span></div>
+        <div class="row"><span class="label">52주 범위</span><span class="value">185,900원 ~ 1,601,000원</span></div>
+        <div class="row"><span class="label">위치</span><span class="value">99.5% <span class="quart">(Q4)</span></span></div>
+      <div class="bar">
+        <div class="bar-q"></div><div class="bar-q" style="left:50%"></div><div class="bar-q" style="left:75%"></div>
+        <div class="bar-fill" style="left:99.51%"></div>
+      </div>
+      <div class="bar-labels"><span>52주 저</span><span>52주 고</span></div>
+        <div class="ref-block">
+          <div class="ref-title">참조 가격대 <span class="ref-note">(현재가 대비)</span></div>
+          <table class="ref-table">
+          <tr class="ref below"><td>52주 저</td><td class="num">185,900원</td><td class="num pct">-88.3%</td></tr>
+          <tr class="ref below"><td>Q1 (하위 25%선)</td><td class="num">539,675원</td><td class="num pct">-66.1%</td></tr>
+          <tr class="ref below"><td>Q2 (중간)</td><td class="num">893,450원</td><td class="num pct">-43.9%</td></tr>
+          <tr class="ref below"><td>Q3 (상위 25%선)</td><td class="num">1,247,225원</td><td class="num pct">-21.8%</td></tr>
+          <tr class="ref above"><td>52주 고</td><td class="num">1,601,000원</td><td class="num pct">+0.4%</td></tr>
+          </table>
+        </div>
+        <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">28.90 · — · —</span></div>
+        <div class="row"><span class="label">RSI(14) · 200d 이격</span><span class="value small">92 (70 초과) · +149.8%</span></div>
+        <div class="row"><span class="label">수익률 1M / 3M</span><span class="value small">+81.4% / +84.6%</span></div>
+        <div class="row"><span class="label">최근 cross</span><span class="value small">최근 1년 내 없음</span></div>
+      </article>
+    </div>
+  </section>
+  <section class="stocks">
+    <h2>🇺🇸 미국 빅테크 <span class="meta">USD</span></h2>
+    <div class="cards">
+      <article class="card">
+        <h3>애플 <span class="ticker">AAPL</span></h3>
+        <div class="row"><span class="label">현재가</span><span class="value strong">$284.18</span><span class="change">+2.66%</span></div>
+        <div class="row"><span class="label">52주 범위</span><span class="value">$193.25 ~ $288.62</span></div>
+        <div class="row"><span class="label">위치</span><span class="value">95.3% <span class="quart">(Q4)</span></span></div>
+      <div class="bar">
+        <div class="bar-q"></div><div class="bar-q" style="left:50%"></div><div class="bar-q" style="left:75%"></div>
+        <div class="bar-fill" style="left:95.34%"></div>
+      </div>
+      <div class="bar-labels"><span>52주 저</span><span>52주 고</span></div>
+        <div class="ref-block">
+          <div class="ref-title">참조 가격대 <span class="ref-note">(현재가 대비)</span></div>
+          <table class="ref-table">
+          <tr class="ref below"><td>52주 저</td><td class="num">$193.25</td><td class="num pct">-32.0%</td></tr>
+          <tr class="ref below"><td>Q1 (하위 25%선)</td><td class="num">$217.09</td><td class="num pct">-23.6%</td></tr>
+          <tr class="ref below"><td>Q2 (중간)</td><td class="num">$240.94</td><td class="num pct">-15.2%</td></tr>
+          <tr class="ref below"><td>Q3 (상위 25%선)</td><td class="num">$264.78</td><td class="num pct">-6.8%</td></tr>
+          <tr class="ref above"><td>52주 고</td><td class="num">$288.62</td><td class="num pct">+1.6%</td></tr>
+          </table>
+        </div>
+        <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">34.51 · 39.14 · 0.39%</span></div>
+        <div class="row"><span class="label">RSI(14) · 200d 이격</span><span class="value small">66 · +11.1%</span></div>
+        <div class="row"><span class="label">수익률 1M / 3M</span><span class="value small">+9.8% / +5.5%</span></div>
+        <div class="row"><span class="label">최근 cross</span><span class="value small">최근 1년 내 없음</span></div>
+      </article>
+      <article class="card">
+        <h3>마이크로소프트 <span class="ticker">MSFT</span></h3>
+        <div class="row"><span class="label">현재가</span><span class="value strong">$411.38</span><span class="change">-0.54%</span></div>
+        <div class="row"><span class="label">52주 범위</span><span class="value">$356.28 ~ $555.45</span></div>
+        <div class="row"><span class="label">위치</span><span class="value">27.7% <span class="quart">(Q2)</span></span></div>
+      <div class="bar">
+        <div class="bar-q"></div><div class="bar-q" style="left:50%"></div><div class="bar-q" style="left:75%"></div>
+        <div class="bar-fill" style="left:27.66%"></div>
+      </div>
+      <div class="bar-labels"><span>52주 저</span><span>52주 고</span></div>
+        <div class="ref-block">
+          <div class="ref-title">참조 가격대 <span class="ref-note">(현재가 대비)</span></div>
+          <table class="ref-table">
+          <tr class="ref below"><td>52주 저</td><td class="num">$356.28</td><td class="num pct">-13.4%</td></tr>
+          <tr class="ref below"><td>Q1 (하위 25%선)</td><td class="num">$406.07</td><td class="num pct">-1.3%</td></tr>
+          <tr class="ref above"><td>Q2 (중간)</td><td class="num">$455.87</td><td class="num pct">+10.8%</td></tr>
+          <tr class="ref above"><td>Q3 (상위 25%선)</td><td class="num">$505.66</td><td class="num pct">+22.9%</td></tr>
+          <tr class="ref above"><td>52주 고</td><td class="num">$555.45</td><td class="num pct">+35.0%</td></tr>
+          </table>
+        </div>
+        <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">24.48 · 7.38 · 0.88%</span></div>
+        <div class="row"><span class="label">RSI(14) · 200d 이격</span><span class="value small">50 · -11.9%</span></div>
+        <div class="row"><span class="label">수익률 1M / 3M</span><span class="value small">+10.3% / +0.0%</span></div>
+        <div class="row"><span class="label">최근 cross</span><span class="value small">최근 1년 내 없음</span></div>
+      </article>
+      <article class="card">
+        <h3>알파벳 Class A <span class="ticker">GOOGL</span></h3>
+        <div class="row"><span class="label">현재가</span><span class="value strong">$388.43</span><span class="change">+1.35%</span></div>
+        <div class="row"><span class="label">52주 범위</span><span class="value">$147.84 ~ $387.38</span></div>
+        <div class="row"><span class="label">위치</span><span class="value">100.4% <span class="quart">(Q4)</span></span></div>
+      <div class="bar">
+        <div class="bar-q"></div><div class="bar-q" style="left:50%"></div><div class="bar-q" style="left:75%"></div>
+        <div class="bar-fill" style="left:100.44%"></div>
+      </div>
+      <div class="bar-labels"><span>52주 저</span><span>52주 고</span></div>
+        <div class="ref-block">
+          <div class="ref-title">참조 가격대 <span class="ref-note">(현재가 대비)</span></div>
+          <table class="ref-table">
+          <tr class="ref below"><td>52주 저</td><td class="num">$147.84</td><td class="num pct">-61.9%</td></tr>
+          <tr class="ref below"><td>Q1 (하위 25%선)</td><td class="num">$207.72</td><td class="num pct">-46.5%</td></tr>
+          <tr class="ref below"><td>Q2 (중간)</td><td class="num">$267.61</td><td class="num pct">-31.1%</td></tr>
+          <tr class="ref below"><td>Q3 (상위 25%선)</td><td class="num">$327.50</td><td class="num pct">-15.7%</td></tr>
+          <tr class="ref below"><td>52주 고</td><td class="num">$387.38</td><td class="num pct">-0.3%</td></tr>
+          </table>
+        </div>
+        <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">28.69 · 9.83 · 0.22%</span></div>
+        <div class="row"><span class="label">RSI(14) · 200d 이격</span><span class="value small">82 (70 초과) · +37.2%</span></div>
+        <div class="row"><span class="label">수익률 1M / 3M</span><span class="value small">+29.5% / +14.3%</span></div>
+        <div class="row"><span class="label">최근 cross</span><span class="value small">최근 1년 내 없음</span></div>
+      </article>
+      <article class="card">
+        <h3>아마존닷컴 <span class="ticker">AMZN</span></h3>
+        <div class="row"><span class="label">현재가</span><span class="value strong">$273.55</span><span class="change">+0.55%</span></div>
+        <div class="row"><span class="label">52주 범위</span><span class="value">$183.85 ~ $276.10</span></div>
+        <div class="row"><span class="label">위치</span><span class="value">97.2% <span class="quart">(Q4)</span></span></div>
+      <div class="bar">
+        <div class="bar-q"></div><div class="bar-q" style="left:50%"></div><div class="bar-q" style="left:75%"></div>
+        <div class="bar-fill" style="left:97.24%"></div>
+      </div>
+      <div class="bar-labels"><span>52주 저</span><span>52주 고</span></div>
+        <div class="ref-block">
+          <div class="ref-title">참조 가격대 <span class="ref-note">(현재가 대비)</span></div>
+          <table class="ref-table">
+          <tr class="ref below"><td>52주 저</td><td class="num">$183.85</td><td class="num pct">-32.8%</td></tr>
+          <tr class="ref below"><td>Q1 (하위 25%선)</td><td class="num">$206.91</td><td class="num pct">-24.4%</td></tr>
+          <tr class="ref below"><td>Q2 (중간)</td><td class="num">$229.98</td><td class="num pct">-15.9%</td></tr>
+          <tr class="ref below"><td>Q3 (상위 25%선)</td><td class="num">$253.04</td><td class="num pct">-7.5%</td></tr>
+          <tr class="ref above"><td>52주 고</td><td class="num">$276.10</td><td class="num pct">+0.9%</td></tr>
+          </table>
+        </div>
+        <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">30.58 · 6.66 · —</span></div>
+        <div class="row"><span class="label">RSI(14) · 200d 이격</span><span class="value small">82 (70 초과) · +20.1%</span></div>
+        <div class="row"><span class="label">수익률 1M / 3M</span><span class="value small">+28.6% / +14.6%</span></div>
+        <div class="row"><span class="label">최근 cross</span><span class="value small">데드크로스 · 38영업일 전 (2026-03-11)</span></div>
+      </article>
+      <article class="card">
+        <h3>엔비디아 <span class="ticker">NVDA</span></h3>
+        <div class="row"><span class="label">현재가</span><span class="value strong">$196.50</span><span class="change">-1.00%</span></div>
+        <div class="row"><span class="label">52주 범위</span><span class="value">$110.82 ~ $216.83</span></div>
+        <div class="row"><span class="label">위치</span><span class="value">80.8% <span class="quart">(Q4)</span></span></div>
+      <div class="bar">
+        <div class="bar-q"></div><div class="bar-q" style="left:50%"></div><div class="bar-q" style="left:75%"></div>
+        <div class="bar-fill" style="left:80.82%"></div>
+      </div>
+      <div class="bar-labels"><span>52주 저</span><span>52주 고</span></div>
+        <div class="ref-block">
+          <div class="ref-title">참조 가격대 <span class="ref-note">(현재가 대비)</span></div>
+          <table class="ref-table">
+          <tr class="ref below"><td>52주 저</td><td class="num">$110.82</td><td class="num pct">-43.6%</td></tr>
+          <tr class="ref below"><td>Q1 (하위 25%선)</td><td class="num">$137.32</td><td class="num pct">-30.1%</td></tr>
+          <tr class="ref below"><td>Q2 (중간)</td><td class="num">$163.82</td><td class="num pct">-16.6%</td></tr>
+          <tr class="ref below"><td>Q3 (상위 25%선)</td><td class="num">$190.33</td><td class="num pct">-3.1%</td></tr>
+          <tr class="ref above"><td>52주 고</td><td class="num">$216.83</td><td class="num pct">+10.3%</td></tr>
+          </table>
+        </div>
+        <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">39.94 · 30.36 · 0.02%</span></div>
+        <div class="row"><span class="label">RSI(14) · 200d 이격</span><span class="value small">48 · +6.7%</span></div>
+        <div class="row"><span class="label">수익률 1M / 3M</span><span class="value small">+10.6% / +9.0%</span></div>
+        <div class="row"><span class="label">최근 cross</span><span class="value small">최근 1년 내 없음</span></div>
+      </article>
+      <article class="card">
+        <h3>테슬라 <span class="ticker">TSLA</span></h3>
+        <div class="row"><span class="label">현재가</span><span class="value strong">$389.37</span><span class="change">-0.80%</span></div>
+        <div class="row"><span class="label">52주 범위</span><span class="value">$271.00 ~ $498.83</span></div>
+        <div class="row"><span class="label">위치</span><span class="value">52.0% <span class="quart">(Q3)</span></span></div>
+      <div class="bar">
+        <div class="bar-q"></div><div class="bar-q" style="left:50%"></div><div class="bar-q" style="left:75%"></div>
+        <div class="bar-fill" style="left:51.96%"></div>
+      </div>
+      <div class="bar-labels"><span>52주 저</span><span>52주 고</span></div>
+        <div class="ref-block">
+          <div class="ref-title">참조 가격대 <span class="ref-note">(현재가 대비)</span></div>
+          <table class="ref-table">
+          <tr class="ref below"><td>52주 저</td><td class="num">$271.00</td><td class="num pct">-30.4%</td></tr>
+          <tr class="ref below"><td>Q1 (하위 25%선)</td><td class="num">$327.96</td><td class="num pct">-15.8%</td></tr>
+          <tr class="ref below"><td>Q2 (중간)</td><td class="num">$384.91</td><td class="num pct">-1.1%</td></tr>
+          <tr class="ref above"><td>Q3 (상위 25%선)</td><td class="num">$441.87</td><td class="num pct">+13.5%</td></tr>
+          <tr class="ref above"><td>52주 고</td><td class="num">$498.83</td><td class="num pct">+28.1%</td></tr>
+          </table>
+        </div>
+        <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">331.28 · 17.38 · —</span></div>
+        <div class="row"><span class="label">RSI(14) · 200d 이격</span><span class="value small">48 · -3.4%</span></div>
+        <div class="row"><span class="label">수익률 1M / 3M</span><span class="value small">+10.4% / -7.7%</span></div>
+        <div class="row"><span class="label">최근 cross</span><span class="value small">데드크로스 · 18영업일 전 (2026-04-09)</span></div>
+      </article>
+    </div>
+  </section>
+</body>
+</html>
