@@ -1,0 +1,187 @@
+import { writeFile, mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
+import type {
+  StockDashboardSection,
+  DashboardCard,
+  Currency,
+} from '../types/stock.js';
+import type { WeatherForecast, WeatherDay } from '../types/weather.js';
+
+export interface DashboardPage {
+  generatedAt: string;
+  today: string;
+  weather: WeatherForecast[];
+  kr: StockDashboardSection;
+  us: StockDashboardSection;
+}
+
+export class DashboardReporter {
+  async write(page: DashboardPage, outPath: string): Promise<void> {
+    await mkdir(dirname(outPath), { recursive: true });
+    await writeFile(outPath, this.render(page), 'utf8');
+  }
+
+  render(page: DashboardPage): string {
+    return `<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>대시보드 ${esc(page.today)}</title>
+  <style>${this.css()}</style>
+</head>
+<body>
+  <header>
+    <h1>오늘의 대시보드</h1>
+    <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)}</div>
+    <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
+  </header>
+${this.renderWeather(page.weather)}
+${this.renderStockSection('🇰🇷 국내 주식', page.kr)}
+${this.renderStockSection('🇺🇸 미국 빅테크', page.us)}
+</body>
+</html>
+`;
+  }
+
+  private renderWeather(forecasts: WeatherForecast[]): string {
+    if (forecasts.length === 0) return '';
+    const head = forecasts[0]!;
+    const dateHeaders = head.days
+      .map((d) => `<th>${esc(formatShortDate(d.date))}</th>`)
+      .join('');
+    const rows = forecasts
+      .map((f) => {
+        const cells = f.days
+          .map((d) => this.renderWeatherCell(d))
+          .join('');
+        return `      <tr><th class="city">${esc(f.city)}</th>${cells}</tr>`;
+      })
+      .join('\n');
+    return `  <section class="weather">
+    <h2>주간 날씨 — open-meteo</h2>
+    <table class="weather-table">
+      <thead><tr><th class="city">도시</th>${dateHeaders}</tr></thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+    <p class="legend"><span class="rainy-legend">빨강</span> = 비/소나기/천둥번개 예보</p>
+  </section>`;
+  }
+
+  private renderWeatherCell(d: WeatherDay): string {
+    const cls = d.rainy ? ' class="rainy"' : '';
+    const tmax = d.temperatureMax == null ? '—' : `${d.temperatureMax.toFixed(0)}°`;
+    const tmin = d.temperatureMin == null ? '—' : `${d.temperatureMin.toFixed(0)}°`;
+    const pop = d.precipitationProbabilityMax == null
+      ? ''
+      : `<div class="pop">강수 ${d.precipitationProbabilityMax}%</div>`;
+    return `<td${cls}><div class="day-desc">${esc(d.description)}</div><div class="temp">${tmax} / ${tmin}</div>${pop}</td>`;
+  }
+
+  private renderStockSection(title: string, section: StockDashboardSection): string {
+    const cards = section.cards.map((c) => this.renderCard(c, section.currency)).join('\n');
+    return `  <section class="stocks">
+    <h2>${esc(title)} <span class="meta">${esc(section.currency)}</span></h2>
+    <div class="cards">
+${cards}
+    </div>
+  </section>`;
+  }
+
+  private renderCard(c: DashboardCard, currency: Currency): string {
+    const s = c.snapshot;
+    const price = formatPrice(s.price, currency);
+    const change =
+      s.changePercent == null
+        ? '—'
+        : `${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%`;
+    const lo = s.fiftyTwoWeekLow == null ? '—' : formatPrice(s.fiftyTwoWeekLow, currency);
+    const hi = s.fiftyTwoWeekHigh == null ? '—' : formatPrice(s.fiftyTwoWeekHigh, currency);
+    const pos = c.fiftyTwoWeekPosition == null
+      ? '—'
+      : `${c.fiftyTwoWeekPosition.toFixed(1)}%`;
+    const quart = c.quartile == null ? '—' : `Q${c.quartile}`;
+    const refs = c.referenceLines == null
+      ? '—'
+      : `Q1 ${formatPrice(c.referenceLines.q1, currency)} · Q2 ${formatPrice(c.referenceLines.q2, currency)} · Q3 ${formatPrice(c.referenceLines.q3, currency)}`;
+    const per = s.per == null ? '—' : s.per.toFixed(2);
+    const pbr = s.pbr == null ? '—' : s.pbr.toFixed(2);
+    const div = s.dividendYield == null ? '—' : `${s.dividendYield.toFixed(2)}%`;
+    const positionBar =
+      c.fiftyTwoWeekPosition == null
+        ? ''
+        : `      <div class="bar">
+        <div class="bar-q"></div><div class="bar-q" style="left:50%"></div><div class="bar-q" style="left:75%"></div>
+        <div class="bar-fill" style="left:${c.fiftyTwoWeekPosition.toFixed(2)}%"></div>
+      </div>
+      <div class="bar-labels"><span>52주 저</span><span>52주 고</span></div>`;
+    return `      <article class="card">
+        <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span></h3>
+        <div class="row"><span class="label">현재가</span><span class="value strong">${price}</span><span class="change">${change}</span></div>
+        <div class="row"><span class="label">52주 범위</span><span class="value">${lo} ~ ${hi}</span></div>
+        <div class="row"><span class="label">위치</span><span class="value">${pos} <span class="quart">(${quart})</span></span></div>
+${positionBar}
+        <div class="row"><span class="label">참조선</span><span class="value small">${refs}</span></div>
+        <div class="row"><span class="label">PER · PBR · 배당</span><span class="value small">${per} · ${pbr} · ${div}</span></div>
+      </article>`;
+  }
+
+  private css(): string {
+    return `
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", sans-serif; margin: 0; color: #222; background: #fafafa; }
+      header { padding: 24px; background: #fff; border-bottom: 1px solid #eee; }
+      h1 { margin: 0 0 4px; font-size: 1.6em; }
+      .meta { color: #888; font-size: .9em; }
+      .disclaimer { background: #fff7e6; border-left: 4px solid #f5a623; padding: 10px 14px; margin: 14px 0 0; font-size: .9em; color: #555; line-height: 1.5; }
+      section { padding: 20px 24px; }
+      h2 { margin: 0 0 12px; font-size: 1.2em; }
+      table.weather-table { border-collapse: collapse; width: 100%; background: #fff; }
+      table.weather-table th, table.weather-table td { border: 1px solid #e6e6e6; padding: 8px 10px; font-size: .85em; text-align: center; vertical-align: top; }
+      table.weather-table thead th { background: #f4f4f4; }
+      table.weather-table tbody th.city { background: #fafafa; text-align: left; }
+      table.weather-table td.rainy { background: #ffecec; color: #c62828; font-weight: 600; }
+      .day-desc { font-weight: 500; margin-bottom: 4px; }
+      .temp { color: #555; font-size: .92em; }
+      .pop { color: #888; font-size: .85em; margin-top: 2px; }
+      .legend { font-size: .85em; color: #555; margin-top: 8px; }
+      .rainy-legend { color: #c62828; font-weight: 600; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+      .card { background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 14px 16px; font-size: .92em; }
+      .card h3 { margin: 0 0 10px; font-size: 1.05em; }
+      .ticker { color: #888; font-weight: normal; font-size: .85em; }
+      .row { display: flex; justify-content: space-between; align-items: baseline; padding: 3px 0; gap: 8px; }
+      .label { color: #777; font-size: .9em; flex-shrink: 0; }
+      .value { text-align: right; font-variant-numeric: tabular-nums; }
+      .value.strong { font-weight: 700; font-size: 1.05em; }
+      .value.small { font-size: .85em; }
+      .change { color: #555; font-size: .85em; min-width: 60px; text-align: right; }
+      .quart { color: #888; font-size: .85em; }
+      .bar { position: relative; height: 8px; background: #f0f0f0; border-radius: 4px; margin: 8px 0 4px; }
+      .bar-q { position: absolute; top: 0; width: 1px; height: 8px; background: #ccc; left: 25%; }
+      .bar-fill { position: absolute; top: -3px; width: 3px; height: 14px; background: #1976d2; border-radius: 1px; transform: translateX(-1.5px); }
+      .bar-labels { display: flex; justify-content: space-between; color: #999; font-size: .75em; }
+    `;
+  }
+}
+
+function esc(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatPrice(v: number | null, currency: Currency): string {
+  if (v == null) return '—';
+  if (currency === 'KRW') return `${Math.round(v).toLocaleString('ko-KR')}원`;
+  return `$${v.toFixed(2)}`;
+}
+
+function formatShortDate(isoDate: string): string {
+  const d = new Date(`${isoDate}T00:00:00+09:00`);
+  const md = `${d.getMonth() + 1}/${d.getDate()}`;
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  return `${md} (${days[d.getDay()]})`;
+}
