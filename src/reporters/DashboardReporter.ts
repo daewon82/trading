@@ -43,6 +43,19 @@ export class DashboardReporter {
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
 ${this.renderChanges(page.changes)}
+  <section class="holdings">
+    <h2>💼 매수한 종목 <span class="meta">(브라우저 localStorage에만 저장 — 본인 기기 한정)</span></h2>
+    <p class="holdings-hint">매수가를 입력하면 매수가 대비 수익률·매도 검토 라벨·동향이 표시됩니다. <strong>매수/매도 결정은 본인.</strong></p>
+    <form id="holdingForm" class="holding-form" onsubmit="return false">
+      <input type="text" id="hCode" placeholder="코드 (005930 또는 AAPL)" autocomplete="off">
+      <input type="number" id="hPrice" placeholder="매수가" step="0.01" autocomplete="off">
+      <input type="number" id="hQty" placeholder="수량 (선택)" step="1" autocomplete="off">
+      <button type="submit" id="hAddBtn">추가</button>
+    </form>
+    <div id="holdingStatus" class="search-status"></div>
+    <div id="holdingsList" class="holdings-list"></div>
+    <p id="holdingsEmpty" class="holdings-empty">아직 매수한 종목이 없습니다. 위 폼으로 추가하세요.</p>
+  </section>
   <section class="search">
     <h2>🔎 종목 검색 (임시)</h2>
     <p class="search-hint">티커 입력 (예: <code>005930</code> 삼성전자, <code>AAPL</code> Apple). KR은 6자리 숫자, US는 알파벳. 결과는 페이지에 영구 추가되지 않습니다 — 새로고침하면 사라짐.</p>
@@ -70,6 +83,234 @@ ${this.renderInsights(page)}
         });
         onScroll();
       }
+    })();
+
+    // 매수한 종목 — localStorage + Yahoo chart fetch + 매도 검토 라벨
+    (function () {
+      var form = document.getElementById('holdingForm');
+      var codeEl = document.getElementById('hCode');
+      var priceEl = document.getElementById('hPrice');
+      var qtyEl = document.getElementById('hQty');
+      var statusEl = document.getElementById('holdingStatus');
+      var listEl = document.getElementById('holdingsList');
+      var emptyEl = document.getElementById('holdingsEmpty');
+      if (!form || !codeEl || !priceEl || !listEl || !emptyEl) return;
+
+      var YAHOO = 'https://query1.finance.yahoo.com/v8/finance/chart';
+      var KEY = 'tradingHoldings.v1';
+
+      function loadHoldings() {
+        try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; }
+      }
+      function saveHoldings(arr) {
+        try { localStorage.setItem(KEY, JSON.stringify(arr)); } catch (e) {}
+      }
+      function setStatus(msg, cls) {
+        statusEl.textContent = msg || '';
+        statusEl.className = 'search-status' + (cls ? ' ' + cls : '');
+      }
+      function escHtml2(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+      function fmtCurrency(v, currency) {
+        if (v == null) return '—';
+        if (currency === 'KRW') return Math.round(v).toLocaleString('ko-KR') + '원';
+        return '$' + Number(v).toFixed(2);
+      }
+      function fmtSigned(v, currency) {
+        if (v == null) return '—';
+        var sign = v >= 0 ? '+' : '−';
+        var abs = Math.abs(v);
+        if (currency === 'KRW') return sign + Math.round(abs).toLocaleString('ko-KR') + '원';
+        return sign + '$' + abs.toFixed(2);
+      }
+      function smaClient(arr, period) {
+        if (arr.length < period) return null;
+        var s = 0;
+        for (var i = arr.length - period; i < arr.length; i++) s += arr[i];
+        return s / period;
+      }
+      function rsiClient(arr, period) {
+        if (arr.length < period + 1) return null;
+        var g = 0, l = 0;
+        for (var i = arr.length - period; i < arr.length; i++) {
+          var d = arr[i] - arr[i - 1];
+          if (d > 0) g += d; else l += -d;
+        }
+        var ag = g / period, al = l / period;
+        if (al === 0) return ag === 0 ? 50 : 100;
+        if (ag === 0) return 0;
+        return 100 - 100 / (1 + ag / al);
+      }
+      function sparkClient(closes) {
+        if (!closes || closes.length < 2) return '';
+        var w = 280, h = 50, mn = closes[0], mx = closes[0];
+        for (var i = 0; i < closes.length; i++) { if (closes[i] < mn) mn = closes[i]; if (closes[i] > mx) mx = closes[i]; }
+        var rng = (mx - mn) || 1;
+        var pts = closes.map(function (c, i) {
+          return ((i / (closes.length - 1)) * w).toFixed(1) + ',' + (h - ((c - mn) / rng) * h).toFixed(1);
+        }).join(' ');
+        var color = closes[closes.length - 1] >= closes[0] ? '#c62828' : '#2e7d32';
+        return '<svg class="spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><polyline fill="none" stroke="' + color + '" stroke-width="1.5" points="' + pts + '"/></svg>';
+      }
+      function fetchChart(symbol) {
+        var p2 = Math.floor(Date.now() / 1000), p1 = p2 - 365 * 86400;
+        return fetch(YAHOO + '/' + encodeURIComponent(symbol) + '?period1=' + p1 + '&period2=' + p2 + '&interval=1d')
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) {
+            var res = j && j.chart && j.chart.result && j.chart.result[0];
+            if (!res) return null;
+            var ts = res.timestamp || [];
+            var q = res.indicators && res.indicators.quote && res.indicators.quote[0];
+            if (!q) return null;
+            var closes = [];
+            for (var i = 0; i < ts.length; i++) if (q.close && q.close[i] != null) closes.push(q.close[i]);
+            var meta = res.meta || {};
+            return {
+              symbol: meta.symbol,
+              name: meta.longName || meta.shortName || meta.symbol,
+              currency: meta.currency,
+              price: meta.regularMarketPrice,
+              high52: meta.fiftyTwoWeekHigh,
+              low52: meta.fiftyTwoWeekLow,
+              closes: closes,
+            };
+          })
+          .catch(function () { return null; });
+      }
+      function resolveSymbols(input) {
+        var t = (input || '').trim().toUpperCase();
+        if (!t) return [];
+        if (/^[0-9]{6}$/.test(t)) return [t + '.KS', t + '.KQ'];
+        return [t];
+      }
+      function fetchByInput(rawInput) {
+        var syms = resolveSymbols(rawInput);
+        var p = Promise.resolve(null);
+        syms.forEach(function (s) {
+          p = p.then(function (prev) { return prev || fetchChart(s); });
+        });
+        return p;
+      }
+
+      function evaluateSell(d, buyPrice) {
+        // 사실 기반 매도 검토 라벨 (단정 X)
+        if (d.price == null) return { label: '데이터 없음', cls: 'sell-na', reasons: [] };
+        var pnlPct = ((d.price - buyPrice) / buyPrice) * 100;
+        var sma200 = smaClient(d.closes, 200);
+        var pctVs200 = sma200 ? ((d.price - sma200) / sma200) * 100 : null;
+        var rsi14 = rsiClient(d.closes, 14);
+        var posPct = (d.high52 != null && d.low52 != null && d.high52 !== d.low52)
+          ? ((d.price - d.low52) / (d.high52 - d.low52)) * 100 : null;
+        var quart = posPct == null ? null : (posPct < 25 ? 1 : posPct < 50 ? 2 : posPct < 75 ? 3 : 4);
+
+        var reasons = [];
+        // 손절 신호 우선
+        if (pnlPct <= -7) reasons.push('손익 ' + pnlPct.toFixed(1) + '% (손절선 −7% 이하)');
+        if (pctVs200 != null && pctVs200 < -10) reasons.push('200d ' + pctVs200.toFixed(1) + '% (강한 하락 추세)');
+        var stopLoss = reasons.length > 0;
+
+        // 익절 신호
+        var profitReasons = [];
+        if (pnlPct >= 10) profitReasons.push('수익 +' + pnlPct.toFixed(1) + '%');
+        if (rsi14 != null && rsi14 > 70) profitReasons.push('RSI ' + rsi14.toFixed(0) + ' (과열)');
+        if (quart === 4) profitReasons.push('52주 Q4 (고평가 영역)');
+
+        if (stopLoss) {
+          return { label: '⚠️ 손절 검토', cls: 'sell-stop', reasons: reasons };
+        }
+        if (profitReasons.length >= 2) {
+          return { label: '💰 익절 검토', cls: 'sell-take', reasons: profitReasons };
+        }
+        if (pnlPct >= 5) {
+          return { label: '📊 보유 (수익권)', cls: 'sell-hold-up', reasons: ['수익 +' + pnlPct.toFixed(1) + '%'] };
+        }
+        if (pnlPct < 0) {
+          return { label: '📊 보유 (손실권)', cls: 'sell-hold-down', reasons: ['손익 ' + pnlPct.toFixed(1) + '%'] };
+        }
+        return { label: '📊 보유 검토', cls: 'sell-hold', reasons: ['특이 신호 없음'] };
+      }
+
+      function renderHoldingCard(h, d) {
+        if (!d) {
+          return '<article class="holding-card error">' +
+            '<h3>' + escHtml2(h.code) + ' (데이터 없음)</h3>' +
+            '<button class="holding-remove" data-code="' + escHtml2(h.code) + '">삭제</button>' +
+            '</article>';
+        }
+        var pnlPct = ((d.price - h.buyPrice) / h.buyPrice) * 100;
+        var pnlAbs = (d.price - h.buyPrice) * (h.qty || 1);
+        var pnlCls = pnlPct >= 0 ? 'pnl-up' : 'pnl-down';
+        var sell = evaluateSell(d, h.buyPrice);
+        var sparklineCloses = d.closes.slice(-60);
+        var posPct = (d.high52 != null && d.low52 != null && d.high52 !== d.low52)
+          ? ((d.price - d.low52) / (d.high52 - d.low52)) * 100 : null;
+        var quart = posPct == null ? null : (posPct < 25 ? 1 : posPct < 50 ? 2 : posPct < 75 ? 3 : 4);
+        var posStr = posPct == null ? '52주 —' : '52주 ' + posPct.toFixed(0) + '% (Q' + quart + ')';
+
+        var qtyStr = h.qty ? ' × ' + h.qty.toLocaleString('ko-KR') + '주' : '';
+        var pnlAbsStr = h.qty ? ' (' + fmtSigned(pnlAbs, d.currency) + ')' : '';
+
+        return '<article class="holding-card">' +
+          '<h3>' + escHtml2(d.name) + ' <span class="ticker">' + escHtml2(h.code) + '</span> <span class="sell-badge ' + sell.cls + '">' + escHtml2(sell.label) + '</span></h3>' +
+          '<div class="ic-head">' +
+            '<span class="ic-price-current">현재 ' + fmtCurrency(d.price, d.currency) + '</span>' +
+            '<span class="ic-pos">' + posStr + '</span>' +
+          '</div>' +
+          '<div class="holding-row"><span class="ins-label">매수가</span><span class="ins-value">' + fmtCurrency(h.buyPrice, d.currency) + qtyStr + '</span></div>' +
+          '<div class="holding-row"><span class="ins-label">손익</span><span class="ins-value ' + pnlCls + '">' + (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%' + pnlAbsStr + '</span></div>' +
+          sparkClient(sparklineCloses) +
+          '<div class="sell-reasons">' + sell.reasons.map(function(r){ return '• ' + escHtml2(r); }).join('<br>') + '</div>' +
+          '<button class="holding-remove" data-code="' + escHtml2(h.code) + '">삭제</button>' +
+          '</article>';
+      }
+
+      function refresh() {
+        var holdings = loadHoldings();
+        if (holdings.length === 0) {
+          listEl.innerHTML = '';
+          emptyEl.style.display = 'block';
+          return;
+        }
+        emptyEl.style.display = 'none';
+        listEl.innerHTML = holdings.map(function(h){ return '<article class="holding-card loading"><h3>' + escHtml2(h.code) + ' 불러오는 중…</h3></article>'; }).join('');
+        Promise.all(holdings.map(function(h){ return fetchByInput(h.code).then(function(d){ return { h: h, d: d }; }); }))
+          .then(function(results) {
+            listEl.innerHTML = results.map(function(r){ return renderHoldingCard(r.h, r.d); }).join('');
+            // bind remove buttons
+            var btns = listEl.querySelectorAll('.holding-remove');
+            for (var i = 0; i < btns.length; i++) {
+              btns[i].addEventListener('click', function(e) {
+                var code = e.currentTarget.getAttribute('data-code');
+                var arr = loadHoldings().filter(function(h){ return h.code !== code; });
+                saveHoldings(arr);
+                refresh();
+              });
+            }
+          });
+      }
+
+      form.addEventListener('submit', function(){
+        var code = (codeEl.value || '').trim().toUpperCase();
+        var price = parseFloat(priceEl.value);
+        var qty = qtyEl.value ? parseInt(qtyEl.value, 10) : null;
+        if (!code || !isFinite(price) || price <= 0) {
+          setStatus('코드와 매수가를 정확히 입력해 주세요', 'err');
+          return;
+        }
+        var arr = loadHoldings();
+        if (arr.some(function(h){ return h.code === code; })) {
+          setStatus(code + ' 는 이미 등록됨 (먼저 삭제 후 재등록)', 'err');
+          return;
+        }
+        arr.push({ code: code, buyPrice: price, qty: qty, addedAt: new Date().toISOString() });
+        saveHoldings(arr);
+        codeEl.value = ''; priceEl.value = ''; qtyEl.value = '';
+        setStatus('추가됨: ' + code, 'ok');
+        refresh();
+      });
+
+      refresh();
     })();
 
     // 종목 검색 (Yahoo chart API 직접 호출, 클라이언트 측 임시 카드)
@@ -479,6 +720,39 @@ ${rows}
       .dom-bear-text { color: #2e7d32; font-weight: 600; }
       .dom-summary { margin-top: 6px; font-size: .85em; color: #555; }
       .dom-reason { margin-top: 6px; padding: 6px 10px; background: #fff; border-left: 3px solid #1976d2; border-radius: 4px; font-size: .82em; color: #555; line-height: 1.5; }
+      section.holdings { padding: 16px 24px; background: #f1f8e9; border-bottom: 1px solid #c5e1a5; }
+      section.holdings h2 { font-size: 1.05em; margin: 0 0 6px; }
+      .holdings-hint { font-size: .85em; color: #555; margin: 0 0 10px; line-height: 1.5; }
+      .holding-form { display: flex; flex-wrap: wrap; gap: 8px; max-width: 720px; }
+      .holding-form input { padding: 8px 12px; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; font-variant-numeric: tabular-nums; }
+      .holding-form input[type="text"] { flex: 1.5; min-width: 160px; }
+      .holding-form input[type="number"] { flex: 1; min-width: 110px; }
+      .holding-form button { padding: 8px 16px; background: #2e7d32; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
+      .holding-form button:hover { background: #1b5e20; }
+      .holdings-empty { font-size: .9em; color: #888; margin: 14px 0 0; }
+      .holdings-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-top: 12px; }
+      .holding-card { background: #fff; border: 1px solid #c5e1a5; border-radius: 8px; padding: 14px 16px; font-size: .9em; position: relative; }
+      .holding-card h3 { margin: 0 0 8px; font-size: 1em; }
+      .holding-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: .9em; border-bottom: 1px dashed #f0f0f0; }
+      .pnl-up { color: #c62828; font-weight: 700; }
+      .pnl-down { color: #2e7d32; font-weight: 700; }
+      .sell-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .72em; font-weight: 600; margin-left: 4px; }
+      .sell-stop { background: #ffcdd2; color: #b71c1c; }
+      .sell-take { background: #fff3e0; color: #ef6c00; }
+      .sell-hold-up { background: #fce4ec; color: #ad1457; }
+      .sell-hold-down { background: #e8f5e9; color: #2e7d32; }
+      .sell-hold { background: #eceff1; color: #455a64; }
+      .sell-na { background: #eee; color: #999; }
+      .sell-reasons { margin-top: 6px; padding: 6px 8px; background: #fafafa; border-radius: 4px; font-size: .82em; color: #555; line-height: 1.5; }
+      .holding-remove { margin-top: 10px; padding: 4px 12px; background: #888; color: #fff; border: 0; border-radius: 4px; cursor: pointer; font-size: .8em; }
+      .holding-remove:hover { background: #555; }
+      .holding-card.loading { color: #888; }
+      .holding-card.error { background: #ffebee; }
+      @media (max-width: 600px) {
+        section.holdings { padding: 14px 16px; }
+        .holding-form { flex-direction: column; }
+        .holding-form input, .holding-form button { width: 100%; }
+      }
       section.search { padding: 16px 24px; background: #f0f4f8; border-bottom: 1px solid #d6dee6; }
       .search-hint { margin: 0 0 10px; font-size: .85em; color: #555; line-height: 1.5; }
       .search-hint code { background: #fff; padding: 1px 6px; border-radius: 3px; font-size: .92em; }
