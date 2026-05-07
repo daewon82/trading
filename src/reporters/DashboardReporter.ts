@@ -83,8 +83,9 @@ ${this.renderChanges(page.changes)}
     <div id="searchResult" class="search-result"></div>
   </section>
 ${this.renderUniverse('🚀 코스피 매수 후보 Top 10 — 자동 선정', 'KOSPI/KOSDAQ 시총 상위 30종 후보 풀에서 매수 우호 신호(net = 매수 − 매도) 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.krWatchTop)}
-${this.renderUniverse('💎 미국 저평가 후보 Top 10 — 자동 선정', '가치주 25종 후보 풀에서 저평가 가중(Q1=+5, Q2=+2, Q4=−3) + 매수 우호 신호 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.usValueTop)}
-${this.renderInsights(page)}
+${this.renderInsightsKR(page)}
+${this.renderUniverse('💎 미국 저평가 후보 Top 10 — 자동 선정', '가치주 35종 후보 풀에서 Q4(고평가) 자동 제외 + 저평가 가중(Q1=+5, Q2=+2) + 매수 우호 신호 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.usValueTop)}
+${this.renderInsightsUS(page)}
 ${this.renderNews(page.news)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
@@ -851,37 +852,53 @@ ${addedLis}
   </section>`;
   }
 
-  private renderInsights(page: DashboardPage): string {
-    const krInsights = page.kr.cards.map((c) => evaluateInsight(c, 'KR'));
-    const usInsights = page.us.cards.map((c) => evaluateInsight(c, 'US'));
-    const valueInsights = page.valueKr?.cards.map((c) => evaluateInsight(c, 'KR')) ?? [];
-    // Q4 종목도 시드에 포함된 그대로 모두 표시 — 고평가 영역은 평가 배지로 시각 구분
-    const valueQ4Count = valueInsights.filter((ins) => ins.card.quartile === 4).length;
-    if (krInsights.length === 0 && usInsights.length === 0 && valueInsights.length === 0) return '';
-
-    const renderGroup = (title: string, intro: string, ins: InsightResult[], currency: Currency): string => {
-      if (ins.length === 0) return '';
-      const cards = ins.map((i) => renderInsightCard(i, currency)).join('\n');
-      const introHtml = intro ? `      <p class="group-intro">${intro}</p>` : '';
-      return `    <div class="insight-group">
+  private renderInsightGroup(
+    title: string,
+    intro: string,
+    ins: InsightResult[],
+    currency: Currency,
+  ): string {
+    if (ins.length === 0) return '';
+    const cards = ins.map((i) => renderInsightCard(i, currency)).join('\n');
+    const introHtml = intro ? `      <p class="group-intro">${intro}</p>` : '';
+    return `    <div class="insight-group">
       <h3 class="insight-group-title">${esc(title)}</h3>
 ${introHtml}
       <div class="insights-cards">
 ${cards}
       </div>
     </div>`;
-    };
+  }
+
+  private renderCommonIntro(): string {
+    return `    <p class="insight-intro"><strong>매수 결정은 사용자 본인 판단입니다.</strong> 신호 발생은 사실 정보이며 매수 권유가 아닙니다. 모든 신호가 충족돼도 손실 가능.<br><br><strong>📌 평가 배지 vs 우세 비율</strong> — <strong>평가 배지</strong>(저평가/고평가)는 52주 가격 분위 1차원 정보, <strong>우세 비율</strong>은 추세·모멘텀·수급 등 종합 신호 카운트입니다. <strong>"저평가인데 매도 우세"는 모순이 아닌 가치 함정(value trap) 의심 신호</strong>일 수 있음 — 가격이 싸지만 계속 떨어지는 중일 가능성.</p>`;
+  }
+
+  private renderInsightsKR(page: DashboardPage): string {
+    const krInsights = page.kr.cards.map((c) => evaluateInsight(c, 'KR'));
+    const valueAll = page.valueKr?.cards.map((c) => evaluateInsight(c, 'KR')) ?? [];
+    // 저평가 후보에서 Q4(고평가) 자동 제외 — "저평가" 라벨과 모순 방지
+    const valueInsights = valueAll.filter((ins) => ins.card.quartile !== 4);
+    const valueExcludedCount = valueAll.length - valueInsights.length;
+    if (krInsights.length === 0 && valueInsights.length === 0) return '';
 
     return `  <section class="insights">
-    <p class="insight-intro"><strong>매수 결정은 사용자 본인 판단입니다.</strong> 신호 발생은 사실 정보이며 매수 권유가 아닙니다. 모든 신호가 충족돼도 손실 가능.<br><br><strong>📌 평가 배지 vs 우세 비율</strong> — <strong>평가 배지</strong>(저평가/고평가)는 52주 가격 분위 1차원 정보, <strong>우세 비율</strong>은 추세·모멘텀·수급 등 종합 신호 카운트입니다. <strong>"저평가인데 매도 우세"는 모순이 아닌 가치 함정(value trap) 의심 신호</strong>일 수 있음 — 가격이 싸지만 계속 떨어지는 중일 가능성.</p>
-${renderGroup(`🇰🇷 국내 주식 (${krInsights.length}종)`, '', krInsights, 'KRW')}
-${renderGroup(
-      `📚 저평가 후보 — KOSPI 가치주 시드 (${valueInsights.length}종${valueQ4Count > 0 ? `, ⚠️ Q4 ${valueQ4Count}종 포함` : ''})`,
-      `저PER · 저PBR · 고배당 등 객관 기준으로 거론되는 가치주 후보입니다. <strong>매수 추천이 아닙니다.</strong> 가치 함정(value trap) 위험 — 산업 사양·실적 악화로 영구 저평가될 수도 있습니다.${valueQ4Count > 0 ? ` <br><strong>※ ${valueQ4Count}종은 현재 52주 Q4(고평가 영역).</strong> 펀더멘털 기준 가치주 시드지만 가격이 최근 반등해 단기 진입은 부적합할 수 있음 — 평가 배지(⚠️) 확인 후 본인 판단.` : ''}`,
+${this.renderCommonIntro()}
+${this.renderInsightGroup(`🇰🇷 국내 주식 (${krInsights.length}종)`, '', krInsights, 'KRW')}
+${this.renderInsightGroup(
+      `📚 저평가 후보 — KOSPI 가치주 시드 (${valueInsights.length}종${valueExcludedCount > 0 ? `, Q4 ${valueExcludedCount}종 자동 제외` : ''})`,
+      `저PER · 저PBR · 고배당 등 객관 기준으로 거론되는 가치주 후보입니다. <strong>매수 추천이 아닙니다.</strong> 가치 함정(value trap) 위험 — 산업 사양·실적 악화로 영구 저평가될 수도 있음.${valueExcludedCount > 0 ? ` <br><strong>※ ${valueExcludedCount}종은 현재 52주 Q4(고평가)이라 "저평가 후보" 라벨과 모순되어 자동 제외됨.</strong> 시드 리스트(<code>KR_VALUE_CANDIDATES</code>)는 그대로 유지되며, 가격이 다시 하단으로 내려가면 자동 복귀.` : ''}`,
       valueInsights,
       'KRW',
     )}
-${renderGroup(`🇺🇸 미국 빅테크 (${usInsights.length}종)`, '', usInsights, 'USD')}
+  </section>`;
+  }
+
+  private renderInsightsUS(page: DashboardPage): string {
+    const usInsights = page.us.cards.map((c) => evaluateInsight(c, 'US'));
+    if (usInsights.length === 0) return '';
+    return `  <section class="insights">
+${this.renderInsightGroup(`🇺🇸 미국 빅테크 (${usInsights.length}종)`, '', usInsights, 'USD')}
   </section>`;
   }
 
