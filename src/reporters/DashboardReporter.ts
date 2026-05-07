@@ -9,6 +9,7 @@ import type {
 import type { WeatherForecast } from '../types/weather.js';
 import type { MacroQuote } from '../types/macro.js';
 import type { ChangelogEntry } from '../types/changelog.js';
+import type { NewsSection } from '../types/news.js';
 
 export interface DashboardPage {
   generatedAt: string;
@@ -19,6 +20,7 @@ export interface DashboardPage {
   us: StockDashboardSection;
   valueKr: StockDashboardSection | null;
   changes: ChangelogEntry | null;
+  news: NewsSection[];
 }
 
 export class DashboardReporter {
@@ -70,6 +72,7 @@ ${this.renderChanges(page.changes)}
     <div id="searchResult" class="search-result"></div>
   </section>
 ${this.renderInsights(page)}
+${this.renderNews(page.news)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
     // 공통 — 한국 주요 종목 키워드 매핑 (회사명·별칭 → ticker)
@@ -705,6 +708,39 @@ ${this.renderInsights(page)}
 `;
   }
 
+  private renderNews(sections: NewsSection[]): string {
+    if (!sections || sections.length === 0) return '';
+    const blocks = sections
+      .filter((s) => s.items.length > 0)
+      .map((s) => {
+        const flag = s.region === 'KR' ? '🇰🇷' : '🇺🇸';
+        const lis = s.items
+          .map((it) => {
+            const date = it.pubDate ? formatNewsDate(it.pubDate) : '';
+            return `        <li>
+          <a href="${esc(it.link)}" target="_blank" rel="noopener noreferrer">${esc(it.title)}</a>
+          ${date ? `<span class="news-date">${esc(date)}</span>` : ''}
+        </li>`;
+          })
+          .join('\n');
+        return `      <div class="news-block">
+        <h3>${flag} ${esc(s.source)} <span class="meta">최신 ${s.items.length}건</span></h3>
+        <ol>
+${lis}
+        </ol>
+      </div>`;
+      })
+      .join('\n');
+    if (!blocks) return '';
+    return `  <section class="news">
+    <h2>📰 핫한 경제 기사</h2>
+    <p class="news-note">RSS 기반 시간순 최신 (인기 랭킹은 RSS에 정보 없음). 헤드라인은 정보 제공이며 매매 권유가 아닙니다.</p>
+    <div class="news-grid">
+${blocks}
+    </div>
+  </section>`;
+  }
+
   private renderChanges(c: ChangelogEntry | null): string {
     if (!c) return '';
     if (c.added.length === 0 && c.removed.length === 0) return '';
@@ -955,6 +991,17 @@ ${renderGroup(`🇺🇸 미국 빅테크 (${usInsights.length}종)`, '', usInsig
       .cl-section { color: #888; font-size: .82em; }
       .cl-detail { color: #555; font-size: .82em; margin-top: 2px; line-height: 1.4; }
       .cl-note { font-size: .8em; color: #888; margin: 8px 0 0; }
+      section.news { padding: 20px 24px; background: #f5f5f5; border-top: 1px solid #ddd; }
+      section.news h2 { margin: 0 0 6px; font-size: 1.05em; }
+      .news-note { font-size: .82em; color: #888; margin: 0 0 14px; }
+      .news-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+      .news-block { background: #fff; border-radius: 6px; padding: 12px 14px; border: 1px solid #e6e6e6; }
+      .news-block h3 { margin: 0 0 8px; font-size: .95em; color: #555; }
+      .news-block ol { margin: 0; padding-left: 22px; font-size: .9em; line-height: 1.6; }
+      .news-block li { margin-bottom: 6px; }
+      .news-block a { color: #1976d2; text-decoration: none; }
+      .news-block a:hover { text-decoration: underline; }
+      .news-date { color: #999; font-size: .85em; margin-left: 6px; }
       .top-btn { position: fixed; right: 20px; bottom: 20px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #1976d2; color: #fff; font-size: 1.4em; line-height: 1; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity .2s, transform .2s; z-index: 1000; }
       .top-btn.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
       .top-btn:hover { background: #1565c0; }
@@ -1418,5 +1465,17 @@ function formatPrice(v: number | null, currency: Currency): string {
   if (v == null) return '—';
   if (currency === 'KRW') return `${Math.round(v).toLocaleString('ko-KR')}원`;
   return `$${v.toFixed(2)}`;
+}
+
+function formatNewsDate(pubDate: string): string {
+  const d = new Date(pubDate);
+  if (isNaN(d.getTime())) return '';
+  // Asia/Seoul 기준 m/d HH:mm
+  const fmt = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+  return fmt.format(d);
 }
 

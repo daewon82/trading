@@ -12,6 +12,7 @@ import {
 import { DashboardBuilder } from '../src/analyzers/DashboardBuilder.js';
 import { computeIndicators } from '../src/analyzers/TechnicalIndicators.js';
 import { evaluateInsight } from '../src/reporters/DashboardReporter.js';
+import { fetchRssFeed } from '../src/sources/news/RssSource.js';
 import {
   DashboardReporter,
   type DashboardPage,
@@ -27,6 +28,7 @@ import type { WeatherForecast } from '../src/types/weather.js';
 import type { IndicatorSet } from '../src/types/timeseries.js';
 import type { FlowSummary } from '../src/types/flow.js';
 import type { MacroQuote } from '../src/types/macro.js';
+import type { NewsSection } from '../src/types/news.js';
 import type {
   ChangelogEntry,
   ChangelogMeta,
@@ -74,6 +76,7 @@ const closesMap = new Map<string, number[]>();
 const flowMap = new Map<string, FlowSummary>();
 const range52Map = new Map<string, { high: number | null; low: number | null }>();
 let macros: MacroQuote[] = [];
+let newsSections: NewsSection[] = [];
 const SPARKLINE_DAYS = 60;
 const MACRO_SYMBOLS: Array<{ symbol: string; name: string; unit: string }> = [
   { symbol: '^KS11', name: '코스피', unit: '' },
@@ -92,6 +95,21 @@ test('주간 날씨 (서울/고양시)', async () => {
     cities: weatherForecasts.map((f) => f.city),
     days: weatherForecasts[0]?.days.length ?? 0,
   });
+});
+
+test('경제 기사 (KR 5건 + US 3건)', async () => {
+  const [krItems, usItems] = await Promise.all([
+    fetchRssFeed('https://www.yna.co.kr/rss/economy.xml', '연합뉴스', 5),
+    fetchRssFeed('https://finance.yahoo.com/news/rssindex', 'Yahoo Finance', 3),
+  ]);
+  newsSections = [];
+  if (krItems.length > 0) {
+    newsSections.push({ region: 'KR', source: '연합뉴스 경제', items: krItems });
+  }
+  if (usItems.length > 0) {
+    newsSections.push({ region: 'US', source: 'Yahoo Finance', items: usItems });
+  }
+  logger.info('news fetched', { kr: krItems.length, us: usItems.length });
 });
 
 test('거시 환경 (KOSPI / 원/달러 / 미국 10년물)', async () => {
@@ -240,6 +258,7 @@ test.afterAll(async () => {
     us: usSection,
     valueKr: valueSection,
     changes,
+    news: newsSections,
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });

@@ -1,6 +1,6 @@
 {
   "date": "2026-05-07 (목요일)",
-  "generatedAt": "2026-05-07T06:38:37.013Z",
+  "generatedAt": "2026-05-07T06:46:17.488Z",
   "seeds": [
     {
       "code": "005930",
@@ -48,8 +48,8 @@
       "code": "068270",
       "name": "셀트리온",
       "section": "KR",
-      "dominantLabel": "혼합 (동률)",
-      "reasoning": "신호 동률 — 어느 한쪽으로 기울지 않음"
+      "dominantLabel": "매수 우호 우세",
+      "reasoning": "중간 가격대 + 모멘텀 우호"
     },
     {
       "code": "105560",
