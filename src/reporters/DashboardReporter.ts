@@ -66,7 +66,6 @@ ${this.renderChanges(page.changes)}
     <div id="searchStatus" class="search-status"></div>
     <div id="searchResult" class="search-result"></div>
   </section>
-${this.renderWeather(page.weather)}
 ${this.renderInsights(page)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
@@ -696,44 +695,6 @@ ${renderGroup(
     )}
 ${renderGroup(`🇺🇸 미국 빅테크 (${usInsights.length}종)`, '', usInsights, 'USD')}
   </section>`;
-  }
-
-  private renderWeather(forecasts: WeatherForecast[]): string {
-    if (forecasts.length === 0) return '';
-    const head = forecasts[0]!;
-    const dateHeaders = head.days
-      .map((d) => `<th>${esc(formatShortDate(d.date))}</th>`)
-      .join('');
-    const rows = forecasts
-      .map((f) => {
-        const cells = f.days
-          .map((d) => this.renderWeatherCell(d))
-          .join('');
-        return `      <tr><th class="city">${esc(f.city)}</th>${cells}</tr>`;
-      })
-      .join('\n');
-    return `  <section class="weather">
-    <h2>주간 날씨 — open-meteo</h2>
-    <div class="weather-wrap">
-      <table class="weather-table">
-        <thead><tr><th class="city">도시</th>${dateHeaders}</tr></thead>
-        <tbody>
-${rows}
-        </tbody>
-      </table>
-    </div>
-    <p class="legend"><span class="rainy-legend">빨강</span> = 비/소나기/천둥번개 예보</p>
-  </section>`;
-  }
-
-  private renderWeatherCell(d: WeatherDay): string {
-    const cls = d.rainy ? ' class="rainy"' : '';
-    const tmax = d.temperatureMax == null ? '—' : `${d.temperatureMax.toFixed(0)}°`;
-    const tmin = d.temperatureMin == null ? '—' : `${d.temperatureMin.toFixed(0)}°`;
-    const pop = d.precipitationProbabilityMax == null
-      ? ''
-      : `<div class="pop">강수 ${d.precipitationProbabilityMax}%</div>`;
-    return `<td${cls}><div class="day-desc">${esc(d.description)}</div><div class="temp">${tmax} / ${tmin}</div>${pop}</td>`;
   }
 
   private css(): string {
