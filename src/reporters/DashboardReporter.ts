@@ -45,9 +45,9 @@ export class DashboardReporter {
 ${this.renderChanges(page.changes)}
   <section class="holdings">
     <h2>💼 매수한 종목 <span class="meta">(브라우저 localStorage에만 저장 — 본인 기기 한정)</span></h2>
-    <p class="holdings-hint">매수가를 입력하면 매수가 대비 수익률·매도 검토 라벨·동향이 표시됩니다. <strong>매수/매도 결정은 본인.</strong></p>
+    <p class="holdings-hint">종목명과 매수가만 입력하면 됩니다 (예: <code>삼성전자</code>, <code>유플러스</code>, <code>Apple</code>). 매수가 대비 수익률·매도 검토 라벨·동향이 표시됩니다. <strong>매수/매도 결정은 본인.</strong></p>
     <form id="holdingForm" class="holding-form" onsubmit="return false">
-      <input type="text" id="hCode" placeholder="코드 (005930 또는 AAPL)" autocomplete="off">
+      <input type="text" id="hCode" placeholder="종목명 (예: 삼성전자)" autocomplete="off">
       <input type="number" id="hPrice" placeholder="매수가" step="0.01" autocomplete="off">
       <input type="number" id="hQty" placeholder="수량 (선택)" step="1" autocomplete="off">
       <button type="submit" id="hAddBtn">추가</button>
@@ -400,23 +400,33 @@ ${this.renderInsights(page)}
       }
 
       form.addEventListener('submit', function(){
-        var code = (codeEl.value || '').trim().toUpperCase();
+        var raw = (codeEl.value || '').trim();
         var price = parseFloat(priceEl.value);
         var qty = qtyEl.value ? parseInt(qtyEl.value, 10) : null;
-        if (!code || !isFinite(price) || price <= 0) {
-          setStatus('코드와 매수가를 정확히 입력해 주세요', 'err');
+        if (!raw || !isFinite(price) || price <= 0) {
+          setStatus('종목명과 매수가를 정확히 입력해 주세요', 'err');
           return;
         }
-        var arr = loadHoldings();
-        if (arr.some(function(h){ return h.code === code; })) {
-          setStatus(code + ' 는 이미 등록됨 (먼저 삭제 후 재등록)', 'err');
-          return;
-        }
-        arr.push({ code: code, buyPrice: price, qty: qty, addedAt: new Date().toISOString() });
-        saveHoldings(arr);
-        codeEl.value = ''; priceEl.value = ''; qtyEl.value = '';
-        setStatus('추가됨: ' + code, 'ok');
-        refresh();
+        // 종목명을 ticker로 즉시 해석해 검증 (잘못 입력 방지)
+        setStatus('종목 검증 중…', '');
+        tradingResolveQuery(raw).then(function (syms) {
+          if (!syms || syms.length === 0) {
+            setStatus('종목을 찾지 못함: "' + raw + '" — 정확한 이름/티커 입력 (예: 삼성전자, 유플러스)', 'err');
+            return;
+          }
+          // raw 입력을 키로 사용 (사용자가 본 그대로 표시), 실제 fetch는 raw → resolve
+          var key = raw.toUpperCase();
+          var arr = loadHoldings();
+          if (arr.some(function(h){ return (h.code || '').toUpperCase() === key; })) {
+            setStatus('"' + raw + '" 는 이미 등록됨 (먼저 삭제 후 재등록)', 'err');
+            return;
+          }
+          arr.push({ code: raw, buyPrice: price, qty: qty, addedAt: new Date().toISOString() });
+          saveHoldings(arr);
+          codeEl.value = ''; priceEl.value = ''; qtyEl.value = '';
+          setStatus('추가됨: ' + raw, 'ok');
+          refresh();
+        });
       });
 
       refresh();
