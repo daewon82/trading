@@ -46,6 +46,7 @@ export function computeIndicators(ts: Timeseries): IndicatorSet {
     sma200,
     rsi14,
     pctVsSma200,
+    lastDayReturn: pctReturn(closes, 1),
     return1w: pctReturn(closes, 5),
     return1m: pctReturn(closes, 21),
     return3m: pctReturn(closes, 63),

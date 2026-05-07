@@ -31,6 +31,8 @@ export interface IndicatorSet {
   sma200: number | null;
   rsi14: number | null;
   pctVsSma200: number | null;
+  /** 직전 거래일 대비 변동률 (%) */
+  lastDayReturn: number | null;
   return1w: number | null;
   return1m: number | null;
   return3m: number | null;

@@ -2,8 +2,10 @@ name: daily-dashboard
 
 on:
   schedule:
-    # 23:00 UTC = 08:00 KST (다음 날)
-    - cron: '0 23 * * *'
+    # 시장 개장 직후 (09:00 KST = 00:00 UTC) + 장마감 직후 (15:30 KST = 06:30 UTC)
+    # GitHub Actions cron은 5~30분 지연 가능 (정시 보장 X)
+    - cron: '0 0 * * *'
+    - cron: '30 6 * * *'
   workflow_dispatch: {}
 
 permissions:

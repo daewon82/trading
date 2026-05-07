@@ -1041,11 +1041,30 @@ export function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightR
   if (ind?.alignmentBullish === true) bullish.push('5/20/60 정배열');
   if (ind?.alignmentBullish === false) bearish.push('5/20/60 역배열');
 
+  // 단기 급등 → 조정 압력 (다음날 mean reversion 위험)
+  const recentSpike =
+    ind?.lastDayReturn != null && ind.lastDayReturn > 10;
+  if (ind?.lastDayReturn != null) {
+    if (ind.lastDayReturn > 15) {
+      cautious.push(`직전일 +${ind.lastDayReturn.toFixed(1)}% (강한 급등 — 조정 압력 ↑)`);
+      cautious.push(`단기 차익실현 매물 가능성`);
+    } else if (ind.lastDayReturn > 10) {
+      cautious.push(`직전일 +${ind.lastDayReturn.toFixed(1)}% (단기 급등 — 조정 압력)`);
+    } else if (ind.lastDayReturn > 7) {
+      cautious.push(`직전일 +${ind.lastDayReturn.toFixed(1)}% (강세 — 조정 가능)`);
+    } else if (ind.lastDayReturn < -10) {
+      bullish.push(`직전일 ${ind.lastDayReturn.toFixed(1)}% (단기 급락 — 반등 가능)`);
+    }
+  }
+
   // 모멘텀
   if (ind?.rsi14 != null) {
     if (ind.rsi14 > 70) cautious.push(`RSI ${ind.rsi14.toFixed(0)} (과열, 70 초과)`);
     else if (ind.rsi14 < 30) bullish.push(`RSI ${ind.rsi14.toFixed(0)} (과매도, 반등 가능)`);
-    else if (ind.rsi14 >= 50) bullish.push(`RSI ${ind.rsi14.toFixed(0)} (50 위 모멘텀)`);
+    else if (ind.rsi14 >= 50 && !recentSpike) {
+      // 단기 급등 동반 시 RSI 매수 신호 제외 (이미 과열 위험 인지됨)
+      bullish.push(`RSI ${ind.rsi14.toFixed(0)} (50 위 모멘텀)`);
+    }
   }
   if (ind?.return1m != null) {
     if (ind.return1m > 5) bullish.push(`1M +${ind.return1m.toFixed(1)}%`);
@@ -1216,12 +1235,20 @@ export function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightR
     else dominantLabel = '혼합 (동률)';
   }
   const dominance = { bullishPct, cautiousPct, bearishPct, dominantLabel, total };
-  const reasoning = explainDominance(dominantLabel, q);
+  const reasoning = explainDominance(dominantLabel, q, ind?.lastDayReturn);
 
   return { card: c, market, bullish, cautious, bearish, patterns, valuationLabel, trendLabel, dominance, reasoning };
 }
 
-function explainDominance(dominant: string, quartile: Quartile | null): string {
+function explainDominance(
+  dominant: string,
+  quartile: Quartile | null,
+  lastDayReturn?: number | null,
+): string {
+  // 단기 급등 + 매수 우세 → 조정 위험 reasoning 우선
+  if (lastDayReturn != null && lastDayReturn > 10 && dominant === '매수 우호 우세') {
+    return `⚠️ 직전일 +${lastDayReturn.toFixed(1)}% 급등 — 추세는 강하지만 다음날 조정 압력 존재. 분할매수·진입가 조정 검토`;
+  }
   if (dominant === '매수 우호 우세') {
     if (quartile === 1) return '저평가 + 추세도 양호 — 가치주 회복 신호일 수 있음';
     if (quartile === 4) return '고평가지만 정배열·수급 등 모멘텀 강함 — 추세 추종형';
