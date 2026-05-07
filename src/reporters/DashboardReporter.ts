@@ -42,12 +42,14 @@ export class DashboardReporter {
     <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)}</div>
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
-${this.renderChanges(page.changes)}
   <section class="holdings">
-    <h2>💼 매수한 종목 <span class="meta">(브라우저 localStorage에만 저장 — 본인 기기 한정)</span></h2>
-    <p class="holdings-hint">종목명과 매수가만 입력하면 됩니다 (예: <code>삼성전자</code>, <code>유플러스</code>, <code>Apple</code>). 매수가 대비 수익률·매도 검토 라벨·동향이 표시됩니다. <strong>매수/매도 결정은 본인.</strong></p>
+    <h2>💼 매수한 종목 <span class="meta">(브라우저 localStorage 한정)</span></h2>
+    <p class="holdings-hint">종목명을 입력하면 자동완성 목록이 뜹니다. 선택 후 매수가 입력 → 추가. 등록되면 매수가 대비 수익률·매도 검토 라벨이 표시됩니다. <strong>매수/매도 결정은 본인.</strong></p>
     <form id="holdingForm" class="holding-form" onsubmit="return false">
-      <input type="text" id="hCode" placeholder="종목명 (예: 삼성전자)" autocomplete="off">
+      <div class="holding-input-wrap">
+        <input type="text" id="hCode" placeholder="종목명 (예: 삼성전자, 유플러스)" autocomplete="off">
+        <ul id="hSuggest" class="suggest-list" role="listbox"></ul>
+      </div>
       <input type="number" id="hPrice" placeholder="매수가" step="0.01" autocomplete="off">
       <input type="number" id="hQty" placeholder="수량 (선택)" step="1" autocomplete="off">
       <button type="submit" id="hAddBtn">추가</button>
@@ -56,6 +58,7 @@ ${this.renderChanges(page.changes)}
     <div id="holdingsList" class="holdings-list"></div>
     <p id="holdingsEmpty" class="holdings-empty">아직 매수한 종목이 없습니다. 위 폼으로 추가하세요.</p>
   </section>
+${this.renderChanges(page.changes)}
   <section class="search">
     <h2>🔎 종목 검색 (임시)</h2>
     <p class="search-hint">티커 입력 (예: <code>005930</code> 삼성전자, <code>AAPL</code> Apple). KR은 6자리 숫자, US는 알파벳. 결과는 페이지에 영구 추가되지 않습니다 — 새로고침하면 사라짐.</p>
@@ -197,7 +200,7 @@ ${this.renderInsights(page)}
       }
     })();
 
-    // 매수한 종목 — localStorage + Yahoo chart fetch + 매도 검토 라벨
+    // 매수한 종목 — localStorage + Yahoo chart fetch + 자동완성 + 매도 검토 라벨
     (function () {
       var form = document.getElementById('holdingForm');
       var codeEl = document.getElementById('hCode');
@@ -206,7 +209,87 @@ ${this.renderInsights(page)}
       var statusEl = document.getElementById('holdingStatus');
       var listEl = document.getElementById('holdingsList');
       var emptyEl = document.getElementById('holdingsEmpty');
+      var suggestEl = document.getElementById('hSuggest');
       if (!form || !codeEl || !priceEl || !listEl || !emptyEl) return;
+
+      // ── 자동완성 dropdown ──
+      var suggestDebounce = null;
+      function hideSuggest() { if (suggestEl) suggestEl.classList.remove('show'); }
+      function showSuggest(items) {
+        if (!suggestEl) return;
+        if (!items || items.length === 0) { hideSuggest(); return; }
+        suggestEl.innerHTML = items.map(function (it, i) {
+          return '<li class="suggest-item" data-name="' + escapeHtmlAttr(it.name) + '" data-symbol="' + escapeHtmlAttr(it.symbol || '') + '">' +
+            '<span class="suggest-name">' + escapeHtmlText(it.name) + '</span>' +
+            (it.symbol ? '<span class="suggest-sym">' + escapeHtmlText(it.symbol) + '</span>' : '') +
+            '</li>';
+        }).join('');
+        suggestEl.classList.add('show');
+        var lis = suggestEl.querySelectorAll('.suggest-item');
+        for (var i = 0; i < lis.length; i++) {
+          lis[i].addEventListener('mousedown', function (e) {
+            // mousedown으로 input blur 전에 처리
+            var name = e.currentTarget.getAttribute('data-name');
+            codeEl.value = name;
+            hideSuggest();
+            priceEl.focus();
+          });
+        }
+      }
+      function escapeHtmlAttr(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+      function escapeHtmlText(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+      function searchSuggest(q) {
+        if (!q) { hideSuggest(); return; }
+        var trimmed = q.trim();
+        if (!trimmed || trimmed.length < 1) { hideSuggest(); return; }
+        var qLower = trimmed.toLowerCase().replace(/\s/g, '');
+        var local = [];
+        for (var i = 0; i < KR_KEYWORDS.length && local.length < 8; i++) {
+          var entry = KR_KEYWORDS[i];
+          var matched = false;
+          for (var j = 0; j < entry.kw.length; j++) {
+            var k = String(entry.kw[j]).toLowerCase().replace(/\s/g, '');
+            if (k.includes(qLower) || qLower.includes(k)) { matched = true; break; }
+          }
+          if (matched) {
+            // 첫 키워드를 representative name으로
+            local.push({ name: entry.kw[0], symbol: entry.sym });
+          }
+        }
+        // 한국 매핑이 있으면 그것만 표시
+        if (local.length > 0) { showSuggest(local); return; }
+        // 영문이면 Yahoo search API
+        if (/^[A-Za-z][A-Za-z0-9\.\-=\^ ]*$/.test(trimmed)) {
+          fetch('https://query2.finance.yahoo.com/v1/finance/search?q=' + encodeURIComponent(trimmed) + '&quotesCount=8')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (j) {
+              if (!j || !j.quotes) { hideSuggest(); return; }
+              var items = j.quotes
+                .filter(function (qt) { return qt.symbol && qt.quoteType === 'EQUITY'; })
+                .slice(0, 8)
+                .map(function (qt) {
+                  return { name: qt.shortname || qt.longname || qt.symbol, symbol: qt.symbol };
+                });
+              showSuggest(items);
+            })
+            .catch(function () { hideSuggest(); });
+        } else {
+          hideSuggest();
+        }
+      }
+      codeEl.addEventListener('input', function () {
+        clearTimeout(suggestDebounce);
+        suggestDebounce = setTimeout(function () { searchSuggest(codeEl.value); }, 200);
+      });
+      codeEl.addEventListener('focus', function () { searchSuggest(codeEl.value); });
+      codeEl.addEventListener('blur', function () { setTimeout(hideSuggest, 200); });
+      codeEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') hideSuggest();
+      });
 
       var YAHOO = 'https://query1.finance.yahoo.com/v8/finance/chart';
       var KEY = 'tradingHoldings.v1';
@@ -802,10 +885,17 @@ ${renderGroup(`🇺🇸 미국 빅테크 (${usInsights.length}종)`, '', usInsig
       section.holdings { padding: 16px 24px; background: #f1f8e9; border-bottom: 1px solid #c5e1a5; }
       section.holdings h2 { font-size: 1.05em; margin: 0 0 6px; }
       .holdings-hint { font-size: .85em; color: #555; margin: 0 0 10px; line-height: 1.5; }
-      .holding-form { display: flex; flex-wrap: wrap; gap: 8px; max-width: 720px; }
+      .holding-form { display: flex; flex-wrap: wrap; gap: 8px; max-width: 720px; align-items: flex-start; }
+      .holding-input-wrap { position: relative; flex: 1.5; min-width: 200px; }
+      .holding-input-wrap input { width: 100%; }
       .holding-form input { padding: 8px 12px; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; font-variant-numeric: tabular-nums; }
-      .holding-form input[type="text"] { flex: 1.5; min-width: 160px; }
       .holding-form input[type="number"] { flex: 1; min-width: 110px; }
+      .suggest-list { position: absolute; top: 100%; left: 0; right: 0; margin: 2px 0 0; padding: 0; list-style: none; background: #fff; border: 1px solid #ccc; border-radius: 4px; max-height: 280px; overflow-y: auto; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: none; }
+      .suggest-list.show { display: block; }
+      .suggest-item { padding: 8px 12px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; font-size: .9em; }
+      .suggest-item:hover { background: #f0f4f8; }
+      .suggest-name { color: #222; }
+      .suggest-sym { color: #888; font-size: .85em; font-variant-numeric: tabular-nums; }
       .holding-form button { padding: 8px 16px; background: #2e7d32; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
       .holding-form button:hover { background: #1b5e20; }
       .holdings-empty { font-size: .9em; color: #888; margin: 14px 0 0; }
