@@ -6,7 +6,7 @@ import type {
   Currency,
   Quartile,
 } from '../types/stock.js';
-import type { WeatherForecast, WeatherDay } from '../types/weather.js';
+import type { WeatherForecast } from '../types/weather.js';
 import type { MacroQuote } from '../types/macro.js';
 import type { ChangelogEntry } from '../types/changelog.js';
 
@@ -1330,9 +1330,3 @@ function formatPrice(v: number | null, currency: Currency): string {
   return `$${v.toFixed(2)}`;
 }
 
-function formatShortDate(isoDate: string): string {
-  const d = new Date(`${isoDate}T00:00:00+09:00`);
-  const md = `${d.getMonth() + 1}/${d.getDate()}`;
-  const days = ['일', '월', '화', '수', '목', '금', '토'];
-  return `${md} (${days[d.getDay()]})`;
-}
