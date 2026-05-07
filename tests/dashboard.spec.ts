@@ -70,13 +70,44 @@ const KR_WATCH_POOL = [
   '024110', '267260', '042700', '247540', '086520', '051910',
 ];
 
-// US value pool — 가치주(저PER/배당/안정) + 시총 대형주 (25종)
-// 평가 후 저평가(Q1~Q2) + 매수 우세 가중 → 상위 10종
+// US value pool — 가치주(저PER/배당/안정) + 시총 대형주 (35종)
+// 평가 후 Q4(고평가) 자동 제외 + 매수 우세 가중 → 상위 10종
 const US_VALUE_POOL = [
   'BRK-B', 'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'KO', 'PEP', 'PG',
   'WMT', 'HD', 'JNJ', 'PFE', 'MRK', 'BMY', 'XOM', 'CVX', 'COP', 'T',
   'VZ', 'IBM', 'INTC', 'CSCO', 'MMM',
+  // 추가 가치주 후보 (저평가 가능성 ↑)
+  'DIS', 'TGT', 'F', 'KHC', 'CL', 'MCD', 'LOW', 'UPS', 'DUK', 'O',
 ];
+
+// KR 종목 코드 → 한글 종목명 매핑 (Yahoo chart longName이 영문이라 보정)
+const KR_NAMES: Record<string, string> = {
+  '005930': '삼성전자', '000660': 'SK하이닉스', '373220': 'LG에너지솔루션',
+  '005380': '현대차', '000270': '기아', '035420': 'NAVER', '035720': '카카오',
+  '005490': 'POSCO홀딩스', '003670': '포스코퓨처엠', '207940': '삼성바이오로직스',
+  '068270': '셀트리온', '105560': 'KB금융', '086790': '하나금융지주',
+  '055550': '신한지주', '028260': '삼성물산', '066570': 'LG전자',
+  '012330': '현대모비스', '329180': 'HD현대중공업', '012450': '한화에어로스페이스',
+  '017670': 'SK텔레콤', '030200': 'KT', '033780': 'KT&G', '032830': '삼성생명',
+  '015760': '한국전력', '024110': '기업은행', '267260': 'HD현대일렉트릭',
+  '042700': '한미반도체', '247540': '에코프로비엠', '086520': '에코프로',
+  '051910': 'LG화학', '267250': 'HD현대', '006400': '삼성SDI',
+};
+
+// 미국 빅테크 일부도 한글 표기 (사용자 친숙)
+const US_NAMES: Record<string, string> = {
+  AAPL: '애플', MSFT: '마이크로소프트', GOOGL: '구글(알파벳)',
+  AMZN: '아마존', NVDA: '엔비디아', TSLA: '테슬라', META: '메타',
+  'BRK-B': '버크셔해서웨이', JPM: 'JP모건', BAC: '뱅크오브아메리카',
+  WFC: '웰스파고', C: '씨티그룹', GS: '골드만삭스', MS: '모건스탠리',
+  KO: '코카콜라', PEP: '펩시코', PG: '프록터앤갬블', WMT: '월마트',
+  HD: '홈디포', JNJ: '존슨앤존슨', PFE: '화이자', MRK: '머크',
+  BMY: '브리스톨마이어스', XOM: '엑손모빌', CVX: '셰브론', COP: '코노코필립스',
+  T: 'AT&T', VZ: '버라이즌', IBM: 'IBM', INTC: '인텔', CSCO: '시스코', MMM: '3M',
+  DIS: '디즈니', TGT: '타겟', F: '포드', KHC: '크래프트하인즈',
+  CL: '콜게이트', MCD: '맥도날드', LOW: '로우스', UPS: 'UPS',
+  DUK: '듀크에너지', O: '리얼티인컴',
+};
 const krCodes = (process.env.KR_DASHBOARD_CODES ?? DEFAULT_KR)
   .split(',').map((s) => s.trim()).filter(Boolean);
 const usTickers = (process.env.US_DASHBOARD_TICKERS ?? DEFAULT_US)
@@ -277,9 +308,12 @@ test.afterAll(async () => {
     const price = closes[closes.length - 1]!;
     const yesterday = closes[closes.length - 2]!;
     const changePercent = yesterday > 0 ? ((price - yesterday) / yesterday) * 100 : null;
+    const localName = market === 'KR'
+      ? (KR_NAMES[ticker] ?? nameMap.get(ticker))
+      : (US_NAMES[ticker] ?? nameMap.get(ticker));
     const snap: StockSnapshot = {
       code: ticker,
-      name: nameMap.get(ticker) ?? ticker,
+      name: localName ?? ticker,
       market,
       currency: market === 'KR' ? 'KRW' : 'USD',
       source: market === 'KR' ? 'naver-kr' : 'yahoo',
@@ -321,14 +355,15 @@ test.afterAll(async () => {
   });
   krWatchTop = krResults.slice(0, 10);
 
-  // US pool — 저평가 가중치(Q1=+5, Q2=+2, Q4=-3) 적용
+  // US pool — Q4(고평가) 하드 필터 + 저평가 가중치(Q1=+5, Q2=+2, Q3=0) 적용
   const usResults: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
   for (const ticker of US_VALUE_POOL) {
     const card = buildUniverseCard(ticker, 'US');
     if (!card) continue;
+    if (card.quartile === 4) continue; // 고평가 영역은 "저평가 후보"에서 제외
     const ins = evaluateInsight(card, 'US');
     const valueWeight =
-      card.quartile === 1 ? 5 : card.quartile === 2 ? 2 : card.quartile === 4 ? -3 : 0;
+      card.quartile === 1 ? 5 : card.quartile === 2 ? 2 : 0;
     usResults.push({
       ticker,
       name: card.snapshot.name,
