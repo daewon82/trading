@@ -60,6 +60,23 @@ const DEFAULT_US = 'AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA';
 // 가치 함정(value trap) 위험 있음 — 본인 검증 필수
 const DEFAULT_VALUE_KR =
   '005490,012330,017670,033780,086790,055550,032830,024110,267250,051910';
+
+// KR universe pool — KOSPI/KOSDAQ 시총 상위 + 거래량 풍부 종목 (30종)
+// 매일 cron 시 평가 → 매수 우호 net 점수 상위 10종 자동 선정
+const KR_WATCH_POOL = [
+  '005930', '000660', '373220', '005380', '000270', '035420', '035720', '005490',
+  '003670', '207940', '068270', '105560', '086790', '055550', '028260', '066570',
+  '012330', '329180', '012450', '017670', '030200', '033780', '032830', '015760',
+  '024110', '267260', '042700', '247540', '086520', '051910',
+];
+
+// US value pool — 가치주(저PER/배당/안정) + 시총 대형주 (25종)
+// 평가 후 저평가(Q1~Q2) + 매수 우세 가중 → 상위 10종
+const US_VALUE_POOL = [
+  'BRK-B', 'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'KO', 'PEP', 'PG',
+  'WMT', 'HD', 'JNJ', 'PFE', 'MRK', 'BMY', 'XOM', 'CVX', 'COP', 'T',
+  'VZ', 'IBM', 'INTC', 'CSCO', 'MMM',
+];
 const krCodes = (process.env.KR_DASHBOARD_CODES ?? DEFAULT_KR)
   .split(',').map((s) => s.trim()).filter(Boolean);
 const usTickers = (process.env.US_DASHBOARD_TICKERS ?? DEFAULT_US)
@@ -77,6 +94,9 @@ const flowMap = new Map<string, FlowSummary>();
 const range52Map = new Map<string, { high: number | null; low: number | null }>();
 let macros: MacroQuote[] = [];
 let newsSections: NewsSection[] = [];
+const nameMap = new Map<string, string>();
+let krWatchTop: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
+let usValueTop: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
 const SPARKLINE_DAYS = 60;
 const MACRO_SYMBOLS: Array<{ symbol: string; name: string; unit: string }> = [
   { symbol: '^KS11', name: '코스피', unit: '' },
@@ -123,12 +143,16 @@ test('거시 환경 (KOSPI / 원/달러 / 미국 10년물)', async () => {
   });
 });
 
-test('시계열 + 기술적 지표 + sparkline (병렬 fetch)', async () => {
-  const tasks: Array<{ ticker: string; market: 'KR' | 'US' }> = [
-    ...krCodes.map((code) => ({ ticker: code, market: 'KR' as const })),
-    ...usTickers.map((t) => ({ ticker: t, market: 'US' as const })),
-    ...valueKrCodes.map((code) => ({ ticker: code, market: 'KR' as const })),
-  ];
+test('시계열 + 기술적 지표 + sparkline + universe pool (병렬 fetch)', async () => {
+  // 중복 제거: 메인/가치/universe pool 합쳐 한 번만 fetch
+  const allTickers = new Map<string, 'KR' | 'US'>();
+  for (const c of krCodes) allTickers.set(c, 'KR');
+  for (const t of usTickers) allTickers.set(t, 'US');
+  for (const c of valueKrCodes) allTickers.set(c, 'KR');
+  for (const c of KR_WATCH_POOL) if (!allTickers.has(c)) allTickers.set(c, 'KR');
+  for (const t of US_VALUE_POOL) if (!allTickers.has(t)) allTickers.set(t, 'US');
+
+  const tasks = [...allTickers.entries()].map(([ticker, market]) => ({ ticker, market }));
   const results = await Promise.all(
     tasks.map(async ({ ticker, market }) => {
       const ts = await fetchDailyChart(ticker, resolveCandidates(ticker, market));
@@ -141,12 +165,16 @@ test('시계열 + 기술적 지표 + sparkline (병렬 fetch)', async () => {
           high: ts.fiftyTwoWeekHigh,
           low: ts.fiftyTwoWeekLow,
         });
-        return { ticker, points: ts.points.length, sparkPoints: closes.length };
+        if (ts.longName) nameMap.set(ticker, ts.longName);
+        return { ticker, points: ts.points.length };
       }
-      return { ticker, points: 0, sparkPoints: 0 };
+      return { ticker, points: 0 };
     }),
   );
-  logger.info('indicators + sparkline computed', { count: indicatorMap.size, results });
+  logger.info('indicators + universe fetched', {
+    total: results.length,
+    indicators: indicatorMap.size,
+  });
 });
 
 for (const code of krCodes) {
@@ -238,6 +266,86 @@ test.afterAll(async () => {
   const usSection = builder.build(usSnaps, { indicators: indicatorMap, closes: closesMap });
   const valueSection = valueKrSnaps.length > 0 ? builder.build(valueKrSnaps, ctx) : null;
 
+  // Universe selection — Yahoo meta 기반으로 dummy snapshot 만들고 평가
+  const buildUniverseCard = (
+    ticker: string,
+    market: 'KR' | 'US',
+  ): import('../src/types/stock.js').DashboardCard | null => {
+    const closes = closesMap.get(ticker);
+    const range = range52Map.get(ticker);
+    if (!closes || closes.length < 2 || !range) return null;
+    const price = closes[closes.length - 1]!;
+    const yesterday = closes[closes.length - 2]!;
+    const changePercent = yesterday > 0 ? ((price - yesterday) / yesterday) * 100 : null;
+    const snap: StockSnapshot = {
+      code: ticker,
+      name: nameMap.get(ticker) ?? ticker,
+      market,
+      currency: market === 'KR' ? 'KRW' : 'USD',
+      source: market === 'KR' ? 'naver-kr' : 'yahoo',
+      capturedAt: new Date().toISOString(),
+      price,
+      changePercent,
+      marketCap: null,
+      per: null,
+      pbr: null,
+      eps: null,
+      bps: null,
+      roe: null,
+      dividendYield: null,
+      fiftyTwoWeekHigh: range.high,
+      fiftyTwoWeekLow: range.low,
+    };
+    const sec = builder.build([snap], { indicators: indicatorMap, closes: closesMap });
+    return sec.cards[0] ?? null;
+  };
+
+  // KR pool — net 점수 큰 순으로 정렬, 동률은 cautious 적은 순
+  const krResults: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
+  for (const ticker of KR_WATCH_POOL) {
+    const card = buildUniverseCard(ticker, 'KR');
+    if (!card) continue;
+    const ins = evaluateInsight(card, 'KR');
+    krResults.push({
+      ticker,
+      name: card.snapshot.name,
+      market: 'KR',
+      card,
+      insight: ins,
+      score: ins.bullish.length - ins.bearish.length,
+    });
+  }
+  krResults.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return a.insight.cautious.length - b.insight.cautious.length;
+  });
+  krWatchTop = krResults.slice(0, 10);
+
+  // US pool — 저평가 가중치(Q1=+5, Q2=+2, Q4=-3) 적용
+  const usResults: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
+  for (const ticker of US_VALUE_POOL) {
+    const card = buildUniverseCard(ticker, 'US');
+    if (!card) continue;
+    const ins = evaluateInsight(card, 'US');
+    const valueWeight =
+      card.quartile === 1 ? 5 : card.quartile === 2 ? 2 : card.quartile === 4 ? -3 : 0;
+    usResults.push({
+      ticker,
+      name: card.snapshot.name,
+      market: 'US',
+      card,
+      insight: ins,
+      score: ins.bullish.length - ins.bearish.length + valueWeight,
+    });
+  }
+  usResults.sort((a, b) => b.score - a.score);
+  usValueTop = usResults.slice(0, 10);
+
+  logger.info('universe selection', {
+    krTop: krWatchTop.map((r) => ({ ticker: r.ticker, score: r.score })),
+    usTop: usValueTop.map((r) => ({ ticker: r.ticker, score: r.score, q: r.card.quartile })),
+  });
+
   // Changelog: 직전 meta와 비교해 추가/삭제 종목 + 평가 사유 추출
   const today = todayInSeoul();
   const currentSeeds: SeedSnapshot[] = [
@@ -259,6 +367,8 @@ test.afterAll(async () => {
     valueKr: valueSection,
     changes,
     news: newsSections,
+    krWatchTop,
+    usValueTop,
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });

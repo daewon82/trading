@@ -11,6 +11,15 @@ import type { MacroQuote } from '../types/macro.js';
 import type { ChangelogEntry } from '../types/changelog.js';
 import type { NewsSection } from '../types/news.js';
 
+export interface UniverseTop {
+  ticker: string;
+  name: string;
+  market: 'KR' | 'US';
+  card: DashboardCard;
+  insight: InsightResult;
+  score: number;
+}
+
 export interface DashboardPage {
   generatedAt: string;
   today: string;
@@ -21,6 +30,8 @@ export interface DashboardPage {
   valueKr: StockDashboardSection | null;
   changes: ChangelogEntry | null;
   news: NewsSection[];
+  krWatchTop: UniverseTop[];
+  usValueTop: UniverseTop[];
 }
 
 export class DashboardReporter {
@@ -71,6 +82,8 @@ ${this.renderChanges(page.changes)}
     <div id="searchStatus" class="search-status"></div>
     <div id="searchResult" class="search-result"></div>
   </section>
+${this.renderUniverse('🚀 코스피 매수 후보 Top 10 — 자동 선정', 'KOSPI/KOSDAQ 시총 상위 30종 후보 풀에서 매수 우호 신호(net = 매수 − 매도) 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.krWatchTop)}
+${this.renderUniverse('💎 미국 저평가 후보 Top 10 — 자동 선정', '가치주 25종 후보 풀에서 저평가 가중(Q1=+5, Q2=+2, Q4=−3) + 매수 우호 신호 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.usValueTop)}
 ${this.renderInsights(page)}
 ${this.renderNews(page.news)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
@@ -708,6 +721,62 @@ ${this.renderNews(page.news)}
 `;
   }
 
+  private renderUniverse(title: string, intro: string, top: UniverseTop[]): string {
+    if (!top || top.length === 0) return '';
+    const cards = top
+      .map((t, idx) => {
+        const currency: Currency = t.market === 'KR' ? 'KRW' : 'USD';
+        return this.renderUniverseCard(t, idx + 1, currency);
+      })
+      .join('\n');
+    return `  <section class="universe">
+    <h2>${esc(title)}</h2>
+    <p class="universe-intro">${intro}</p>
+    <div class="universe-list">
+${cards}
+    </div>
+  </section>`;
+  }
+
+  private renderUniverseCard(t: UniverseTop, rank: number, currency: Currency): string {
+    const c = t.card;
+    const ins = t.insight;
+    const s = c.snapshot;
+    const price = formatPrice(s.price, currency);
+    const change =
+      s.changePercent == null
+        ? '—'
+        : `${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%`;
+    const pos =
+      c.fiftyTwoWeekPosition == null
+        ? '52주 —'
+        : `52주 ${c.fiftyTwoWeekPosition.toFixed(0)}%${c.quartile ? ` (Q${c.quartile})` : ''}`;
+    const q = c.quartile;
+    let badgeText = '평가 데이터 없음';
+    let badgeCls = 'badge-na';
+    if (q === 1) { badgeText = '💰 저평가 (Q1)'; badgeCls = 'badge-low'; }
+    else if (q === 2) { badgeText = '◐ 중하단 (Q2)'; badgeCls = 'badge-mid-low'; }
+    else if (q === 3) { badgeText = '◑ 중상단 (Q3)'; badgeCls = 'badge-mid-high'; }
+    else if (q === 4) { badgeText = '⚠ 고평가 (Q4)'; badgeCls = 'badge-high'; }
+    const reasons = [
+      ...ins.bullish.slice(0, 3).map((b) => `<li class="u-bull">⊕ ${esc(b)}</li>`),
+      ...ins.bearish.slice(0, 2).map((b) => `<li class="u-bear">⊖ ${esc(b)}</li>`),
+    ].join('');
+    return `      <article class="universe-card">
+        <div class="u-rank">#${rank}</div>
+        <div class="u-body">
+          <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span> <span class="eval-badge ${badgeCls}">${esc(badgeText)}</span></h3>
+          <div class="u-row">
+            <span class="ic-price-current">${price}</span>
+            <span class="ic-price-change">${change}</span>
+            <span class="ic-pos">${pos}</span>
+            <span class="u-score">net ${t.score >= 0 ? '+' : ''}${t.score}</span>
+          </div>
+          <ul class="u-reasons">${reasons}</ul>
+        </div>
+      </article>`;
+  }
+
   private renderNews(sections: NewsSection[]): string {
     if (!sections || sections.length === 0) return '';
     const blocks = sections
@@ -991,6 +1060,23 @@ ${renderGroup(`🇺🇸 미국 빅테크 (${usInsights.length}종)`, '', usInsig
       .cl-section { color: #888; font-size: .82em; }
       .cl-detail { color: #555; font-size: .82em; margin-top: 2px; line-height: 1.4; }
       .cl-note { font-size: .8em; color: #888; margin: 8px 0 0; }
+      section.universe { padding: 20px 24px; background: #fff8e1; border-top: 1px solid #ffe082; }
+      section.universe h2 { margin: 0 0 6px; font-size: 1.1em; color: #5d4037; }
+      .universe-intro { font-size: .85em; color: #555; margin: 0 0 14px; padding: 8px 12px; background: #fff; border-left: 3px solid #ef6c00; border-radius: 4px; line-height: 1.5; }
+      .universe-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 10px; }
+      .universe-card { background: #fff; border: 1px solid #ffe082; border-radius: 8px; padding: 10px 14px; display: flex; gap: 12px; }
+      .u-rank { font-size: 1.4em; font-weight: 700; color: #ef6c00; min-width: 36px; text-align: center; padding-top: 2px; }
+      .u-body { flex: 1; }
+      .universe-card h3 { margin: 0 0 6px; font-size: 1em; }
+      .u-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; padding: 2px 0; }
+      .u-score { margin-left: auto; padding: 2px 8px; background: #ef6c00; color: #fff; border-radius: 12px; font-size: .82em; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .u-reasons { margin: 6px 0 0; padding-left: 18px; font-size: .82em; line-height: 1.55; }
+      .u-bull { color: #c62828; }
+      .u-bear { color: #2e7d32; }
+      @media (max-width: 600px) {
+        .universe-card { padding: 8px 10px; gap: 8px; }
+        .u-rank { font-size: 1.1em; min-width: 28px; }
+      }
       section.news { padding: 20px 24px; background: #f5f5f5; border-top: 1px solid #ddd; }
       section.news h2 { margin: 0 0 6px; font-size: 1.05em; }
       .news-note { font-size: .82em; color: #888; margin: 0 0 14px; }

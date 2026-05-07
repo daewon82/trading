@@ -10,6 +10,7 @@ export interface Timeseries {
   ticker: string;
   resolved: string;
   currency: string;
+  longName: string | null;
   points: PricePoint[];
   fiftyTwoWeekHigh: number | null;
   fiftyTwoWeekLow: number | null;

@@ -16,6 +16,8 @@ interface YahooMeta {
   chartPreviousClose?: number;
   fiftyTwoWeekHigh?: number;
   fiftyTwoWeekLow?: number;
+  longName?: string;
+  shortName?: string;
 }
 
 interface YahooChartResponse {
@@ -94,6 +96,7 @@ export async function fetchDailyChart(
         ticker,
         resolved: symbol,
         currency: result.currency,
+        longName: result.longName,
         points: result.points,
         fiftyTwoWeekHigh: result.fiftyTwoWeekHigh,
         fiftyTwoWeekLow: result.fiftyTwoWeekLow,
@@ -109,6 +112,7 @@ async function tryFetch(
   period2: number,
 ): Promise<{
   currency: string;
+  longName: string | null;
   points: PricePoint[];
   fiftyTwoWeekHigh: number | null;
   fiftyTwoWeekLow: number | null;
@@ -147,6 +151,7 @@ async function tryFetch(
     }
     return {
       currency: result.meta.currency,
+      longName: result.meta.longName ?? result.meta.shortName ?? null,
       points,
       fiftyTwoWeekHigh: result.meta.fiftyTwoWeekHigh ?? null,
       fiftyTwoWeekLow: result.meta.fiftyTwoWeekLow ?? null,
