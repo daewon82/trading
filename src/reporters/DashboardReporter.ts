@@ -32,6 +32,7 @@ export interface DashboardPage {
   news: NewsSection[];
   krWatchTop: UniverseTop[];
   usValueTop: UniverseTop[];
+  usGrowthTop: UniverseTop[];
 }
 
 export class DashboardReporter {
@@ -85,7 +86,7 @@ ${this.renderChanges(page.changes)}
 ${this.renderUniverse('🚀 코스피 매수 후보 Top 10 — 자동 선정', 'KOSPI/KOSDAQ 시총 상위 30종 후보 풀에서 매수 우호 신호(net = 매수 − 매도) 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.krWatchTop)}
 ${this.renderInsightsKR(page)}
 ${this.renderUniverse('💎 미국 저평가 후보 Top 10 — 자동 선정', '가치주 35종 후보 풀에서 Q4(고평가) 자동 제외 + 저평가 가중(Q1=+5, Q2=+2) + 매수 우호 신호 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.usValueTop)}
-${this.renderInsightsUS(page)}
+${this.renderUniverse('🚀 미국 매수 추천 Top 5 — 성장·모멘텀', '빅테크 + 성장주 12종 후보 풀(AAPL/MSFT/GOOGL/AMZN/NVDA/TSLA/META/AMD/AVGO/CRM/NOW/NFLX)에서 매수 우호 net 점수 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.usGrowthTop)}
 ${this.renderNews(page.news)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
@@ -354,6 +355,122 @@ ${this.renderNews(page.news)}
         if (ag === 0) return 0;
         return 100 - 100 / (1 + ag / al);
       }
+      function pctReturnClient(arr, lookback) {
+        if (arr.length < lookback + 1) return null;
+        var r = arr[arr.length - 1], p = arr[arr.length - 1 - lookback];
+        if (p === 0) return null;
+        return ((r - p) / p) * 100;
+      }
+      // 시계열 + meta 기반 평가 (서버 evaluateInsight 단순 클라이언트 포팅, 외인기관 X)
+      function evaluateInsightClient(closes, price, high52, low52) {
+        var bullish = [], cautious = [], bearish = [];
+        var sma5 = smaClient(closes, 5), sma20 = smaClient(closes, 20),
+            sma50 = smaClient(closes, 50), sma60 = smaClient(closes, 60),
+            sma200 = smaClient(closes, 200);
+        var rsi14 = rsiClient(closes, 14);
+        var pct200 = (sma200 != null && sma200 !== 0) ? ((price - sma200) / sma200) * 100 : null;
+        var alignmentBullish = (sma5 != null && sma20 != null && sma60 != null) ? (sma5 > sma20 && sma20 > sma60) : null;
+        var ret1m = pctReturnClient(closes, 21);
+        var ret3m = pctReturnClient(closes, 63);
+        var ret12m = pctReturnClient(closes, 252);
+        var ret1d = (closes.length >= 2 && closes[closes.length - 2] > 0)
+          ? ((closes[closes.length - 1] - closes[closes.length - 2]) / closes[closes.length - 2]) * 100 : null;
+        var posPct = (high52 != null && low52 != null && high52 !== low52)
+          ? ((price - low52) / (high52 - low52)) * 100 : null;
+        var quart = posPct == null ? null : (posPct < 25 ? 1 : posPct < 50 ? 2 : posPct < 75 ? 3 : 4);
+
+        // 추세
+        if (pct200 != null) {
+          if (pct200 > 5) bullish.push('200일선 +' + pct200.toFixed(1) + '% 위');
+          else if (pct200 < -10) bearish.push('200일선 ' + pct200.toFixed(1) + '% 아래 (강한 하락)');
+          else if (pct200 < -5) cautious.push('200일선 ' + pct200.toFixed(1) + '% 아래');
+        }
+        if (alignmentBullish === true) bullish.push('5/20/60 정배열');
+        if (alignmentBullish === false) bearish.push('5/20/60 역배열');
+
+        // 단기 급등
+        var recentSpike = ret1d != null && ret1d > 10;
+        if (ret1d != null) {
+          if (ret1d > 15) {
+            cautious.push('직전일 +' + ret1d.toFixed(1) + '% (강한 급등 — 조정 압력 ↑)');
+            cautious.push('단기 차익실현 매물 가능성');
+          } else if (ret1d > 10) cautious.push('직전일 +' + ret1d.toFixed(1) + '% (단기 급등 — 조정 압력)');
+          else if (ret1d > 7) cautious.push('직전일 +' + ret1d.toFixed(1) + '% (강세 — 조정 가능)');
+          else if (ret1d < -10) bullish.push('직전일 ' + ret1d.toFixed(1) + '% (단기 급락 — 반등 가능)');
+        }
+
+        // RSI
+        if (rsi14 != null) {
+          if (rsi14 > 70) cautious.push('RSI ' + rsi14.toFixed(0) + ' (과열)');
+          else if (rsi14 < 30) bullish.push('RSI ' + rsi14.toFixed(0) + ' (과매도, 반등 가능)');
+          else if (rsi14 >= 50 && !recentSpike) bullish.push('RSI ' + rsi14.toFixed(0) + ' (50 위 모멘텀)');
+        }
+
+        // 수익률
+        if (ret1m != null) {
+          if (ret1m > 5) bullish.push('1M +' + ret1m.toFixed(1) + '%');
+          else if (ret1m < -10) bearish.push('1M ' + ret1m.toFixed(1) + '% (큰 폭 하락)');
+          else if (ret1m < -5) cautious.push('1M ' + ret1m.toFixed(1) + '%');
+        }
+        if (ret3m != null) {
+          if (ret3m > 10) bullish.push('3M +' + ret3m.toFixed(1) + '%');
+          else if (ret3m < -15) bearish.push('3M ' + ret3m.toFixed(1) + '% (큰 폭 하락)');
+          else if (ret3m < -10) cautious.push('3M ' + ret3m.toFixed(1) + '%');
+        }
+        if (ret12m != null) {
+          if (ret12m > 20) bullish.push('12M +' + ret12m.toFixed(1) + '% (장기 모멘텀 ↑)');
+          else if (ret12m < -20) bearish.push('12M ' + ret12m.toFixed(1) + '% (장기 부진)');
+        }
+
+        // 52주 위치
+        if (quart === 1) bullish.push('52주 Q1 (저평가 영역)');
+        else if (quart === 4) cautious.push('52주 Q4 (고평가 영역)');
+
+        var total = bullish.length + cautious.length + bearish.length;
+        var bullPct = total > 0 ? (bullish.length / total) * 100 : 0;
+        var cautPct = total > 0 ? (cautious.length / total) * 100 : 0;
+        var bearPct = total > 0 ? (bearish.length / total) * 100 : 0;
+        var dominant = '신호 없음';
+        if (total > 0) {
+          if (bullish.length > cautious.length && bullish.length > bearish.length) dominant = '매수 우호 우세';
+          else if (bearish.length > bullish.length && bearish.length > cautious.length) dominant = '매도 우호 우세';
+          else if (cautious.length > bullish.length && cautious.length > bearish.length) dominant = '신중 우세';
+          else dominant = '혼합 (동률)';
+        }
+
+        // 평가/추세 라벨
+        var valLabel = quart === 1 ? '저평가 영역 (Q1)' : quart === 2 ? '중하단 (Q2)' : quart === 3 ? '중상단 (Q3)' : quart === 4 ? '고평가 영역 (Q4)' : '데이터 부족';
+        var trendLabel = '판단 보류';
+        if (alignmentBullish === true && pct200 != null && pct200 > 0) trendLabel = '상승 추세 (정배열 + 200d 위)';
+        else if (alignmentBullish === false && pct200 != null && pct200 < 0) trendLabel = '하락 추세 (역배열 + 200d 아래)';
+        else if (alignmentBullish != null || pct200 != null) trendLabel = '횡보·전환 (혼합)';
+
+        // reasoning
+        var reasoning = '';
+        if (ret1d != null && ret1d > 10 && dominant === '매수 우호 우세') {
+          reasoning = '⚠️ 직전일 +' + ret1d.toFixed(1) + '% 급등 — 추세 강하지만 다음날 조정 압력. 분할매수 검토';
+        } else if (dominant === '매수 우호 우세') {
+          reasoning = quart === 1 ? '저평가 + 추세 양호 — 가치주 회복 신호일 수 있음'
+            : quart === 4 ? '고평가지만 정배열·모멘텀 강함 — 추세 추종형'
+            : '추세·모멘텀 우호적';
+        } else if (dominant === '매도 우호 우세') {
+          reasoning = quart === 1 ? '⚠️ 저평가지만 역배열·약세 — 가치 함정 의심'
+            : quart === 4 ? '고평가에서 약세 전환 — 차익실현 압력'
+            : '추세 약세 + 모멘텀 약화';
+        } else if (dominant === '신중 우세') {
+          reasoning = quart === 4 ? '고평가 + 과열 — 단기 조정 가능' : '혼합 신호';
+        } else {
+          reasoning = '신호 부족 또는 동률';
+        }
+
+        return {
+          bullish: bullish, cautious: cautious, bearish: bearish,
+          bullPct: bullPct, cautPct: cautPct, bearPct: bearPct,
+          dominantLabel: dominant, reasoning: reasoning,
+          valuationLabel: valLabel, trendLabel: trendLabel,
+          quart: quart, posPct: posPct,
+        };
+      }
       function sparkClient(closes) {
         if (!closes || closes.length < 2) return '';
         var w = 280, h = 50, mn = closes[0], mx = closes[0];
@@ -446,29 +563,76 @@ ${this.renderNews(page.news)}
             '<button class="holding-remove" data-code="' + escHtml2(h.code) + '">삭제</button>' +
             '</article>';
         }
+        // 풍부 평가 (서버 인사이트 카드와 동일)
+        var ev = evaluateInsightClient(d.closes, d.price, d.high52, d.low52);
+        var displayName = (h.code && /[가-힣]/.test(h.code)) ? h.code : (d.name || h.code);
+
         var pnlPct = ((d.price - h.buyPrice) / h.buyPrice) * 100;
         var pnlAbs = (d.price - h.buyPrice) * (h.qty || 1);
         var pnlCls = pnlPct >= 0 ? 'pnl-up' : 'pnl-down';
         var sell = evaluateSell(d, h.buyPrice);
-        var sparklineCloses = d.closes.slice(-60);
-        var posPct = (d.high52 != null && d.low52 != null && d.high52 !== d.low52)
-          ? ((d.price - d.low52) / (d.high52 - d.low52)) * 100 : null;
-        var quart = posPct == null ? null : (posPct < 25 ? 1 : posPct < 50 ? 2 : posPct < 75 ? 3 : 4);
-        var posStr = posPct == null ? '52주 —' : '52주 ' + posPct.toFixed(0) + '% (Q' + quart + ')';
 
+        // 평가 배지
+        var q = ev.quart;
+        var badgeText = '평가 데이터 없음', badgeCls = 'badge-na';
+        if (q === 1) { badgeText = '💰 저평가 (Q1)'; badgeCls = 'badge-low'; }
+        else if (q === 2) { badgeText = '◐ 중하단 (Q2)'; badgeCls = 'badge-mid-low'; }
+        else if (q === 3) { badgeText = '◑ 중상단 (Q3)'; badgeCls = 'badge-mid-high'; }
+        else if (q === 4) { badgeText = '⚠ 고평가 (Q4)'; badgeCls = 'badge-high'; }
+
+        // 우세 라벨 색상
+        var dominantCls = ev.dominantLabel.startsWith('매수') ? 'dom-label-bull'
+          : ev.dominantLabel.startsWith('매도') ? 'dom-label-bear'
+          : ev.dominantLabel.startsWith('신중') ? 'dom-label-caut' : 'dom-label-mix';
+
+        var bullW = ev.bullPct.toFixed(1), cautW = ev.cautPct.toFixed(1), bearW = ev.bearPct.toFixed(1);
+
+        function listOf(arr) {
+          if (arr.length === 0) return '<li class="empty">해당 신호 없음</li>';
+          return arr.map(function(b){ return '<li>' + escHtml2(b) + '</li>'; }).join('');
+        }
+
+        var posStr = ev.posPct == null ? '52주 —' : '52주 ' + ev.posPct.toFixed(0) + '% (Q' + q + ')';
         var qtyStr = h.qty ? ' × ' + h.qty.toLocaleString('ko-KR') + '주' : '';
         var pnlAbsStr = h.qty ? ' (' + fmtSigned(pnlAbs, d.currency) + ')' : '';
+        var changeRecent = (d.closes.length >= 2 && d.closes[d.closes.length - 2] > 0)
+          ? ((d.closes[d.closes.length - 1] - d.closes[d.closes.length - 2]) / d.closes[d.closes.length - 2]) * 100 : null;
+        var changeStr = changeRecent == null ? '' : (changeRecent >= 0 ? '+' : '') + changeRecent.toFixed(2) + '%';
 
-        return '<article class="holding-card">' +
-          '<h3>' + escHtml2(d.name) + ' <span class="ticker">' + escHtml2(h.code) + '</span> <span class="sell-badge ' + sell.cls + '">' + escHtml2(sell.label) + '</span></h3>' +
+        return '<article class="holding-card insight-card">' +
+          '<h3>' + escHtml2(displayName) + ' <span class="ticker">' + escHtml2(h.code) + '</span> ' +
+            '<span class="eval-badge ' + badgeCls + '">' + escHtml2(badgeText) + '</span> ' +
+            '<span class="sell-badge ' + sell.cls + '">' + escHtml2(sell.label) + '</span></h3>' +
           '<div class="ic-head">' +
-            '<span class="ic-price-current">현재 ' + fmtCurrency(d.price, d.currency) + '</span>' +
+            '<span class="ic-price-current">' + fmtCurrency(d.price, d.currency) + '</span>' +
+            '<span class="ic-price-change">' + changeStr + '</span>' +
             '<span class="ic-pos">' + posStr + '</span>' +
           '</div>' +
-          '<div class="holding-row"><span class="ins-label">매수가</span><span class="ins-value">' + fmtCurrency(h.buyPrice, d.currency) + qtyStr + '</span></div>' +
-          '<div class="holding-row"><span class="ins-label">손익</span><span class="ins-value ' + pnlCls + '">' + (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%' + pnlAbsStr + '</span></div>' +
-          sparkClient(sparklineCloses) +
-          '<div class="sell-reasons">' + sell.reasons.map(function(r){ return '• ' + escHtml2(r); }).join('<br>') + '</div>' +
+          sparkClient(d.closes.slice(-60)) +
+          '<div class="holding-row buy-row"><span class="ins-label">매수가</span><span class="ins-value">' + fmtCurrency(h.buyPrice, d.currency) + qtyStr + '</span></div>' +
+          '<div class="holding-row pnl-row"><span class="ins-label">손익</span><span class="ins-value ' + pnlCls + '">' + (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%' + pnlAbsStr + '</span></div>' +
+          '<div class="insight-row"><span class="ins-label">평가</span><span class="ins-value">' + escHtml2(ev.valuationLabel) + '</span></div>' +
+          '<div class="insight-row"><span class="ins-label">추세</span><span class="ins-value">' + escHtml2(ev.trendLabel) + '</span></div>' +
+          '<div class="dominance">' +
+            '<div class="dom-bar">' +
+              '<div class="dom-seg dom-bull" style="width:' + bullW + '%"></div>' +
+              '<div class="dom-seg dom-caut" style="width:' + cautW + '%"></div>' +
+              '<div class="dom-seg dom-bear" style="width:' + bearW + '%"></div>' +
+            '</div>' +
+            '<div class="dom-stats">' +
+              '<span class="dom-bull-text">⊕ ' + bullW + '% (' + ev.bullish.length + ')</span>' +
+              '<span class="dom-caut-text">⚠ ' + cautW + '% (' + ev.cautious.length + ')</span>' +
+              '<span class="dom-bear-text">⊖ ' + bearW + '% (' + ev.bearish.length + ')</span>' +
+            '</div>' +
+            '<div class="dom-summary">→ <strong class="' + dominantCls + '">' + escHtml2(ev.dominantLabel) + '</strong></div>' +
+            '<div class="dom-reason">' + ev.reasoning + '</div>' +
+          '</div>' +
+          '<div class="signal-grid signal-grid-3">' +
+            '<div class="bullish"><h4>⊕ 매수 우호</h4><ul>' + listOf(ev.bullish) + '</ul></div>' +
+            '<div class="cautious"><h4>⚠ 신중</h4><ul>' + listOf(ev.cautious) + '</ul></div>' +
+            '<div class="bearish"><h4>⊖ 매도 우호</h4><ul>' + listOf(ev.bearish) + '</ul></div>' +
+          '</div>' +
+          '<div class="sell-reasons"><strong>매도 검토:</strong> ' + sell.reasons.map(function(r){ return escHtml2(r); }).join(' · ') + '</div>' +
           '<button class="holding-remove" data-code="' + escHtml2(h.code) + '">삭제</button>' +
           '</article>';
       }
@@ -875,30 +1039,20 @@ ${cards}
   }
 
   private renderInsightsKR(page: DashboardPage): string {
-    const krInsights = page.kr.cards.map((c) => evaluateInsight(c, 'KR'));
     const valueAll = page.valueKr?.cards.map((c) => evaluateInsight(c, 'KR')) ?? [];
     // 저평가 후보에서 Q4(고평가) 자동 제외 — "저평가" 라벨과 모순 방지
     const valueInsights = valueAll.filter((ins) => ins.card.quartile !== 4);
     const valueExcludedCount = valueAll.length - valueInsights.length;
-    if (krInsights.length === 0 && valueInsights.length === 0) return '';
+    if (valueInsights.length === 0) return '';
 
     return `  <section class="insights">
 ${this.renderCommonIntro()}
-${this.renderInsightGroup(`🇰🇷 국내 주식 (${krInsights.length}종)`, '', krInsights, 'KRW')}
 ${this.renderInsightGroup(
       `📚 저평가 후보 — KOSPI 가치주 시드 (${valueInsights.length}종${valueExcludedCount > 0 ? `, Q4 ${valueExcludedCount}종 자동 제외` : ''})`,
       `저PER · 저PBR · 고배당 등 객관 기준으로 거론되는 가치주 후보입니다. <strong>매수 추천이 아닙니다.</strong> 가치 함정(value trap) 위험 — 산업 사양·실적 악화로 영구 저평가될 수도 있음.${valueExcludedCount > 0 ? ` <br><strong>※ ${valueExcludedCount}종은 현재 52주 Q4(고평가)이라 "저평가 후보" 라벨과 모순되어 자동 제외됨.</strong> 시드 리스트(<code>KR_VALUE_CANDIDATES</code>)는 그대로 유지되며, 가격이 다시 하단으로 내려가면 자동 복귀.` : ''}`,
       valueInsights,
       'KRW',
     )}
-  </section>`;
-  }
-
-  private renderInsightsUS(page: DashboardPage): string {
-    const usInsights = page.us.cards.map((c) => evaluateInsight(c, 'US'));
-    if (usInsights.length === 0) return '';
-    return `  <section class="insights">
-${this.renderInsightGroup(`🇺🇸 미국 빅테크 (${usInsights.length}종)`, '', usInsights, 'USD')}
   </section>`;
   }
 

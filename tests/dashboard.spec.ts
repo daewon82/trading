@@ -80,6 +80,13 @@ const US_VALUE_POOL = [
   'DIS', 'TGT', 'F', 'KHC', 'CL', 'MCD', 'LOW', 'UPS', 'DUK', 'O',
 ];
 
+// US growth pool — 빅테크 + 모멘텀 성장주 (12종)
+// 평가 후 매수 우호 net 점수 상위 5종 자동 선정
+const US_GROWTH_POOL = [
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META',
+  'AMD', 'AVGO', 'CRM', 'NOW', 'NFLX',
+];
+
 // KR 종목 코드 → 한글 종목명 매핑 (Yahoo chart longName이 영문이라 보정)
 const KR_NAMES: Record<string, string> = {
   '005930': '삼성전자', '000660': 'SK하이닉스', '373220': 'LG에너지솔루션',
@@ -107,6 +114,7 @@ const US_NAMES: Record<string, string> = {
   DIS: '디즈니', TGT: '타겟', F: '포드', KHC: '크래프트하인즈',
   CL: '콜게이트', MCD: '맥도날드', LOW: '로우스', UPS: 'UPS',
   DUK: '듀크에너지', O: '리얼티인컴',
+  AMD: 'AMD', AVGO: '브로드컴', CRM: '세일즈포스', NOW: '서비스나우', NFLX: '넷플릭스',
 };
 const krCodes = (process.env.KR_DASHBOARD_CODES ?? DEFAULT_KR)
   .split(',').map((s) => s.trim()).filter(Boolean);
@@ -128,6 +136,7 @@ let newsSections: NewsSection[] = [];
 const nameMap = new Map<string, string>();
 let krWatchTop: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
 let usValueTop: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
+let usGrowthTop: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
 const SPARKLINE_DAYS = 60;
 const MACRO_SYMBOLS: Array<{ symbol: string; name: string; unit: string }> = [
   { symbol: '^KS11', name: '코스피', unit: '' },
@@ -182,6 +191,7 @@ test('시계열 + 기술적 지표 + sparkline + universe pool (병렬 fetch)', 
   for (const c of valueKrCodes) allTickers.set(c, 'KR');
   for (const c of KR_WATCH_POOL) if (!allTickers.has(c)) allTickers.set(c, 'KR');
   for (const t of US_VALUE_POOL) if (!allTickers.has(t)) allTickers.set(t, 'US');
+  for (const t of US_GROWTH_POOL) if (!allTickers.has(t)) allTickers.set(t, 'US');
 
   const tasks = [...allTickers.entries()].map(([ticker, market]) => ({ ticker, market }));
   const results = await Promise.all(
@@ -376,6 +386,27 @@ test.afterAll(async () => {
   usResults.sort((a, b) => b.score - a.score);
   usValueTop = usResults.slice(0, 10);
 
+  // US growth pool — 매수 우호 net 점수 상위 5
+  const growthResults: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
+  for (const ticker of US_GROWTH_POOL) {
+    const card = buildUniverseCard(ticker, 'US');
+    if (!card) continue;
+    const ins = evaluateInsight(card, 'US');
+    growthResults.push({
+      ticker,
+      name: card.snapshot.name,
+      market: 'US',
+      card,
+      insight: ins,
+      score: ins.bullish.length - ins.bearish.length,
+    });
+  }
+  growthResults.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return a.insight.cautious.length - b.insight.cautious.length;
+  });
+  usGrowthTop = growthResults.slice(0, 5);
+
   logger.info('universe selection', {
     krTop: krWatchTop.map((r) => ({ ticker: r.ticker, score: r.score })),
     usTop: usValueTop.map((r) => ({ ticker: r.ticker, score: r.score, q: r.card.quartile })),
@@ -404,6 +435,7 @@ test.afterAll(async () => {
     news: newsSections,
     krWatchTop,
     usValueTop,
+    usGrowthTop,
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });
