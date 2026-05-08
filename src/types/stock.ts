@@ -96,6 +96,7 @@ export interface DashboardCard {
   indicators: import('./timeseries.js').IndicatorSet | null;
   sparklineCloses: number[] | null;
   flow: import('./flow.js').FlowSummary | null;
+  consensus: import('./consensus.js').AnalystConsensus | null;
 }
 
 export interface StockDashboardSection {

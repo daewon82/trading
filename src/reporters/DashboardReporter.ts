@@ -1656,6 +1656,9 @@ function renderInsightCard(ins: InsightResult, currency: Currency): string {
 
   // sparkline
   const spark = renderSparkline(c.sparklineCloses);
+
+  // 컨센서스 (KR은 NaverKr, US는 Yahoo)
+  const consensusRow = renderConsensusRow(c.consensus, c.snapshot.price, currency);
   const listOf = (arr: string[]) =>
     arr.length === 0
       ? '<li class="empty">해당 신호 없음</li>'
@@ -1688,6 +1691,7 @@ function renderInsightCard(ins: InsightResult, currency: Currency): string {
           <span class="ic-pos">${pos}</span>
         </div>
 ${spark}
+${consensusRow}
         <div class="insight-row"><span class="ins-label">추세</span><span class="ins-value">${esc(ins.trendLabel)}</span></div>
 ${renderRiskRow(ins, currency)}
         <div class="dominance">

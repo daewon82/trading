@@ -7,11 +7,13 @@ import type {
 } from '../types/stock.js';
 import type { IndicatorSet } from '../types/timeseries.js';
 import type { FlowSummary } from '../types/flow.js';
+import type { AnalystConsensus } from '../types/consensus.js';
 
 export interface BuildContext {
   indicators?: ReadonlyMap<string, IndicatorSet>;
   closes?: ReadonlyMap<string, number[]>;
   flows?: ReadonlyMap<string, FlowSummary>;
+  consensuses?: ReadonlyMap<string, AnalystConsensus>;
 }
 
 export class DashboardBuilder {
@@ -35,6 +37,7 @@ export class DashboardBuilder {
         ctx.indicators?.get(s.code) ?? null,
         ctx.closes?.get(s.code) ?? null,
         ctx.flows?.get(s.code) ?? null,
+        ctx.consensuses?.get(s.code) ?? null,
       ),
     );
     return { market: head.market, currency: head.currency, cards };
@@ -45,6 +48,7 @@ export class DashboardBuilder {
     indicators: IndicatorSet | null,
     sparklineCloses: number[] | null,
     flow: FlowSummary | null,
+    consensus: AnalystConsensus | null,
   ): DashboardCard {
     const position = this.calcPosition(s.price, s.fiftyTwoWeekLow, s.fiftyTwoWeekHigh);
     return {
@@ -55,6 +59,7 @@ export class DashboardBuilder {
       indicators,
       sparklineCloses,
       flow,
+      consensus,
     };
   }
 

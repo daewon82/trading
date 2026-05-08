@@ -18,6 +18,8 @@ import {
   fetchAnalystConsensus,
 } from '../src/sources/consensus/YahooConsensusSource.js';
 import type { AnalystConsensus } from '../src/types/consensus.js';
+
+const consensusMap = new Map<string, AnalystConsensus>();
 import {
   DashboardReporter,
   type DashboardPage,
@@ -229,14 +231,17 @@ for (const code of krCodes) {
     await src.open(page, code);
     const snap = await src.extractSnapshot(page, code);
     krSnaps.push(snap);
+    // 같은 page에서 컨센서스 추출 (추가 fetch 없음)
+    const cons = await src.extractConsensus(page, code);
+    if (cons) consensusMap.set(code, cons);
     logger.info('KR snapshot', {
       code,
       name: snap.name,
       price: snap.price,
       pos52w: pos(snap),
+      consensus: cons ? `${cons.recommendationKey} ${cons.recommendationMean?.toFixed(2)}/5 (target ${cons.targetMeanPrice})` : null,
     });
 
-    // 같은 page로 외국인/기관 매매동향 페이지로 이동해 수급 추출
     const flow = await new NaverKrFlowSource().fetch(page, code);
     if (flow) {
       flowMap.set(code, flow);
@@ -271,6 +276,9 @@ for (const code of valueKrCodes) {
     await src.open(page, code);
     const snap = await src.extractSnapshot(page, code);
     valueKrSnaps.push(snap);
+    // 컨센서스 추출
+    const cons = await src.extractConsensus(page, code);
+    if (cons) consensusMap.set(code, cons);
     logger.info('Value KR snapshot', {
       code,
       name: snap.name,
@@ -307,7 +315,7 @@ test.afterAll(async () => {
   fixup52w(valueKrSnaps);
 
   const builder = new DashboardBuilder();
-  const ctx = { indicators: indicatorMap, closes: closesMap, flows: flowMap };
+  const ctx = { indicators: indicatorMap, closes: closesMap, flows: flowMap, consensuses: consensusMap };
   const krSection = builder.build(krSnaps, ctx);
   const usSection = builder.build(usSnaps, { indicators: indicatorMap, closes: closesMap });
   const valueSection = valueKrSnaps.length > 0 ? builder.build(valueKrSnaps, ctx) : null;
@@ -413,7 +421,7 @@ test.afterAll(async () => {
   usGrowthTop = growthResults.slice(0, 5);
 
   // 미국 종목 컨센서스 fetch (Yahoo crumb 인증, US universe Top 종목들에만)
-  const consensusMap = new Map<string, AnalystConsensus>();
+  // KR 컨센서스는 NaverKr fetch 시점에 이미 consensusMap에 추가됨
   const auth = await getYahooAuth();
   if (auth) {
     const usTopTickers = [
