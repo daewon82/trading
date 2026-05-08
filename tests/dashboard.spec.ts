@@ -144,6 +144,8 @@ const nameMap = new Map<string, string>();
 let krWatchTop: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
 let usValueTop: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
 let usGrowthTop: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
+let krForeignBuyTop: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
+let krValueForeignBuyTop: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
 const SPARKLINE_DAYS = 60;
 const MACRO_SYMBOLS: Array<{ symbol: string; name: string; unit: string }> = [
   { symbol: '^KS11', name: '코스피', unit: '' },
@@ -267,6 +269,16 @@ for (const ticker of usTickers) {
       marketCap: snap.marketCap,
       pos52w: pos(snap),
     });
+  });
+}
+
+// KR universe pool 추가 종목 — 외국인 매수 데이터 확보용 (메인/가치에 없는 종목만)
+const krAlreadyFetched = new Set([...krCodes, ...valueKrCodes]);
+const krExtraPool = KR_WATCH_POOL.filter((t) => !krAlreadyFetched.has(t));
+for (const code of krExtraPool) {
+  test(`KR pool extra ${code} (flow only)`, async ({ page }) => {
+    const flow = await new NaverKrFlowSource().fetch(page, code);
+    if (flow) flowMap.set(code, flow);
   });
 }
 
@@ -420,6 +432,53 @@ test.afterAll(async () => {
   });
   usGrowthTop = growthResults.slice(0, 5);
 
+  // KR 외국인 매수 Top 10 (전체 KR pool에서 외인 5d 순매수 양수, 큰 순)
+  const krForeignResults: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
+  for (const ticker of KR_WATCH_POOL) {
+    const flow = flowMap.get(ticker);
+    if (!flow || flow.net5dForeigner == null || flow.net5dForeigner <= 0) continue;
+    const card = buildUniverseCard(ticker, 'KR');
+    if (!card) continue;
+    // flow와 consensus 매핑
+    card.flow = flow;
+    card.consensus = consensusMap.get(ticker) ?? null;
+    const ins = evaluateInsight(card, 'KR');
+    krForeignResults.push({
+      ticker,
+      name: card.snapshot.name,
+      market: 'KR',
+      card,
+      insight: ins,
+      score: flow.net5dForeigner,
+      consensus: card.consensus,
+    });
+  }
+  krForeignResults.sort((a, b) => b.score - a.score);
+  krForeignBuyTop = krForeignResults.slice(0, 10);
+
+  // 저평가 + 외국인 매수 Top 10 (Q1 + 외인 5d 순매수)
+  const krValueForeignResults: import('../src/reporters/DashboardReporter.js').UniverseTop[] = [];
+  for (const ticker of KR_WATCH_POOL) {
+    const flow = flowMap.get(ticker);
+    if (!flow || flow.net5dForeigner == null || flow.net5dForeigner <= 0) continue;
+    const card = buildUniverseCard(ticker, 'KR');
+    if (!card || card.quartile !== 1) continue; // Q1 저평가만
+    card.flow = flow;
+    card.consensus = consensusMap.get(ticker) ?? null;
+    const ins = evaluateInsight(card, 'KR');
+    krValueForeignResults.push({
+      ticker,
+      name: card.snapshot.name,
+      market: 'KR',
+      card,
+      insight: ins,
+      score: flow.net5dForeigner,
+      consensus: card.consensus,
+    });
+  }
+  krValueForeignResults.sort((a, b) => b.score - a.score);
+  krValueForeignBuyTop = krValueForeignResults.slice(0, 10);
+
   // 미국 종목 컨센서스 fetch (Yahoo crumb 인증, US universe Top 종목들에만)
   // KR 컨센서스는 NaverKr fetch 시점에 이미 consensusMap에 추가됨
   const auth = await getYahooAuth();
@@ -479,6 +538,8 @@ test.afterAll(async () => {
     krWatchTop,
     usValueTop,
     usGrowthTop,
+    krForeignBuyTop,
+    krValueForeignBuyTop,
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });

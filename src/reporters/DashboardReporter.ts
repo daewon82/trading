@@ -35,6 +35,8 @@ export interface DashboardPage {
   krWatchTop: UniverseTop[];
   usValueTop: UniverseTop[];
   usGrowthTop: UniverseTop[];
+  krForeignBuyTop: UniverseTop[];
+  krValueForeignBuyTop: UniverseTop[];
 }
 
 export class DashboardReporter {
@@ -85,6 +87,8 @@ ${this.renderChanges(page.changes)}
     <div id="searchStatus" class="search-status"></div>
     <div id="searchResult" class="search-result"></div>
   </section>
+${this.renderUniverse('🌏 외국인 매수 Top 10 — KR 코스피', 'KR 시총 상위 30종 후보 풀에서 <strong>외국인 5일 누적 순매수 양수</strong>인 종목을 매수량 큰 순. 한국 시장에서 외국인 매수는 가격 상승과 자주 동행하지만 단일 신호로 결정 X — 다른 신호와 조합 권장.', page.krForeignBuyTop)}
+${this.renderUniverse('💰 저평가 + 외국인 매수 Top 10 — KR 코스피', 'KR 시총 상위 30종 후보 풀에서 <strong>52주 Q1(저평가 영역)이면서 외국인 5일 순매수</strong> 동시 충족 종목. 저평가 + 외인 매수 조합은 가치주 회복 신호일 수 있음.', page.krValueForeignBuyTop)}
 ${this.renderUniverse('🚀 코스피 매수 후보 Top 10 — 자동 선정', 'KOSPI/KOSDAQ 시총 상위 30종 후보 풀에서 매수 우호 신호(net = 매수 − 매도) 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.krWatchTop)}
 ${this.renderInsightsKR(page)}
 ${this.renderUniverse('💎 미국 저평가 후보 Top 10 — 자동 선정', '가치주 35종 후보 풀에서 Q4(고평가) 자동 제외 + 저평가 가중(Q1=+5, Q2=+2) + 매수 우호 신호 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.usValueTop)}
