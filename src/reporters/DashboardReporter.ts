@@ -10,6 +10,7 @@ import type { WeatherForecast } from '../types/weather.js';
 import type { MacroQuote } from '../types/macro.js';
 import type { ChangelogEntry } from '../types/changelog.js';
 import type { NewsSection } from '../types/news.js';
+import type { AnalystConsensus } from '../types/consensus.js';
 
 export interface UniverseTop {
   ticker: string;
@@ -18,6 +19,7 @@ export interface UniverseTop {
   card: DashboardCard;
   insight: InsightResult;
   score: number;
+  consensus?: AnalystConsensus | null;
 }
 
 export interface DashboardPage {
@@ -927,6 +929,7 @@ ${cards}
       ...ins.bullish.slice(0, 3).map((b) => `<li class="u-bull">⊕ ${esc(b)}</li>`),
       ...ins.bearish.slice(0, 2).map((b) => `<li class="u-bear">⊖ ${esc(b)}</li>`),
     ].join('');
+    const consensusRow = renderConsensusRow(t.consensus, s.price, currency);
     return `      <article class="universe-card">
         <div class="u-rank">#${rank}</div>
         <div class="u-body">
@@ -937,6 +940,7 @@ ${cards}
             <span class="ic-pos">${pos}</span>
             <span class="u-score">net ${t.score >= 0 ? '+' : ''}${t.score}</span>
           </div>
+${consensusRow}
           <ul class="u-reasons">${reasons}</ul>
         </div>
       </article>`;
@@ -1722,6 +1726,46 @@ function formatPrice(v: number | null, currency: Currency): string {
   if (v == null) return '—';
   if (currency === 'KRW') return `${Math.round(v).toLocaleString('ko-KR')}원`;
   return `$${v.toFixed(2)}`;
+}
+
+function renderConsensusRow(
+  cons: AnalystConsensus | null | undefined,
+  currentPrice: number | null,
+  currency: Currency,
+): string {
+  if (!cons || cons.recommendationMean == null) return '';
+  const meanScore = cons.recommendationMean.toFixed(2);
+  const key = cons.recommendationKey ?? '';
+  const keyKr =
+    key === 'strong_buy' || key === 'strongBuy' ? '강력 매수'
+    : key === 'buy' ? '매수'
+    : key === 'hold' ? '보유'
+    : key === 'underperform' ? '시장 하회'
+    : key === 'sell' ? '매도'
+    : key === 'strong_sell' || key === 'strongSell' ? '강력 매도'
+    : key;
+  const keyCls =
+    cons.recommendationMean <= 1.5 ? 'cons-strongbuy'
+    : cons.recommendationMean <= 2.5 ? 'cons-buy'
+    : cons.recommendationMean <= 3.5 ? 'cons-hold'
+    : 'cons-sell';
+  const n = cons.numberOfAnalystOpinions ?? 0;
+  let target = '';
+  if (cons.targetMeanPrice != null) {
+    const tgtStr = formatPrice(cons.targetMeanPrice, currency);
+    let upside = '';
+    if (currentPrice != null && currentPrice > 0) {
+      const u = ((cons.targetMeanPrice - currentPrice) / currentPrice) * 100;
+      const sign = u >= 0 ? '+' : '';
+      const cls = u >= 0 ? 'upside-pos' : 'upside-neg';
+      upside = ` <span class="${cls}">(${sign}${u.toFixed(1)}%)</span>`;
+    }
+    target = ` · 목표가 ${tgtStr}${upside}`;
+  }
+  const trend = cons.trend
+    ? ` · <span class="trend-mini">SB ${cons.trend.strongBuy} · B ${cons.trend.buy} · H ${cons.trend.hold} · S ${cons.trend.sell} · SS ${cons.trend.strongSell}</span>`
+    : '';
+  return `          <div class="u-consensus"><span class="cons-tag ${keyCls}">애널리스트: ${esc(keyKr)} ${meanScore}/5</span> <span class="cons-meta">(${n}명)</span>${target}${trend}</div>`;
 }
 
 function formatNewsDate(pubDate: string): string {

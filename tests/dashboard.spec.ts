@@ -14,6 +14,11 @@ import { computeIndicators } from '../src/analyzers/TechnicalIndicators.js';
 import { evaluateInsight } from '../src/reporters/DashboardReporter.js';
 import { fetchRssFeed } from '../src/sources/news/RssSource.js';
 import {
+  getYahooAuth,
+  fetchAnalystConsensus,
+} from '../src/sources/consensus/YahooConsensusSource.js';
+import type { AnalystConsensus } from '../src/types/consensus.js';
+import {
   DashboardReporter,
   type DashboardPage,
 } from '../src/reporters/DashboardReporter.js';
@@ -406,6 +411,36 @@ test.afterAll(async () => {
     return a.insight.cautious.length - b.insight.cautious.length;
   });
   usGrowthTop = growthResults.slice(0, 5);
+
+  // 미국 종목 컨센서스 fetch (Yahoo crumb 인증, US universe Top 종목들에만)
+  const consensusMap = new Map<string, AnalystConsensus>();
+  const auth = await getYahooAuth();
+  if (auth) {
+    const usTopTickers = [
+      ...usValueTop.map((t) => t.ticker),
+      ...usGrowthTop.map((t) => t.ticker),
+    ];
+    const uniqUsTickers = Array.from(new Set(usTopTickers));
+    const consensusResults = await Promise.all(
+      uniqUsTickers.map((ticker) => fetchAnalystConsensus(ticker, auth)),
+    );
+    for (const c of consensusResults) {
+      if (c) consensusMap.set(c.ticker, c);
+    }
+    for (const t of usValueTop) t.consensus = consensusMap.get(t.ticker) ?? null;
+    for (const t of usGrowthTop) t.consensus = consensusMap.get(t.ticker) ?? null;
+    logger.info('analyst consensus fetched', {
+      count: consensusMap.size,
+      sample: [...consensusMap.values()].slice(0, 3).map((c) => ({
+        t: c.ticker,
+        rec: c.recommendationKey,
+        mean: c.recommendationMean,
+        n: c.numberOfAnalystOpinions,
+      })),
+    });
+  } else {
+    logger.warn('Yahoo auth failed — consensus skipped');
+  }
 
   logger.info('universe selection', {
     krTop: krWatchTop.map((r) => ({ ticker: r.ticker, score: r.score })),
