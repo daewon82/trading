@@ -18,4 +18,7 @@ export interface FlowSummary {
   net5dForeigner: number | null;
   net10dInstitutional: number | null;
   net10dForeigner: number | null;
+  /** 거래원 정보 — 당일 외국계 추정 매도/매수 거래량 (주식 수) */
+  foreignBrokerSell: number | null;
+  foreignBrokerBuy: number | null;
 }

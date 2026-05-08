@@ -33,6 +33,20 @@ export class NaverKrFlowSource {
 
       const daily: DailyFlow[] = raw.map(parseRow);
 
+      // 거래원 정보 — "외국계추정합" 영역 추출 (당일 매도/매수 거래량)
+      const allText = await page.content();
+      const flat = allText.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
+      const brokerMatch = flat.match(
+        /외국계\s*추정합\s*([\d,]+)\s+([\d,]+)\s+([\d,]+)/,
+      );
+      // 응답 패턴: 외국계추정합 [매도] [매수] [매도-매수 절대값]
+      let foreignBrokerSell: number | null = null;
+      let foreignBrokerBuy: number | null = null;
+      if (brokerMatch) {
+        foreignBrokerSell = parsePlainNumber(brokerMatch[1]);
+        foreignBrokerBuy = parsePlainNumber(brokerMatch[2]);
+      }
+
       return {
         code,
         daily,
@@ -40,6 +54,8 @@ export class NaverKrFlowSource {
         net5dForeigner: sumNet(daily, 5, 'foreignerNet'),
         net10dInstitutional: sumNet(daily, 10, 'institutionalNet'),
         net10dForeigner: sumNet(daily, 10, 'foreignerNet'),
+        foreignBrokerSell,
+        foreignBrokerBuy,
       };
     } catch (err) {
       logger.error('NaverKrFlowSource.fetch failed', { code, err: String(err) });

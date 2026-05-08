@@ -1502,6 +1502,12 @@ export function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightR
     } else if (iNet != null && iNet > 0) {
       bullish.push('기관 5일 순매수 (외국인 미동반)');
     }
+    // 외국계 거래원 — 당일 매수/매도 비율
+    if (flow.foreignBrokerBuy != null && flow.foreignBrokerSell != null && flow.foreignBrokerSell > 0) {
+      const ratio = flow.foreignBrokerBuy / flow.foreignBrokerSell;
+      if (ratio >= 1.5) bullish.push(`외국계 거래원 매수 ${ratio.toFixed(1)}× 우위 (당일)`);
+      else if (ratio <= 0.67) cautious.push(`외국계 거래원 매도 우위 (당일)`);
+    }
   }
 
   // 52주 위치
