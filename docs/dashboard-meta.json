@@ -1,6 +1,6 @@
 {
   "date": "2026-05-08 (금요일)",
-  "generatedAt": "2026-05-08T08:04:02.493Z",
+  "generatedAt": "2026-05-08T10:59:52.368Z",
   "seeds": [
     {
       "code": "005930",
@@ -139,8 +139,8 @@
       "code": "012330",
       "name": "현대모비스",
       "section": "Value",
-      "dominantLabel": "신중 우세",
-      "reasoning": "고평가 + 과열 신호 — 단기 조정 가능성"
+      "dominantLabel": "혼합 (동률)",
+      "reasoning": "신호 동률 — 어느 한쪽으로 기울지 않음"
     },
     {
       "code": "017670",
