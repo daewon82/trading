@@ -1,6 +1,6 @@
 {
-  "date": "2026-05-08 (금요일)",
-  "generatedAt": "2026-05-08T10:59:52.368Z",
+  "date": "2026-05-09 (토요일)",
+  "generatedAt": "2026-05-09T07:25:55.804Z",
   "seeds": [
     {
       "code": "005930",
@@ -97,15 +97,15 @@
       "code": "MSFT",
       "name": "마이크로소프트",
       "section": "US",
-      "dominantLabel": "혼합 (동률)",
-      "reasoning": "신호 동률 — 어느 한쪽으로 기울지 않음"
+      "dominantLabel": "매도 우호 우세",
+      "reasoning": "약세 신호 다수 — 추세 약화 진행"
     },
     {
       "code": "GOOGL",
       "name": "알파벳 Class A",
       "section": "US",
-      "dominantLabel": "혼합 (동률)",
-      "reasoning": "신호 동률 — 어느 한쪽으로 기울지 않음"
+      "dominantLabel": "매수 우호 우세",
+      "reasoning": "고평가지만 정배열·수급 등 모멘텀 강함 — 추세 추종형"
     },
     {
       "code": "AMZN",
@@ -125,8 +125,8 @@
       "code": "TSLA",
       "name": "테슬라",
       "section": "US",
-      "dominantLabel": "혼합 (동률)",
-      "reasoning": "신호 동률 — 어느 한쪽으로 기울지 않음"
+      "dominantLabel": "매수 우호 우세",
+      "reasoning": "중간 가격대 + 모멘텀 우호"
     },
     {
       "code": "005490",
