@@ -341,8 +341,17 @@ ${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', 'KO
 
         var sparklineCloses = d.closes.slice(-60);
 
+        // 토스증권 링크 — KR(.KS/.KQ): A + 6자리 코드, US: 그대로 (시도)
+        var sym = String(d.symbol || originalInput);
+        var krMatch = sym.match(/^(\\d{6})\\.(KS|KQ)$/);
+        var tossUrl = krMatch
+          ? 'https://tossinvest.com/stocks/A' + krMatch[1]
+          : 'https://tossinvest.com/stocks/' + encodeURIComponent(sym);
+        var headerInner = escHtml(d.longName) + ' <span class="ticker">' + escHtml(sym) + '</span>';
+        var headerLinked = '<a class="toss-link" href="' + tossUrl + '" target="_blank" rel="noopener noreferrer" title="토스증권에서 보기">' + headerInner + '</a>';
+
         return '<article class="insight-card">' +
-          '<h3>' + escHtml(d.longName) + ' <span class="ticker">' + escHtml(d.symbol || originalInput) + '</span> <span class="eval-badge ' + badgeCls + '">' + escHtml(badgeText) + '</span></h3>' +
+          '<h3>' + headerLinked + ' <span class="eval-badge ' + badgeCls + '">' + escHtml(badgeText) + '</span></h3>' +
           '<div class="ic-head">' +
             '<span class="ic-price-current">' + formatPrice(d.price, d.currency) + '</span>' +
             '<span class="ic-price-change">' + changeStr + '</span>' +
@@ -431,7 +440,7 @@ ${cards}
     return `      <article class="universe-card">
         <div class="u-rank">#${rank}</div>
         <div class="u-body">
-          <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span> <span class="eval-badge ${badgeCls}">${esc(badgeText)}</span></h3>
+          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" title="토스증권에서 보기">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a> <span class="eval-badge ${badgeCls}">${esc(badgeText)}</span></h3>
           <div class="u-price"><span class="price-now">${price}</span> ${change}</div>
           ${flowRows}
         </div>
@@ -482,6 +491,9 @@ ${cards}
       .ref-table tr.below td.pct { color: #2e7d32; }
       .ref-table tr.above td.pct { color: #c62828; }
       .spark { width: 100%; height: 50px; display: block; margin: 8px 0 4px; }
+      .toss-link { color: inherit; text-decoration: none; border-bottom: 1px dashed transparent; }
+      .toss-link:hover { border-bottom-color: #3182f6; color: #3182f6; }
+      .toss-link::after { content: " ↗"; font-size: .75em; color: #3182f6; opacity: .7; }
       .u-price { margin: 2px 0 6px; font-size: .95em; }
       .price-now { font-weight: 600; font-variant-numeric: tabular-nums; }
       .price-up { color: #c62828; font-variant-numeric: tabular-nums; margin-left: 6px; }
