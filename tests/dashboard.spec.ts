@@ -244,7 +244,8 @@ test.afterAll(async () => {
     if (flow.net20dForeigner == null || flow.net20dForeigner <= 0) continue;
     if (flow.net20dInstitutional == null || flow.net20dInstitutional <= 0) continue;
     const card = buildCard(ticker);
-    if (!card || card.quartile !== 1) continue;
+    // 저평가 = 52주 위치 50% 이하 (Q1 + Q2). Q1만으로는 강세장에서 후보 부족.
+    if (!card || (card.quartile !== 1 && card.quartile !== 2)) continue;
     card.flow = flow;
     card.consensus = consensusMap.get(ticker) ?? null;
     const ins = evaluateInsight(card, 'KR');
