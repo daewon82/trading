@@ -59,6 +59,20 @@ ${this.renderUniverse('💖 나의 관심종목 — 외인·기관 수급 동향
 ${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', 'KOSPI 가치주 시드(저PER·저PBR·고배당 큐레이션) 중 20일 외국인·기관 동반 순매수 합산 큰 순.', page.krValueForeignBuyTop)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
+    // 토스증권 — 모바일은 supertoss:// deep link로 앱 호출, PC는 웹 페이지
+    window.openTossApp = function (e, webUrl) {
+      var ua = navigator.userAgent || '';
+      if (!/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) return true;
+      e.preventDefault();
+      var deepLink = 'supertoss://securities?url=' + encodeURIComponent(webUrl);
+      window.location.href = deepLink;
+      // 앱 미설치 시 fallback — 1.5초 후 웹 URL로
+      setTimeout(function () {
+        if (!document.hidden) window.location.href = webUrl;
+      }, 1500);
+      return false;
+    };
+
     // 공통 — 한국 주요 종목 키워드 매핑 (회사명·별칭 → ticker)
     var KR_KEYWORDS = [
       { kw: ['삼성전자','samsung electronics','삼전'], sym: '005930.KS' },
@@ -348,7 +362,7 @@ ${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', 'KO
           ? 'https://tossinvest.com/stocks/A' + krMatch[1]
           : 'https://tossinvest.com/stocks/' + encodeURIComponent(sym);
         var headerInner = escHtml(d.longName) + ' <span class="ticker">' + escHtml(sym) + '</span>';
-        var headerLinked = '<a class="toss-link" href="' + tossUrl + '" target="_blank" rel="noopener noreferrer" title="토스증권에서 보기">' + headerInner + '</a>';
+        var headerLinked = '<a class="toss-link" href="' + tossUrl + '" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">' + headerInner + '</a>';
 
         return '<article class="insight-card">' +
           '<h3>' + headerLinked + ' <span class="eval-badge ' + badgeCls + '">' + escHtml(badgeText) + '</span></h3>' +
@@ -440,7 +454,7 @@ ${cards}
     return `      <article class="universe-card">
         <div class="u-rank">#${rank}</div>
         <div class="u-body">
-          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" title="토스증권에서 보기">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a> <span class="eval-badge ${badgeCls}">${esc(badgeText)}</span></h3>
+          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a> <span class="eval-badge ${badgeCls}">${esc(badgeText)}</span></h3>
           <div class="u-price"><span class="price-now">${price}</span> ${change}</div>
           ${flowRows}
         </div>
