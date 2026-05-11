@@ -9,37 +9,50 @@ export class NaverKrFlowSource {
     flowTable: 'table[summary*="외국인 기관 순매매"]',
   };
 
-  private buildUrl(code: string): string {
-    return `https://finance.naver.com/item/frgn.naver?code=${code}`;
+  private buildUrl(code: string, pageNum: number): string {
+    return `https://finance.naver.com/item/frgn.naver?code=${code}&page=${pageNum}`;
   }
 
-  async fetch(page: Page, code: string): Promise<FlowSummary | null> {
+  /**
+   * frgn.naver 페이지 1~6 fetch — 약 60거래일치 데이터.
+   * pages=1이면 5d/10d만 (빠름), pages=6이면 60d까지 모두 (느림).
+   */
+  async fetch(page: Page, code: string, pages = 6): Promise<FlowSummary | null> {
     try {
-      await page.goto(this.buildUrl(code), {
-        waitUntil: 'domcontentloaded',
-        timeout: 30_000,
-      });
-      await page.waitForSelector(this.sel.flowTable, { timeout: 15_000 });
+      const daily: DailyFlow[] = [];
+      let pageOneRaw = '';
 
-      const raw = await page.locator(this.sel.flowTable).evaluate((table) => {
-        return Array.from(table.querySelectorAll('tbody tr'))
-          .map((tr) =>
-            Array.from(tr.querySelectorAll('td')).map((td) =>
-              (td.textContent ?? '').replace(/\s+/g, ' ').trim(),
-            ),
-          )
-          .filter((cells) => cells.length >= 7 && /^\d{4}\.\d{2}\.\d{2}/.test(cells[0] ?? ''));
-      });
+      for (let pageNum = 1; pageNum <= pages; pageNum++) {
+        await page.goto(this.buildUrl(code, pageNum), {
+          waitUntil: 'domcontentloaded',
+          timeout: 30_000,
+        });
+        await page.waitForSelector(this.sel.flowTable, { timeout: 15_000 });
 
-      const daily: DailyFlow[] = raw.map(parseRow);
+        const raw = await page.locator(this.sel.flowTable).evaluate((table) => {
+          return Array.from(table.querySelectorAll('tbody tr'))
+            .map((tr) =>
+              Array.from(tr.querySelectorAll('td')).map((td) =>
+                (td.textContent ?? '').replace(/\s+/g, ' ').trim(),
+              ),
+            )
+            .filter((cells) => cells.length >= 7 && /^\d{4}\.\d{2}\.\d{2}/.test(cells[0] ?? ''));
+        });
 
-      // 거래원 정보 — "외국계추정합" 영역 추출 (당일 매도/매수 거래량)
-      const allText = await page.content();
-      const flat = allText.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
+        const parsed = raw.map(parseRow);
+        if (parsed.length === 0) break; // 데이터 더 없음
+        daily.push(...parsed);
+
+        if (pageNum === 1) {
+          pageOneRaw = await page.content();
+        }
+      }
+
+      // 거래원 정보 — page=1에서 "외국계추정합" 영역 추출
+      const flat = pageOneRaw.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
       const brokerMatch = flat.match(
         /외국계\s*추정합\s*([\d,]+)\s+([\d,]+)\s+([\d,]+)/,
       );
-      // 응답 패턴: 외국계추정합 [매도] [매수] [매도-매수 절대값]
       let foreignBrokerSell: number | null = null;
       let foreignBrokerBuy: number | null = null;
       if (brokerMatch) {
@@ -54,6 +67,10 @@ export class NaverKrFlowSource {
         net5dForeigner: sumNet(daily, 5, 'foreignerNet'),
         net10dInstitutional: sumNet(daily, 10, 'institutionalNet'),
         net10dForeigner: sumNet(daily, 10, 'foreignerNet'),
+        net20dInstitutional: sumNet(daily, 20, 'institutionalNet'),
+        net20dForeigner: sumNet(daily, 20, 'foreignerNet'),
+        net60dInstitutional: sumNet(daily, 60, 'institutionalNet'),
+        net60dForeigner: sumNet(daily, 60, 'foreignerNet'),
         foreignBrokerSell,
         foreignBrokerBuy,
       };

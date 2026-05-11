@@ -13,8 +13,8 @@
       "code": "000660",
       "name": "SK하이닉스",
       "section": "KR",
-      "dominantLabel": "매수 우호 우세",
-      "reasoning": "고평가지만 정배열·수급 등 모멘텀 강함 — 추세 추종형"
+      "dominantLabel": "혼합 (동률)",
+      "reasoning": "신호 동률 — 어느 한쪽으로 기울지 않음"
     },
     {
       "code": "373220",
@@ -27,8 +27,8 @@
       "code": "003670",
       "name": "포스코퓨처엠",
       "section": "KR",
-      "dominantLabel": "혼합 (동률)",
-      "reasoning": "신호 동률 — 어느 한쪽으로 기울지 않음"
+      "dominantLabel": "매수 우호 우세",
+      "reasoning": "고평가지만 정배열·수급 등 모멘텀 강함 — 추세 추종형"
     },
     {
       "code": "005380",
@@ -76,15 +76,15 @@
       "code": "329180",
       "name": "HD현대중공업",
       "section": "KR",
-      "dominantLabel": "매수 우호 우세",
-      "reasoning": "고평가지만 정배열·수급 등 모멘텀 강함 — 추세 추종형"
+      "dominantLabel": "혼합 (동률)",
+      "reasoning": "신호 동률 — 어느 한쪽으로 기울지 않음"
     },
     {
       "code": "012450",
       "name": "한화에어로스페이스",
       "section": "KR",
-      "dominantLabel": "매수 우호 우세",
-      "reasoning": "중간 가격대 + 모멘텀 우호"
+      "dominantLabel": "혼합 (동률)",
+      "reasoning": "신호 동률 — 어느 한쪽으로 기울지 않음"
     },
     {
       "code": "AAPL",
@@ -146,8 +146,8 @@
       "code": "017670",
       "name": "SK텔레콤",
       "section": "Value",
-      "dominantLabel": "매수 우호 우세",
-      "reasoning": "고평가지만 정배열·수급 등 모멘텀 강함 — 추세 추종형"
+      "dominantLabel": "혼합 (동률)",
+      "reasoning": "신호 동률 — 어느 한쪽으로 기울지 않음"
     },
     {
       "code": "033780",

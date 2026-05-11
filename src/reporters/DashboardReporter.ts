@@ -87,12 +87,9 @@ ${this.renderChanges(page.changes)}
     <div id="searchStatus" class="search-status"></div>
     <div id="searchResult" class="search-result"></div>
   </section>
-${this.renderUniverse('🌏 외국인 매수 Top 10 — KR 코스피', 'KR 시총 상위 30종 후보 풀에서 <strong>외국인 5일 누적 순매수 양수</strong>인 종목을 매수량 큰 순. 한국 시장에서 외국인 매수는 가격 상승과 자주 동행하지만 단일 신호로 결정 X — 다른 신호와 조합 권장.', page.krForeignBuyTop)}
-${this.renderUniverse('💰 저평가 + 외국인 매수 Top 10 — KR 코스피', 'KR 시총 상위 30종 후보 풀에서 <strong>52주 Q1(저평가 영역)이면서 외국인 5일 순매수</strong> 동시 충족 종목. 저평가 + 외인 매수 조합은 가치주 회복 신호일 수 있음.', page.krValueForeignBuyTop)}
-${this.renderUniverse('🚀 코스피 매수 후보 Top 10 — 자동 선정', 'KOSPI/KOSDAQ 시총 상위 30종 후보 풀에서 매수 우호 신호(net = 매수 − 매도) 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.krWatchTop)}
-${this.renderInsightsKR(page)}
-${this.renderUniverse('💎 미국 저평가 후보 Top 10 — 자동 선정', '가치주 35종 후보 풀에서 Q4(고평가) 자동 제외 + 저평가 가중(Q1=+5, Q2=+2) + 매수 우호 신호 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.usValueTop)}
-${this.renderUniverse('🚀 미국 매수 추천 Top 5 — 성장·모멘텀', '빅테크 + 성장주 12종 후보 풀(AAPL/MSFT/GOOGL/AMZN/NVDA/TSLA/META/AMD/AVGO/CRM/NOW/NFLX)에서 매수 우호 net 점수 상위. <strong>추천이 아닌 사실 정렬.</strong>', page.usGrowthTop)}
+${this.renderUniverse('💖 나의 관심종목', '사용자 지정 관심종목 (삼성전자·LG전자·기아·SK텔레콤). 외국인·기관 5d/20d/60d 누적 수급 + 컨센서스 + 평가 배지로 추적.', page.krWatchTop)}
+${this.renderUniverse('💎 저평가 + 외인+기관 20일 매수 Top 5', '<strong>52주 Q1(저평가)</strong> + 외국인 20일 누적 순매수 + 기관 20일 누적 순매수 동시 충족 종목. 펀드매니저들이 표준으로 보는 <strong>20일 기간</strong>에서 외인·기관이 동반 매수 중 = 가치주 회복 + 추세 매수 확정 신호일 수 있음.', page.krValueForeignBuyTop)}
+${this.renderBuySignalGuide()}
 ${this.renderNews(page.news)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
@@ -890,6 +887,48 @@ ${this.renderNews(page.news)}
 </body>
 </html>
 `;
+  }
+
+  private renderBuySignalGuide(): string {
+    return `  <section class="buy-guide">
+    <h2>📋 매수 시점 시그널 — 전문 투자자가 자주 보는 외인·기관 패턴</h2>
+    <p class="bg-intro">한국 시장에서 외국인 비중은 KOSPI 시총의 약 30%로 크고, 외국인·기관 동반 매수는 가격 상승과 통계적으로 자주 동행. 다만 단일 신호로 결정 X — 다른 신호(추세·가치·거래량)와 조합 권장. <strong>매수 결정은 본인 책임.</strong></p>
+    <div class="bg-grid">
+      <div class="bg-card">
+        <h3>★★★ 60일 동반 매수</h3>
+        <p>외국인 + 기관이 <strong>60거래일(3개월)</strong> 누적 순매수면 장기 매수 사이클 진행 중. 가장 안정적인 추세 신호 — 외국인 자금 유입 사이클은 보통 분기 단위로 움직임. 패시브 자금(MSCI 비중 조정 등) 포함 가능.</p>
+      </div>
+      <div class="bg-card">
+        <h3>★★ 20일 동반 매수 (펀드매니저 표준)</h3>
+        <p>외국인 + 기관이 <strong>20거래일(1개월)</strong> 누적 순매수면 추세 매수 확정. 펀드매니저들이 가장 자주 보는 기간 — 노이즈는 줄고 의미 있는 흐름. 가치주 회복·실적 호재 반영 시점.</p>
+      </div>
+      <div class="bg-card">
+        <h3>★ 5일 동반 매수 (단기 추세)</h3>
+        <p>외국인 + 기관이 <strong>5거래일(1주)</strong> 누적 순매수면 단기 매수 추세. 이벤트성 가능 (배당락 직후, 실적 발표 등). 20일과 함께 봐야 신뢰성 ↑.</p>
+      </div>
+      <div class="bg-card">
+        <h3>⚠️ 단기·중기 엇갈림</h3>
+        <p>5일 양수 + 20일 음수 → 단기 반등 (약함, 차익실현 가능). 5일 음수 + 20일 양수 → 추세 유지 + 단기 조정 (조정 마무리 단계 가능). <strong>방향 일치할 때 신뢰성 ↑.</strong></p>
+      </div>
+      <div class="bg-card">
+        <h3>📊 거래원 외국계 (당일)</h3>
+        <p>외국계 거래원 매수 ≥ 매도의 1.5배 = 당일 외인 매수 우위. 5일 데이터가 미반영된 가장 빠른 시그널 — 단 노이즈 多, 다음날 누적과 함께 봐야.</p>
+      </div>
+      <div class="bg-card">
+        <h3>💎 저평가 + 외인 매수 조합</h3>
+        <p>52주 Q1(저평가) + 외인+기관 20일 매수 = 가치주 회복 신호. Buffett 류 가치투자자가 자주 매수하는 시점. 다만 가치 함정(value trap) 위험 — 펀더멘털 악화로 영구 저평가 가능. 분기 실적·산업 동향 추가 확인.</p>
+      </div>
+      <div class="bg-card">
+        <h3>🛑 매도 우세 신호</h3>
+        <p>외인 + 기관 5일·20일 동반 순매도면 약세 추세. 특히 60일 누적도 음수면 장기 자금 이탈 가능. RSI 70+ 동반 시 과열 후 조정 위험.</p>
+      </div>
+      <div class="bg-card">
+        <h3>📐 매수 결정 룰 (참고)</h3>
+        <p><strong>DCA</strong>: 매월 일정 금액 분할매수 — 시점 예측 회피. <strong>이격 매수</strong>: 200일선 −10~−20% 이격 시 검토. <strong>리스크 관리</strong>: 손절선 −7%, 한 종목 자산의 5~10% 이하, 목표가÷손절폭 ≥ 2:1.</p>
+      </div>
+    </div>
+    <p class="bg-disclaimer">※ 본 안내는 공개된 일반 매매 룰의 정리이며 투자 자문이 아닙니다. 위 룰을 적용해도 손실이 날 수 있고, 모든 투자 판단·결과 책임은 본인에게 있습니다.</p>
+  </section>`;
   }
 
   private renderUniverse(title: string, intro: string, top: UniverseTop[]): string {
