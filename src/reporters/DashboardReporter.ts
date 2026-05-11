@@ -395,7 +395,7 @@ ${cards}
   </section>`;
   }
 
-  private renderUniverseCard(t: UniverseTop, rank: number, _currency: Currency): string {
+  private renderUniverseCard(t: UniverseTop, rank: number, currency: Currency): string {
     const c = t.card;
     const s = c.snapshot;
     const flow = c.flow;
@@ -405,6 +405,20 @@ ${cards}
       if (v < 0) return `<td class="flow-sell">↓ 매도</td>`;
       return `<td class="flow-na">—</td>`;
     };
+    const price = formatPrice(s.price, currency);
+    const changeCls =
+      s.changePercent == null ? '' : s.changePercent >= 0 ? 'price-up' : 'price-down';
+    const change =
+      s.changePercent == null
+        ? ''
+        : `<span class="${changeCls}">${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%</span>`;
+    const q = c.quartile;
+    let badgeText = '평가 데이터 없음';
+    let badgeCls = 'badge-na';
+    if (q === 1) { badgeText = '💰 저평가 (Q1)'; badgeCls = 'badge-low'; }
+    else if (q === 2) { badgeText = '◐ 중하단 (Q2)'; badgeCls = 'badge-mid-low'; }
+    else if (q === 3) { badgeText = '◑ 중상단 (Q3)'; badgeCls = 'badge-mid-high'; }
+    else if (q === 4) { badgeText = '⚠ 고평가 (Q4)'; badgeCls = 'badge-high'; }
     const flowRows = flow
       ? `<table class="flow-table">
           <thead><tr><th></th><th>5일</th><th>20일</th><th>60일</th></tr></thead>
@@ -417,7 +431,8 @@ ${cards}
     return `      <article class="universe-card">
         <div class="u-rank">#${rank}</div>
         <div class="u-body">
-          <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span></h3>
+          <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span> <span class="eval-badge ${badgeCls}">${esc(badgeText)}</span></h3>
+          <div class="u-price"><span class="price-now">${price}</span> ${change}</div>
           ${flowRows}
         </div>
       </article>`;
@@ -467,6 +482,10 @@ ${cards}
       .ref-table tr.below td.pct { color: #2e7d32; }
       .ref-table tr.above td.pct { color: #c62828; }
       .spark { width: 100%; height: 50px; display: block; margin: 8px 0 4px; }
+      .u-price { margin: 2px 0 6px; font-size: .95em; }
+      .price-now { font-weight: 600; font-variant-numeric: tabular-nums; }
+      .price-up { color: #c62828; font-variant-numeric: tabular-nums; margin-left: 6px; }
+      .price-down { color: #2e7d32; font-variant-numeric: tabular-nums; margin-left: 6px; }
       .flow-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: .9em; }
       .flow-table thead th { font-weight: 500; color: #888; padding: 4px 6px; text-align: center; border-bottom: 1px solid #eee; font-size: .85em; }
       .flow-table tbody th { text-align: left; padding: 6px 6px; font-weight: 500; color: #555; min-width: 60px; }
