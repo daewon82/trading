@@ -36,13 +36,14 @@ export class DashboardReporter {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="300">
   <title>대시보드 ${esc(page.today)}</title>
   <style>${this.css()}</style>
 </head>
 <body>
   <header>
-    <h1>오늘의 대시보드</h1>
-    <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)}</div>
+    <h1>오늘의 대시보드 <span class="live-dot" title="장중 5분 자동 갱신">●</span></h1>
+    <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)} · <span class="refresh-note">5분마다 자동 새로고침</span></div>
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
   <section class="search">
@@ -55,7 +56,7 @@ export class DashboardReporter {
     <div id="searchStatus" class="search-status"></div>
     <div id="searchResult" class="search-result"></div>
   </section>
-${this.renderUniverse('💖 나의 관심종목 — 외인·기관 수급 동향', '5일 / 20일 / 60일 누적 순매수면 ↑ 매수, 순매도면 ↓ 매도.', page.krWatchTop)}
+${this.renderUniverse('💖 나의 관심종목 — 외인·기관 수급 동향', '오늘(외인 추정) / 5일 / 20일 / 60일 누적. 순매수 ↑ 매수, 순매도 ↓ 매도. 기관 당일은 장 마감 후 집계.', page.krWatchTop)}
 ${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', 'KOSPI 가치주 시드(저PER·저PBR·고배당 큐레이션) 중 20일 외국인·기관 동반 순매수 합산 큰 순.', page.krValueForeignBuyTop)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
@@ -442,12 +443,24 @@ ${cards}
     else if (q === 2) { badgeText = '◐ 중하단 (Q2)'; badgeCls = 'badge-mid-low'; }
     else if (q === 3) { badgeText = '◑ 중상단 (Q3)'; badgeCls = 'badge-mid-high'; }
     else if (q === 4) { badgeText = '⚠ 고평가 (Q4)'; badgeCls = 'badge-high'; }
+    // 당일 외인: 네이버 "외국계 추정합" 매수 - 매도 (장중 갱신, 장 마감 후 최종)
+    const foreignToday = flow && flow.foreignBrokerBuy != null && flow.foreignBrokerSell != null
+      ? flow.foreignBrokerBuy - flow.foreignBrokerSell
+      : null;
+    const todayForeignCell = (): string => {
+      if (foreignToday == null) return `<td class="flow-na">—</td>`;
+      if (foreignToday > 0) return `<td class="flow-buy">↑ 매수</td>`;
+      if (foreignToday < 0) return `<td class="flow-sell">↓ 매도</td>`;
+      return `<td class="flow-na">—</td>`;
+    };
+    // 기관 당일은 무료 소스에서 장중 fetch 불가 (장 마감 후 집계)
+    const todayInstCell = `<td class="flow-na" title="기관 당일 수급은 장 마감 후 집계">장후</td>`;
     const flowRows = flow
       ? `<table class="flow-table">
-          <thead><tr><th></th><th>5일</th><th>20일</th><th>60일</th></tr></thead>
+          <thead><tr><th></th><th>오늘</th><th>5일</th><th>20일</th><th>60일</th></tr></thead>
           <tbody>
-            <tr><th>외국인</th>${cell(flow.net5dForeigner)}${cell(flow.net20dForeigner)}${cell(flow.net60dForeigner)}</tr>
-            <tr><th>기관</th>${cell(flow.net5dInstitutional)}${cell(flow.net20dInstitutional)}${cell(flow.net60dInstitutional)}</tr>
+            <tr><th>외국인</th>${todayForeignCell()}${cell(flow.net5dForeigner)}${cell(flow.net20dForeigner)}${cell(flow.net60dForeigner)}</tr>
+            <tr><th>기관</th>${todayInstCell}${cell(flow.net5dInstitutional)}${cell(flow.net20dInstitutional)}${cell(flow.net60dInstitutional)}</tr>
           </tbody>
         </table>`
       : `<p class="flow-empty">수급 데이터 없음</p>`;
@@ -508,6 +521,9 @@ ${cards}
       .toss-link { color: inherit; text-decoration: none; border-bottom: 1px dashed transparent; }
       .toss-link:hover { border-bottom-color: #3182f6; color: #3182f6; }
       .toss-link::after { content: " ↗"; font-size: .75em; color: #3182f6; opacity: .7; }
+      .live-dot { color: #c62828; font-size: .6em; vertical-align: middle; animation: live-pulse 2s ease-in-out infinite; }
+      @keyframes live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+      .refresh-note { color: #888; font-size: .85em; }
       .u-price { margin: 2px 0 6px; font-size: .95em; }
       .price-now { font-weight: 600; font-variant-numeric: tabular-nums; }
       .price-up { color: #c62828; font-variant-numeric: tabular-nums; margin-left: 6px; }
