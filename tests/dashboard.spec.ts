@@ -236,22 +236,17 @@ test.afterAll(async () => {
   }
   krWatchTop = favoriteResults;
 
-  // 저평가 + 외인+기관 20일 매수 Top 5
+  // 저평가 가치주 시드(25종) 중 외인·기관 20일 동반 순매수 Top 5
+  // "저평가" 정의 = 52주 위치가 아니라 KOSPI 전통 가치주(저PER/저PBR/고배당) 큐레이션 풀.
+  // 강세장에서는 가치주도 52주 고점 근처 가능하지만, 펀더멘털 기준으로는 여전히 저평가.
   const krValueForeignResults: UniverseTop[] = [];
-  const diagnostic: Array<{ ticker: string; q: number | null; f20: number | null; i20: number | null; reason?: string }> = [];
   for (const ticker of valueKrCodes) {
     const flow = flowMap.get(ticker);
+    if (!flow) continue;
+    if (flow.net20dForeigner == null || flow.net20dForeigner <= 0) continue;
+    if (flow.net20dInstitutional == null || flow.net20dInstitutional <= 0) continue;
     const card = buildCard(ticker);
-    const q = card?.quartile ?? null;
-    const f20 = flow?.net20dForeigner ?? null;
-    const i20 = flow?.net20dInstitutional ?? null;
-    const diag = { ticker, q, f20, i20 };
-    if (!flow) { diagnostic.push({ ...diag, reason: 'no-flow' }); continue; }
-    if (!card) { diagnostic.push({ ...diag, reason: 'no-card' }); continue; }
-    if (q !== 1 && q !== 2) { diagnostic.push({ ...diag, reason: 'not-Q1Q2' }); continue; }
-    if (f20 == null || f20 <= 0) { diagnostic.push({ ...diag, reason: 'no-foreign-buy' }); continue; }
-    if (i20 == null || i20 <= 0) { diagnostic.push({ ...diag, reason: 'no-inst-buy' }); continue; }
-    diagnostic.push({ ...diag, reason: 'OK' });
+    if (!card) continue;
     card.flow = flow;
     card.consensus = consensusMap.get(ticker) ?? null;
     const ins = evaluateInsight(card, 'KR');
@@ -261,7 +256,7 @@ test.afterAll(async () => {
       market: 'KR',
       card,
       insight: ins,
-      score: f20 + i20,
+      score: flow.net20dForeigner + flow.net20dInstitutional,
       consensus: card.consensus,
     });
   }
@@ -271,7 +266,6 @@ test.afterAll(async () => {
   logger.info('universe selection', {
     favorites: krWatchTop.map((r) => ({ ticker: r.ticker, score: r.score })),
     valueForeignBuy: krValueForeignBuyTop.map((r) => ({ ticker: r.ticker, score: r.score })),
-    diagnostic,
   });
 
   const today = todayInSeoul();

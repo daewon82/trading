@@ -56,7 +56,7 @@ export class DashboardReporter {
     <div id="searchResult" class="search-result"></div>
   </section>
 ${this.renderUniverse('💖 나의 관심종목 — 외인·기관 수급 동향', '5일 / 20일 / 60일 누적 순매수면 ↑ 매수, 순매도면 ↓ 매도.', page.krWatchTop)}
-${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', '52주 위치 50% 이하(저점~중간) + 20일 외국인·기관 동반 순매수 종목.', page.krValueForeignBuyTop)}
+${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', 'KOSPI 가치주 시드(저PER·저PBR·고배당 큐레이션) 중 20일 외국인·기관 동반 순매수 합산 큰 순.', page.krValueForeignBuyTop)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
     // 공통 — 한국 주요 종목 키워드 매핑 (회사명·별칭 → ticker)
