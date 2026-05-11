@@ -34,9 +34,6 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run dashboard
-        env:
-          JANDI_WEBHOOK_URL: ${{ secrets.JANDI_WEBHOOK_URL }}
-          DASHBOARD_PUBLIC_URL: ${{ vars.DASHBOARD_PUBLIC_URL || 'https://daewon82.github.io/trading/' }}
         run: npm run test:dashboard
 
       - name: Commit docs/
