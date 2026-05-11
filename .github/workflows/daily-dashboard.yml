@@ -2,10 +2,13 @@ name: daily-dashboard
 
 on:
   schedule:
-    # 시장 개장 직후 (09:00 KST = 00:00 UTC) + 장마감 직후 (15:30 KST = 06:30 UTC)
+    # 장중(09:00-15:55 KST = 00:00-06:55 UTC) 평일 5분 간격
     # GitHub Actions cron은 5~30분 지연 가능 (정시 보장 X)
-    - cron: '0 0 * * *'
-    - cron: '30 6 * * *'
+    - cron: '*/5 0-6 * * 1-5'
+    # 장외 평일 1시간 간격 (16:00 KST ~ 다음 08:00 KST = 07:00-23:00 UTC)
+    - cron: '0 7-23 * * 1-5'
+    # 주말 1시간 간격
+    - cron: '0 * * * 0,6'
   workflow_dispatch: {}
 
 permissions:
@@ -36,6 +39,12 @@ jobs:
       - name: Run dashboard
         run: npm run test:dashboard
 
+      - name: Prune old history files (keep last 500)
+        run: |
+          cd docs/history
+          ls -t dashboard-*.html 2>/dev/null | tail -n +501 | xargs -r rm
+          cd ../..
+
       - name: Commit docs/
         run: |
           git config user.name "github-actions[bot]"
@@ -45,5 +54,5 @@ jobs:
             echo "No changes to commit"
             exit 0
           fi
-          git commit -m "chore(dashboard): daily update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git commit -m "chore(dashboard): update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           git push
