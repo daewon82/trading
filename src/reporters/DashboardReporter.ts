@@ -55,8 +55,8 @@ export class DashboardReporter {
     <div id="searchStatus" class="search-status"></div>
     <div id="searchResult" class="search-result"></div>
   </section>
-${this.renderUniverse('💖 나의 관심종목', '사용자 지정 관심종목 (삼성전자·LG전자·기아·SK텔레콤). 외국인·기관 5d/20d/60d 누적 수급 + 컨센서스 + 평가 배지로 추적.', page.krWatchTop)}
-${this.renderUniverse('💎 저평가 + 외인+기관 20일 매수 Top 5', '<strong>52주 Q1(저평가)</strong> + 외국인 20일 누적 순매수 + 기관 20일 누적 순매수 동시 충족 종목. 펀드매니저들이 표준으로 보는 <strong>20일 기간</strong>에서 외인·기관이 동반 매수 중 = 가치주 회복 + 추세 매수 확정 신호일 수 있음.', page.krValueForeignBuyTop)}
+${this.renderUniverse('💖 나의 관심종목 — 외인·기관 수급 동향', '5일 / 20일 / 60일 누적 순매수면 ↑ 매수, 순매도면 ↓ 매도.', page.krWatchTop)}
+${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', '52주 Q1(저평가 영역) + 20일 외국인·기관 동반 순매수 종목.', page.krValueForeignBuyTop)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
     // 공통 — 한국 주요 종목 키워드 매핑 (회사명·별칭 → ticker)
@@ -395,43 +395,30 @@ ${cards}
   </section>`;
   }
 
-  private renderUniverseCard(t: UniverseTop, rank: number, currency: Currency): string {
+  private renderUniverseCard(t: UniverseTop, rank: number, _currency: Currency): string {
     const c = t.card;
-    const ins = t.insight;
     const s = c.snapshot;
-    const price = formatPrice(s.price, currency);
-    const change =
-      s.changePercent == null
-        ? '—'
-        : `${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%`;
-    const pos =
-      c.fiftyTwoWeekPosition == null
-        ? '52주 —'
-        : `52주 ${c.fiftyTwoWeekPosition.toFixed(0)}%${c.quartile ? ` (Q${c.quartile})` : ''}`;
-    const q = c.quartile;
-    let badgeText = '평가 데이터 없음';
-    let badgeCls = 'badge-na';
-    if (q === 1) { badgeText = '💰 저평가 (Q1)'; badgeCls = 'badge-low'; }
-    else if (q === 2) { badgeText = '◐ 중하단 (Q2)'; badgeCls = 'badge-mid-low'; }
-    else if (q === 3) { badgeText = '◑ 중상단 (Q3)'; badgeCls = 'badge-mid-high'; }
-    else if (q === 4) { badgeText = '⚠ 고평가 (Q4)'; badgeCls = 'badge-high'; }
-    const reasons = [
-      ...ins.bullish.slice(0, 3).map((b) => `<li class="u-bull">⊕ ${esc(b)}</li>`),
-      ...ins.bearish.slice(0, 2).map((b) => `<li class="u-bear">⊖ ${esc(b)}</li>`),
-    ].join('');
-    const consensusRow = renderConsensusRow(t.consensus, s.price, currency);
+    const flow = c.flow;
+    const cell = (v: number | null | undefined): string => {
+      if (v == null) return `<td class="flow-na">—</td>`;
+      if (v > 0) return `<td class="flow-buy">↑ 매수</td>`;
+      if (v < 0) return `<td class="flow-sell">↓ 매도</td>`;
+      return `<td class="flow-na">—</td>`;
+    };
+    const flowRows = flow
+      ? `<table class="flow-table">
+          <thead><tr><th></th><th>5일</th><th>20일</th><th>60일</th></tr></thead>
+          <tbody>
+            <tr><th>외국인</th>${cell(flow.net5dForeigner)}${cell(flow.net20dForeigner)}${cell(flow.net60dForeigner)}</tr>
+            <tr><th>기관</th>${cell(flow.net5dInstitutional)}${cell(flow.net20dInstitutional)}${cell(flow.net60dInstitutional)}</tr>
+          </tbody>
+        </table>`
+      : `<p class="flow-empty">수급 데이터 없음</p>`;
     return `      <article class="universe-card">
         <div class="u-rank">#${rank}</div>
         <div class="u-body">
-          <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span> <span class="eval-badge ${badgeCls}">${esc(badgeText)}</span></h3>
-          <div class="u-row">
-            <span class="ic-price-current">${price}</span>
-            <span class="ic-price-change">${change}</span>
-            <span class="ic-pos">${pos}</span>
-            <span class="u-score">net ${t.score >= 0 ? '+' : ''}${t.score}</span>
-          </div>
-${consensusRow}
-          <ul class="u-reasons">${reasons}</ul>
+          <h3>${esc(s.name)} <span class="ticker">${esc(s.code)}</span></h3>
+          ${flowRows}
         </div>
       </article>`;
   }
@@ -480,8 +467,14 @@ ${consensusRow}
       .ref-table tr.below td.pct { color: #2e7d32; }
       .ref-table tr.above td.pct { color: #c62828; }
       .spark { width: 100%; height: 50px; display: block; margin: 8px 0 4px; }
+      .flow-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: .9em; }
+      .flow-table thead th { font-weight: 500; color: #888; padding: 4px 6px; text-align: center; border-bottom: 1px solid #eee; font-size: .85em; }
+      .flow-table tbody th { text-align: left; padding: 6px 6px; font-weight: 500; color: #555; min-width: 60px; }
+      .flow-table tbody td { text-align: center; padding: 6px 6px; font-variant-numeric: tabular-nums; }
       .flow-buy { color: #c62828; font-weight: 600; }
       .flow-sell { color: #2e7d32; font-weight: 600; }
+      .flow-na { color: #bbb; }
+      .flow-empty { color: #888; font-size: .9em; margin: 6px 0 0; }
       .bull { color: #c62828; font-weight: 600; }
       .bear { color: #2e7d32; font-weight: 600; }
       .macro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
