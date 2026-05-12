@@ -428,16 +428,26 @@ ${cards}
       s.changePercent == null
         ? ''
         : `<span class="${changeCls}">${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%</span>`;
-    // 20일 외인+기관 동반 매수 → 초록(추천), 동반 매도 → 빨강(위험)
+    // 20일 외인+기관 동반 매수 → 추천 / 동반 매도 → 위험.
+    // 20일이 혼조면 5일로 fallback (단기 추세 참고).
     const f20 = flow?.net20dForeigner;
     const i20 = flow?.net20dInstitutional;
-    const bothBuy = f20 != null && i20 != null && f20 > 0 && i20 > 0;
-    const bothSell = f20 != null && i20 != null && f20 < 0 && i20 < 0;
-    const cardCls = bothBuy ? 'universe-card trend-buy' : bothSell ? 'universe-card trend-sell' : 'universe-card';
-    const trendLabel = bothBuy
-      ? '<span class="trend-label trend-label-buy">추천</span>'
-      : bothSell
-        ? '<span class="trend-label trend-label-sell">위험</span>'
+    const f5 = flow?.net5dForeigner;
+    const i5 = flow?.net5dInstitutional;
+    const both20Buy = f20 != null && i20 != null && f20 > 0 && i20 > 0;
+    const both20Sell = f20 != null && i20 != null && f20 < 0 && i20 < 0;
+    const both5Buy = f5 != null && i5 != null && f5 > 0 && i5 > 0;
+    const both5Sell = f5 != null && i5 != null && f5 < 0 && i5 < 0;
+    const isBuy = both20Buy || (!both20Sell && !both20Buy && both5Buy);
+    const isSell = both20Sell || (!both20Buy && !both20Sell && both5Sell);
+    const cardCls = isBuy ? 'universe-card trend-buy' : isSell ? 'universe-card trend-sell' : 'universe-card';
+    // 20일 충족이면 ★★, 5일 fallback이면 ★ — 시그널 강도 구분
+    const labelBuy = both20Buy ? '추천 ★★' : '추천 ★';
+    const labelSell = both20Sell ? '위험 ★★' : '위험 ★';
+    const trendLabel = isBuy
+      ? `<span class="trend-label trend-label-buy">${labelBuy}</span>`
+      : isSell
+        ? `<span class="trend-label trend-label-sell">${labelSell}</span>`
         : '';
     // 당일 외인·기관 순매수 — Toss API 실시간 데이터 (장중 갱신)
     const liveDot = flow?.todayInMarketTime ? ' <span class="live-mini" title="장중 실시간">●</span>' : '';
