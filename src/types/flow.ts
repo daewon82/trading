@@ -24,7 +24,12 @@ export interface FlowSummary {
   /** 60거래일 누적 (장기 사이클) */
   net60dInstitutional: number | null;
   net60dForeigner: number | null;
-  /** 거래원 정보 — 당일 외국계 추정 매도/매수 거래량 (주식 수) */
-  foreignBrokerSell: number | null;
-  foreignBrokerBuy: number | null;
+  /** 당일 외인 순매수 (Toss API 실시간, 장중 갱신) */
+  todayForeignerNet: number | null;
+  /** 당일 기관 순매수 (Toss API 실시간, 장중 갱신) */
+  todayInstitutionalNet: number | null;
+  /** 현재 장 운영 중 여부 */
+  todayInMarketTime: boolean;
+  /** 당일 데이터 기준일 (YYYY-MM-DD) */
+  todayDate: string | null;
 }

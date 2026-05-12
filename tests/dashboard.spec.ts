@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 import { writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { NaverKrSource } from '../src/sources/naver-kr/NaverKrSource.js';
-import { NaverKrFlowSource } from '../src/sources/naver-kr/NaverKrFlowSource.js';
+import { TossKrFlowSource } from '../src/sources/toss-kr/TossKrFlowSource.js';
 import {
   fetchDailyChart,
   resolveCandidates,
@@ -117,6 +117,27 @@ test('시계열 + 기술적 지표 + sparkline (병렬 fetch)', async () => {
   });
 });
 
+test('외인·기관 수급 — Toss API 병렬 fetch (장중 실시간)', async () => {
+  const allCodes = new Set<string>([...krCodes, ...valueKrCodes]);
+  const tossSrc = new TossKrFlowSource();
+  const results = await Promise.all(
+    [...allCodes].map(async (code) => {
+      const flow = await tossSrc.fetch(code, 60);
+      if (flow) flowMap.set(code, flow);
+      return { code, ok: !!flow };
+    }),
+  );
+  logger.info('flow fetched (Toss)', {
+    total: results.length,
+    ok: results.filter((r) => r.ok).length,
+    sample: [...flowMap.entries()].slice(0, 3).map(([c, f]) => ({
+      code: c,
+      today: { f: f.todayForeignerNet, i: f.todayInstitutionalNet, live: f.todayInMarketTime },
+      net20d: { f: f.net20dForeigner, i: f.net20dInstitutional },
+    })),
+  });
+});
+
 for (const code of krCodes) {
   test(`KR ${code}`, async ({ page }) => {
     const src = new NaverKrSource();
@@ -131,18 +152,6 @@ for (const code of krCodes) {
       price: snap.price,
       consensus: cons ? `${cons.recommendationKey} ${cons.recommendationMean?.toFixed(2)}/5` : null,
     });
-
-    // 관심종목 — 60일치 (page 1~6) fetch
-    const flow = await new NaverKrFlowSource().fetch(page, code, 6);
-    if (flow) {
-      flowMap.set(code, flow);
-      logger.info('KR flow (favorite)', {
-        code,
-        net5d: { f: flow.net5dForeigner, i: flow.net5dInstitutional },
-        net20d: { f: flow.net20dForeigner, i: flow.net20dInstitutional },
-        net60d: { f: flow.net60dForeigner, i: flow.net60dInstitutional },
-      });
-    }
   });
 }
 
@@ -154,10 +163,6 @@ for (const code of valueKrCodes) {
     valueKrSnaps.push(snap);
     const cons = await src.extractConsensus(page, code);
     if (cons) consensusMap.set(code, cons);
-
-    // 가치 후보 — 20일 평가용 page 1~3 (30일치)
-    const flow = await new NaverKrFlowSource().fetch(page, code, 3);
-    if (flow) flowMap.set(code, flow);
   });
 }
 

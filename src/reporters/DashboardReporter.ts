@@ -443,24 +443,14 @@ ${cards}
     else if (q === 2) { badgeText = '◐ 중하단 (Q2)'; badgeCls = 'badge-mid-low'; }
     else if (q === 3) { badgeText = '◑ 중상단 (Q3)'; badgeCls = 'badge-mid-high'; }
     else if (q === 4) { badgeText = '⚠ 고평가 (Q4)'; badgeCls = 'badge-high'; }
-    // 당일 외인: 네이버 "외국계 추정합" 매수 - 매도 (장중 갱신, 장 마감 후 최종)
-    const foreignToday = flow && flow.foreignBrokerBuy != null && flow.foreignBrokerSell != null
-      ? flow.foreignBrokerBuy - flow.foreignBrokerSell
-      : null;
-    const todayForeignCell = (): string => {
-      if (foreignToday == null) return `<td class="flow-na">—</td>`;
-      if (foreignToday > 0) return `<td class="flow-buy">↑ 매수</td>`;
-      if (foreignToday < 0) return `<td class="flow-sell">↓ 매도</td>`;
-      return `<td class="flow-na">—</td>`;
-    };
-    // 기관 당일은 무료 소스에서 장중 fetch 불가 (장 마감 후 집계)
-    const todayInstCell = `<td class="flow-na" title="기관 당일 수급은 장 마감 후 집계">장후</td>`;
+    // 당일 외인·기관 순매수 — Toss API 실시간 데이터 (장중 갱신)
+    const liveDot = flow?.todayInMarketTime ? ' <span class="live-mini" title="장중 실시간">●</span>' : '';
     const flowRows = flow
       ? `<table class="flow-table">
-          <thead><tr><th></th><th>오늘</th><th>5일</th><th>20일</th><th>60일</th></tr></thead>
+          <thead><tr><th></th><th>오늘${liveDot}</th><th>5일</th><th>20일</th><th>60일</th></tr></thead>
           <tbody>
-            <tr><th>외국인</th>${todayForeignCell()}${cell(flow.net5dForeigner)}${cell(flow.net20dForeigner)}${cell(flow.net60dForeigner)}</tr>
-            <tr><th>기관</th>${todayInstCell}${cell(flow.net5dInstitutional)}${cell(flow.net20dInstitutional)}${cell(flow.net60dInstitutional)}</tr>
+            <tr><th>외국인</th>${cell(flow.todayForeignerNet)}${cell(flow.net5dForeigner)}${cell(flow.net20dForeigner)}${cell(flow.net60dForeigner)}</tr>
+            <tr><th>기관</th>${cell(flow.todayInstitutionalNet)}${cell(flow.net5dInstitutional)}${cell(flow.net20dInstitutional)}${cell(flow.net60dInstitutional)}</tr>
           </tbody>
         </table>`
       : `<p class="flow-empty">수급 데이터 없음</p>`;
@@ -522,6 +512,7 @@ ${cards}
       .toss-link:hover { border-bottom-color: #3182f6; color: #3182f6; }
       .toss-link::after { content: " ↗"; font-size: .75em; color: #3182f6; opacity: .7; }
       .live-dot { color: #c62828; font-size: .6em; vertical-align: middle; animation: live-pulse 2s ease-in-out infinite; }
+      .live-mini { color: #c62828; font-size: .7em; animation: live-pulse 2s ease-in-out infinite; }
       @keyframes live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
       .refresh-note { color: #888; font-size: .85em; }
       .u-price { margin: 2px 0 6px; font-size: .95em; }
@@ -885,11 +876,16 @@ export function evaluateInsight(c: DashboardCard, market: 'KR' | 'US'): InsightR
     } else if (iNet != null && iNet > 0) {
       bullish.push('기관 5일 순매수 (외국인 미동반)');
     }
-    // 외국계 거래원 — 당일 매수/매도 비율
-    if (flow.foreignBrokerBuy != null && flow.foreignBrokerSell != null && flow.foreignBrokerSell > 0) {
-      const ratio = flow.foreignBrokerBuy / flow.foreignBrokerSell;
-      if (ratio >= 1.5) bullish.push(`외국계 거래원 매수 ${ratio.toFixed(1)}× 우위 (당일)`);
-      else if (ratio <= 0.67) cautious.push(`외국계 거래원 매도 우위 (당일)`);
+    // 당일 외인·기관 순매수 (Toss 실시간)
+    if (flow.todayForeignerNet != null && flow.todayForeignerNet > 0) {
+      bullish.push('외국인 당일 순매수');
+    } else if (flow.todayForeignerNet != null && flow.todayForeignerNet < 0) {
+      bearish.push('외국인 당일 순매도');
+    }
+    if (flow.todayInstitutionalNet != null && flow.todayInstitutionalNet > 0) {
+      bullish.push('기관 당일 순매수');
+    } else if (flow.todayInstitutionalNet != null && flow.todayInstitutionalNet < 0) {
+      bearish.push('기관 당일 순매도');
     }
   }
 
