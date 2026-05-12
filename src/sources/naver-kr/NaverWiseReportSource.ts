@@ -11,29 +11,42 @@ export class NaverWiseReportSource {
    * 매출액, YoY, 영업이익, 당기순이익, EPS, PER, PBR, ROE, EV/EBITDA, 순부채비율.
    */
   async fetch(code: string): Promise<FinancialSummary | null> {
-    try {
-      const url = `${BASE}?cmp_cd=${code}`;
-      const res = await globalThis.fetch(url, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        },
-      });
-      if (!res.ok) {
-        logger.warn('NaverWiseReportSource non-200', { code, status: res.status });
-        return null;
+    const url = `${BASE}?cmp_cd=${code}`;
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await globalThis.fetch(url, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          },
+        });
+        if (!res.ok) {
+          logger.warn('NaverWiseReportSource non-200', { code, status: res.status, attempt });
+          if (attempt < 2) { await sleep(1000 * (attempt + 1)); continue; }
+          return null;
+        }
+        const html = await res.text();
+        const annuals = parseAnnuals(html);
+        if (annuals.length === 0) return null;
+        const latestActual = [...annuals].reverse().find((a) => a.type === 'actual') ?? null;
+        const latestEstimate = annuals.find((a) => a.type === 'estimate') ?? null;
+        return { code, annuals, latestActual, latestEstimate };
+      } catch (err) {
+        lastErr = err;
+        if (attempt < 2) {
+          logger.warn('NaverWiseReportSource transient error, retrying', { code, attempt, err: String(err) });
+          await sleep(1000 * (attempt + 1));
+        }
       }
-      const html = await res.text();
-      const annuals = parseAnnuals(html);
-      if (annuals.length === 0) return null;
-      const latestActual = [...annuals].reverse().find((a) => a.type === 'actual') ?? null;
-      const latestEstimate = annuals.find((a) => a.type === 'estimate') ?? null;
-      return { code, annuals, latestActual, latestEstimate };
-    } catch (err) {
-      logger.error('NaverWiseReportSource.fetch failed', { code, err: String(err) });
-      return null;
     }
+    logger.error('NaverWiseReportSource.fetch failed', { code, err: String(lastErr) });
+    return null;
   }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function parseAnnuals(html: string): AnnualFinancials[] {

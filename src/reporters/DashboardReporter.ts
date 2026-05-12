@@ -46,15 +46,15 @@ export class DashboardReporter {
     <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)} · <span class="refresh-note">5분마다 자동 새로고침</span></div>
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
-  <section class="search">
-    <h2>🔎 종목 검색</h2>
-    <p class="search-hint">티커 또는 종목명 입력 — 2자 이상 자동 검색 (예: <code>005930</code>, <code>삼성전자</code>, <code>유플러스</code>, <code>AAPL</code>). 결과는 새로고침하면 사라짐.</p>
-    <form id="searchForm" class="search-form" onsubmit="return false">
-      <input type="text" id="searchInput" placeholder="종목명 또는 티커 (예: 삼성전자, AAPL)" autocomplete="off">
-      <button type="submit" id="searchBtn">검색</button>
+  <section class="add-favorite">
+    <h2>📌 관심종목 추가</h2>
+    <p class="search-hint">코드(6자리) 또는 종목명 입력. 추가한 종목은 브라우저(localStorage)에 저장되며 Yahoo 시세 기반으로 표시. <strong>외인·기관·점수까지 보려면</strong> <a id="issueLink" target="_blank" rel="noopener">GitHub Issue로 등록 요청</a> → 다음 일간 갱신에 반영.</p>
+    <form id="addForm" class="search-form" onsubmit="return false">
+      <input type="text" id="addInput" placeholder="6자리 코드 또는 종목명 (예: 005930, 삼성전자, 유플러스)" autocomplete="off">
+      <button type="submit" id="addBtn">추가</button>
     </form>
-    <div id="searchStatus" class="search-status"></div>
-    <div id="searchResult" class="search-result"></div>
+    <div id="addStatus" class="search-status"></div>
+    <div id="addList" class="add-list"></div>
   </section>
 ${this.renderUniverse('💖 나의 관심종목 — 외인·기관 수급 동향', '오늘(외인 추정) / 5일 / 20일 / 60일 누적. 순매수 ↑ 매수, 순매도 ↓ 매도. 기관 당일은 장 마감 후 집계.', page.krWatchTop)}
 ${this.renderUniverse('💎 저평가 + 외인·기관 매수 + 품질 B 이상 Top 10', 'KOSPI 가치주 시드(40종) 중 20일 외인·기관 동반 순매수 + 품질 점수 B 등급(50점) 이상. 합산 매수 큰 순.', page.krValueForeignBuyTop)}
@@ -218,19 +218,61 @@ ${this.renderUniverse('💎 저평가 + 외인·기관 매수 + 품질 B 이상 
       }
     })();
 
-    // 종목 검색 (Yahoo chart API 직접 호출, 클라이언트 측 임시 카드)
+    // 관심종목 추가 (localStorage 기반 + Yahoo chart 시세)
     (function () {
-      var form = document.getElementById('searchForm');
-      var input = document.getElementById('searchInput');
-      var statusEl = document.getElementById('searchStatus');
-      var resultEl = document.getElementById('searchResult');
-      if (!form || !input || !statusEl || !resultEl) return;
+      var form = document.getElementById('addForm');
+      var input = document.getElementById('addInput');
+      var statusEl = document.getElementById('addStatus');
+      var listEl = document.getElementById('addList');
+      var issueLink = document.getElementById('issueLink');
+      if (!form || !input || !statusEl || !listEl) return;
+
+      var STORAGE_KEY = 'kr-dashboard-extra-codes';
+      function loadCodes() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return [];
+          var arr = JSON.parse(raw);
+          return Array.isArray(arr) ? arr.filter(function (c) { return /^\\d{6}$/.test(c); }) : [];
+        } catch { return []; }
+      }
+      function saveCodes(codes) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(codes)); } catch {}
+      }
+      function updateIssueLink(codes) {
+        if (!issueLink) return;
+        if (codes.length === 0) {
+          issueLink.style.display = 'none';
+          return;
+        }
+        issueLink.style.display = '';
+        var title = encodeURIComponent('[관심종목] 시드 풀 추가 요청: ' + codes.join(', '));
+        var body = encodeURIComponent(
+          '관심종목 시드 풀에 아래 종목 추가 요청합니다.\\n\\n' +
+          '코드: ' + codes.join(', ') + '\\n\\n' +
+          '(이 종목들을 DEFAULT_KR에 추가하면 외인·기관 수급 및 품질 점수까지 자동 표시됩니다.)'
+        );
+        issueLink.href = 'https://github.com/daewon82/trading/issues/new?title=' + title + '&body=' + body;
+      }
 
       var YAHOO = 'https://query1.finance.yahoo.com/v8/finance/chart';
 
       function setStatus(msg, cls) {
         statusEl.textContent = msg || '';
         statusEl.className = 'search-status' + (cls ? ' ' + cls : '');
+      }
+
+      // 입력값 → 6자리 KR 코드로 변환 (직접 6자리 또는 KR_KEYWORDS 매핑 후 .KS/.KQ 제거)
+      function resolveToKrCode(raw) {
+        var t = String(raw || '').trim();
+        if (!t) return null;
+        if (/^\\d{6}$/.test(t)) return t;
+        var sym = tradingFindKrSymbol(t);
+        if (sym) {
+          var m = sym.match(/^(\\d{6})\\./);
+          if (m) return m[1];
+        }
+        return null;
       }
 
       function escHtml(s) {
@@ -331,92 +373,87 @@ ${this.renderUniverse('💎 저평가 + 외인·기관 매수 + 품질 B 이상 
         return p;
       }
 
-      function buildCardHtml(d, originalInput) {
-        var change = (d.price != null && d.previousClose != null && d.previousClose !== 0)
-          ? ((d.price - d.previousClose) / d.previousClose) * 100
+      function buildAddedCardHtml(code, data) {
+        var change = (data && data.price != null && data.previousClose != null && data.previousClose !== 0)
+          ? ((data.price - data.previousClose) / data.previousClose) * 100
           : null;
         var posPct = null;
-        if (d.price != null && d.high52 != null && d.low52 != null && d.high52 !== d.low52) {
-          posPct = ((d.price - d.low52) / (d.high52 - d.low52)) * 100;
+        if (data && data.price != null && data.high52 != null && data.low52 != null && data.high52 !== data.low52) {
+          posPct = ((data.price - data.low52) / (data.high52 - data.low52)) * 100;
         }
-        var sma50 = sma(d.closes, 50);
-        var sma200 = sma(d.closes, 200);
-        var rsi14 = rsi(d.closes, 14);
-        var pctVs200 = (d.price != null && sma200 != null && sma200 !== 0)
-          ? ((d.price - sma200) / sma200) * 100 : null;
-        var r1m = pctReturn(d.closes, 21);
-        var r3m = pctReturn(d.closes, 63);
-
-        var trendLabel = '판단 보류';
-        if (sma200 != null && pctVs200 != null) {
-          if (pctVs200 > 5) trendLabel = '상승 추세 (200일선 위 +' + pctVs200.toFixed(1) + '%)';
-          else if (pctVs200 < -5) trendLabel = '하락 추세 (200일선 아래 ' + pctVs200.toFixed(1) + '%)';
-          else trendLabel = '횡보 (200일선 부근)';
-        }
-
-        var changeStr = change == null ? '—' : (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+        var changeStr = change == null ? '' : '<span class="' + (change >= 0 ? 'price-up' : 'price-down') + '">' + (change >= 0 ? '+' : '') + change.toFixed(2) + '%</span>';
         var posStr = posPct == null ? '52주 —' : '52주 ' + posPct.toFixed(0) + '%';
-        var rsiStr = rsi14 == null ? '—' : rsi14.toFixed(0);
-        var rsiNote = rsi14 == null ? '' : (rsi14 > 70 ? ' (과열)' : rsi14 < 30 ? ' (과매도)' : '');
-        var pct200Str = pctVs200 == null ? '—' : (pctVs200 >= 0 ? '+' : '') + pctVs200.toFixed(1) + '%';
-        var r1Str = r1m == null ? '—' : (r1m >= 0 ? '+' : '') + r1m.toFixed(1) + '%';
-        var r3Str = r3m == null ? '—' : (r3m >= 0 ? '+' : '') + r3m.toFixed(1) + '%';
+        var name = data && data.longName ? data.longName : '코드 ' + code;
+        var priceStr = data ? formatPrice(data.price, data.currency || 'KRW') : '데이터 없음';
+        var spark = data && data.closes ? sparkSvg(data.closes.slice(-60)) : '';
+        var tossUrl = 'https://tossinvest.com/stocks/A' + code;
 
-        var sparklineCloses = d.closes.slice(-60);
-
-        // 토스증권 링크 — KR(.KS/.KQ): A + 6자리 코드, US: 그대로 (시도)
-        var sym = String(d.symbol || originalInput);
-        var krMatch = sym.match(/^(\\d{6})\\.(KS|KQ)$/);
-        var tossUrl = krMatch
-          ? 'https://tossinvest.com/stocks/A' + krMatch[1]
-          : 'https://tossinvest.com/stocks/' + encodeURIComponent(sym);
-        var headerInner = escHtml(d.longName) + ' <span class="ticker">' + escHtml(sym) + '</span>';
-        var headerLinked = '<a class="toss-link" href="' + tossUrl + '" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">' + headerInner + '</a>';
-
-        return '<article class="insight-card">' +
-          '<h3>' + headerLinked + '</h3>' +
-          '<div class="ic-head">' +
-            '<span class="ic-price-current">' + formatPrice(d.price, d.currency) + '</span>' +
-            '<span class="ic-price-change">' + changeStr + '</span>' +
-            '<span class="ic-pos">' + posStr + '</span>' +
-          '</div>' +
-          sparkSvg(sparklineCloses) +
-          '<div class="insight-row"><span class="ins-label">추세</span><span class="ins-value">' + escHtml(trendLabel) + '</span></div>' +
-          '<div class="insight-row"><span class="ins-label">RSI(14) · 200d 이격</span><span class="ins-value">' + rsiStr + rsiNote + ' · ' + pct200Str + '</span></div>' +
-          '<div class="insight-row"><span class="ins-label">수익률 1M / 3M</span><span class="ins-value">' + r1Str + ' / ' + r3Str + '</span></div>' +
-          '<p class="insight-note">※ 검색 임시 결과 (Yahoo chart 기반). 외국인/기관 수급·PER/PBR 등은 페이지 영구 카드에서 확인. 매수 결정은 본인.</p>' +
-          '<button class="search-close" onclick="document.getElementById(\\'searchResult\\').innerHTML=\\'\\'">닫기</button>' +
-          '</article>';
+        return '<article class="universe-card added-card" data-code="' + code + '">' +
+          '<div class="u-rank added-icon">📌</div>' +
+          '<div class="u-body">' +
+          '<h3><a class="toss-link" href="' + tossUrl + '" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)">' +
+          escHtml(name) + ' <span class="ticker">' + code + '</span></a>' +
+          '<span class="trend-label trend-label-pending" title="시드 풀 등록 시 표시">라벨 대기</span>' +
+          '<button class="remove-btn" data-code="' + code + '" title="관심종목에서 제거">×</button></h3>' +
+          '<div class="u-price"><span class="price-now">' + priceStr + '</span> ' + changeStr + ' <span class="ic-pos">' + posStr + '</span></div>' +
+          spark +
+          '<p class="added-note">※ Yahoo 시세만 표시 (외인·기관·점수는 시드 풀 등록 필요)</p>' +
+          '</div></article>';
       }
 
-      var lastQuery = '';
-      function runSearch(raw) {
-        if (!raw) { setStatus('', ''); resultEl.innerHTML = ''; return; }
-        if (raw === lastQuery) return;
-        lastQuery = raw;
-        setStatus('검색 중… ' + raw, '');
-        resultEl.innerHTML = '';
-        fetchTicker(raw).then(function (data) {
-          if (raw !== lastQuery) return; // 입력 바뀌면 이전 응답 무시
-          if (!data) {
-            setStatus('데이터 없음 — "' + raw + '" 형식 확인 (예: 005930, 삼성전자, AAPL)', 'err');
-            return;
-          }
-          setStatus('완료: ' + (data.longName || data.symbol), 'ok');
-          resultEl.innerHTML = buildCardHtml(data, raw);
+      function render() {
+        var codes = loadCodes();
+        updateIssueLink(codes);
+        if (codes.length === 0) {
+          listEl.innerHTML = '<p class="add-empty">추가된 종목 없음 — 위에서 코드 또는 종목명 입력</p>';
+          return;
+        }
+        // 우선 placeholder 카드 출력, fetch 결과 도착 시 교체
+        listEl.innerHTML = codes.map(function (c) { return buildAddedCardHtml(c, null); }).join('');
+        codes.forEach(function (code) {
+          fetchTicker(code).then(function (data) {
+            if (!data) return;
+            var slot = listEl.querySelector('article[data-code="' + code + '"]');
+            if (slot) {
+              var wrap = document.createElement('div');
+              wrap.innerHTML = buildAddedCardHtml(code, data);
+              slot.replaceWith(wrap.firstChild);
+            }
+          });
         });
       }
+
+      listEl.addEventListener('click', function (e) {
+        var btn = e.target.closest('.remove-btn');
+        if (!btn) return;
+        var code = btn.getAttribute('data-code');
+        var codes = loadCodes().filter(function (c) { return c !== code; });
+        saveCodes(codes);
+        render();
+        setStatus('제거됨: ' + code, 'ok');
+      });
+
       form.addEventListener('submit', function () {
-        runSearch((input.value || '').trim());
-      });
-      // 자동 검색 — 입력 후 600ms 디바운스, 2자 이상일 때만
-      var searchDebounce = null;
-      input.addEventListener('input', function () {
-        clearTimeout(searchDebounce);
         var raw = (input.value || '').trim();
-        if (raw.length < 2) { setStatus('', ''); lastQuery = ''; return; }
-        searchDebounce = setTimeout(function () { runSearch(raw); }, 600);
+        if (!raw) { setStatus('코드 또는 종목명을 입력하세요', 'err'); return; }
+        var code = resolveToKrCode(raw);
+        if (!code) {
+          setStatus('알 수 없는 종목 — 6자리 코드 또는 등록된 한글 종목명 입력 (예: 삼성전자, 유플러스)', 'err');
+          return;
+        }
+        var codes = loadCodes();
+        if (codes.indexOf(code) >= 0) {
+          setStatus('이미 추가됨: ' + code, 'err');
+          return;
+        }
+        codes.push(code);
+        saveCodes(codes);
+        input.value = '';
+        setStatus('추가됨: ' + code, 'ok');
+        render();
       });
+
+      render();
     })();
   </script>
 </body>
@@ -689,6 +726,14 @@ ${cards}
       .trend-label { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .75em; font-weight: 700; margin-left: 8px; vertical-align: middle; letter-spacing: .5px; }
       .trend-label-buy { background: #2e7d32; color: #fff; }
       .trend-label-sell { background: #c62828; color: #fff; }
+      .trend-label-pending { background: #9e9e9e; color: #fff; }
+      .add-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+      .add-empty { color: #888; font-size: .9em; margin: 12px 0 0; }
+      .added-card .added-icon { color: #1565c0; }
+      .added-card .remove-btn { margin-left: 8px; background: transparent; border: 1px solid #c62828; color: #c62828; border-radius: 50%; width: 22px; height: 22px; padding: 0; line-height: 18px; cursor: pointer; font-weight: 700; }
+      .added-card .remove-btn:hover { background: #c62828; color: #fff; }
+      .added-note { font-size: .8em; color: #888; margin: 6px 0 0; }
+      #issueLink { color: #1565c0; text-decoration: underline; }
       .quality-score { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .8em; font-weight: 700; margin-left: 8px; vertical-align: middle; font-variant-numeric: tabular-nums; }
       .quality-score .qs-max { font-size: .75em; opacity: .7; font-weight: 500; }
       .quality-score .qs-grade { margin-left: 4px; font-size: .85em; }
@@ -843,6 +888,21 @@ function decideTrend(flow: import('../types/flow.js').FlowSummary | null | undef
   }
   if (score > 0) return { type: 'buy', stars: '◇' };
   if (score < 0) return { type: 'sell', stars: '◇' };
+  // 동률(score == 0) — 최근 신호로 tiebreak (오늘 > 5일 > 어떤 사용 가능한 값이든)
+  const tiebreakers: Array<number | null | undefined> = [
+    flow.todayForeignerNet,
+    flow.todayInstitutionalNet,
+    flow.net5dForeigner,
+    flow.net5dInstitutional,
+    flow.net20dForeigner,
+    flow.net20dInstitutional,
+  ];
+  for (const v of tiebreakers) {
+    if (v != null && v !== 0) {
+      return { type: v > 0 ? 'buy' : 'sell', stars: '◇' };
+    }
+  }
+  // 정말 모든 데이터가 0 또는 null — 매우 드물지만 가능
   return { type: null, stars: '' };
 }
 

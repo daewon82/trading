@@ -31,20 +31,38 @@ export class TossKrFlowSource {
    * 오늘 데이터(body[0])는 장중 실시간 갱신.
    */
   async fetch(code: string, size = 60): Promise<FlowSummary | null> {
-    try {
-      const url = `${BASE}?productCode=A${code}&size=${size}`;
-      const res = await globalThis.fetch(url, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-          Accept: 'application/json',
-        },
-      });
-      if (!res.ok) {
-        logger.warn('TossKrFlowSource non-200', { code, status: res.status });
-        return null;
+    const url = `${BASE}?productCode=A${code}&size=${size}`;
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await globalThis.fetch(url, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            Accept: 'application/json',
+          },
+        });
+        if (!res.ok) {
+          logger.warn('TossKrFlowSource non-200', { code, status: res.status, attempt });
+          if (attempt < 2) { await sleep(1000 * (attempt + 1)); continue; }
+          return null;
+        }
+        const json = (await res.json()) as TossResponse;
+        return this.parseResponse(code, json);
+      } catch (err) {
+        lastErr = err;
+        if (attempt < 2) {
+          logger.warn('TossKrFlowSource transient error, retrying', { code, attempt, err: String(err) });
+          await sleep(1000 * (attempt + 1));
+        }
       }
-      const json = (await res.json()) as TossResponse;
+    }
+    logger.error('TossKrFlowSource.fetch failed', { code, err: String(lastErr) });
+    return null;
+  }
+
+  private parseResponse(code: string, json: TossResponse): FlowSummary | null {
+    try {
       const body = json?.result?.body ?? [];
       if (body.length === 0) return null;
 
@@ -83,6 +101,10 @@ export class TossKrFlowSource {
       return null;
     }
   }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function sumNet(
