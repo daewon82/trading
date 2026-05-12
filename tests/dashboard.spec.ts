@@ -3,6 +3,9 @@ import { writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { NaverKrSource } from '../src/sources/naver-kr/NaverKrSource.js';
 import { TossKrFlowSource } from '../src/sources/toss-kr/TossKrFlowSource.js';
+import { NaverWiseReportSource } from '../src/sources/naver-kr/NaverWiseReportSource.js';
+import type { FinancialSummary } from '../src/types/financial.js';
+import { computeQualityScore, type QualityScore } from '../src/analyzers/QualityScore.js';
 import {
   fetchDailyChart,
   resolveCandidates,
@@ -83,6 +86,8 @@ const valueKrSnaps: StockSnapshot[] = [];
 const indicatorMap = new Map<string, IndicatorSet>();
 const closesMap = new Map<string, number[]>();
 const flowMap = new Map<string, FlowSummary>();
+const financialMap = new Map<string, FinancialSummary>();
+const scoreMap = new Map<string, QualityScore>();
 const range52Map = new Map<string, { high: number | null; low: number | null }>();
 const consensusMap = new Map<string, AnalystConsensus>();
 const nameMap = new Map<string, string>();
@@ -135,10 +140,30 @@ test('외인·기관 수급 — Toss API 병렬 fetch (장중 실시간)', async
   logger.info('flow fetched (Toss)', {
     total: results.length,
     ok: results.filter((r) => r.ok).length,
-    sample: [...flowMap.entries()].slice(0, 3).map(([c, f]) => ({
+  });
+});
+
+test('재무 — Naver Wisereport 병렬 fetch (매출/영업이익/순부채/ROE)', async () => {
+  const allCodes = new Set<string>([...krCodes, ...valueKrCodes]);
+  const wiseSrc = new NaverWiseReportSource();
+  const results = await Promise.all(
+    [...allCodes].map(async (code) => {
+      const fin = await wiseSrc.fetch(code);
+      if (fin) financialMap.set(code, fin);
+      return { code, ok: !!fin };
+    }),
+  );
+  logger.info('financials fetched (Wisereport)', {
+    total: results.length,
+    ok: results.filter((r) => r.ok).length,
+    sample: [...financialMap.entries()].slice(0, 3).map(([c, f]) => ({
       code: c,
-      today: { f: f.todayForeignerNet, i: f.todayInstitutionalNet, live: f.todayInMarketTime },
-      net20d: { f: f.net20dForeigner, i: f.net20dInstitutional },
+      latestActual: f.latestActual ? {
+        year: f.latestActual.year,
+        revenue: f.latestActual.revenue,
+        roe: f.latestActual.roe,
+        debt: f.latestActual.netDebtRatio,
+      } : null,
     })),
   });
 });
@@ -226,13 +251,27 @@ test.afterAll(async () => {
     return sec.cards[0] ?? null;
   };
 
-  // 관심종목 4종
+  // 품질 점수 계산 — 모든 관심·가치 코드에 대해
+  for (const code of [...krCodes, ...valueKrCodes]) {
+    const fin = financialMap.get(code) ?? null;
+    const flow = flowMap.get(code) ?? null;
+    const qs = computeQualityScore(fin, flow);
+    if (qs) scoreMap.set(code, qs);
+  }
+  logger.info('quality scores computed', {
+    count: scoreMap.size,
+    sample: [...scoreMap.entries()].slice(0, 3).map(([c, s]) => ({ code: c, total: s.total, grade: s.grade })),
+  });
+
+  // 관심종목
   const favoriteResults: UniverseTop[] = [];
   for (const ticker of krCodes) {
     const card = buildCard(ticker);
     if (!card) continue;
     card.flow = flowMap.get(ticker) ?? null;
     card.consensus = consensusMap.get(ticker) ?? null;
+    card.financial = financialMap.get(ticker) ?? null;
+    card.qualityScore = scoreMap.get(ticker) ?? null;
     const ins = evaluateInsight(card, 'KR');
     favoriteResults.push({
       ticker,
@@ -259,6 +298,8 @@ test.afterAll(async () => {
     if (!card) continue;
     card.flow = flow;
     card.consensus = consensusMap.get(ticker) ?? null;
+    card.financial = financialMap.get(ticker) ?? null;
+    card.qualityScore = scoreMap.get(ticker) ?? null;
     const ins = evaluateInsight(card, 'KR');
     krValueForeignResults.push({
       ticker,

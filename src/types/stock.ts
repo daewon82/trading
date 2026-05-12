@@ -97,6 +97,8 @@ export interface DashboardCard {
   sparklineCloses: number[] | null;
   flow: import('./flow.js').FlowSummary | null;
   consensus: import('./consensus.js').AnalystConsensus | null;
+  financial?: import('./financial.js').FinancialSummary | null;
+  qualityScore?: import('../analyzers/QualityScore.js').QualityScore | null;
 }
 
 export interface StockDashboardSection {

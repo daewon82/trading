@@ -472,8 +472,8 @@ ${cards}
     return `      <article class="${cardCls}">
         <div class="u-rank">#${rank}</div>
         <div class="u-body">
-          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a>${trendLabel}</h3>
-          <div class="u-price"><span class="price-now">${price}</span> ${change}</div>
+          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a>${trendLabel}${renderQualityScore(c.qualityScore)}</h3>
+          <div class="u-price"><span class="price-now">${price}</span> ${change}</div>${renderScoreBreakdown(c.qualityScore, c.financial)}
           ${flowRows}
         </div>
       </article>`;
@@ -675,6 +675,21 @@ ${cards}
       .trend-label { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .75em; font-weight: 700; margin-left: 8px; vertical-align: middle; letter-spacing: .5px; }
       .trend-label-buy { background: #2e7d32; color: #fff; }
       .trend-label-sell { background: #c62828; color: #fff; }
+      .quality-score { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .8em; font-weight: 700; margin-left: 8px; vertical-align: middle; font-variant-numeric: tabular-nums; }
+      .quality-score .qs-max { font-size: .75em; opacity: .7; font-weight: 500; }
+      .quality-score .qs-grade { margin-left: 4px; font-size: .85em; }
+      .quality-score.score-s { background: #1565c0; color: #fff; }
+      .quality-score.score-a { background: #2e7d32; color: #fff; }
+      .quality-score.score-b { background: #f9a825; color: #fff; }
+      .quality-score.score-c { background: #ef6c00; color: #fff; }
+      .quality-score.score-d { background: #c62828; color: #fff; }
+      .score-detail { margin-top: 6px; font-size: .85em; }
+      .score-detail summary { cursor: pointer; color: #666; font-size: .9em; }
+      .qs-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; margin-top: 6px; }
+      .qs-rows > div { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px dashed #eee; }
+      .qs-rows > div > span { color: #666; }
+      .qs-rows > div > b { font-variant-numeric: tabular-nums; }
+      .qs-rev { grid-column: 1 / -1; padding-top: 4px !important; border-bottom: none !important; }
       .u-rank { font-size: 1.4em; font-weight: 700; color: #ef6c00; min-width: 36px; text-align: center; padding-top: 2px; }
       .u-body { flex: 1; }
       .universe-card h3 { margin: 0 0 6px; font-size: 1em; }
@@ -745,6 +760,41 @@ ${cards}
       }
     `;
   }
+}
+
+function renderQualityScore(
+  qs: import('../analyzers/QualityScore.js').QualityScore | null | undefined,
+): string {
+  if (!qs) return '';
+  const gradeCls = qs.grade === 'S' ? 'score-s' : qs.grade === 'A' ? 'score-a'
+    : qs.grade === 'B' ? 'score-b' : qs.grade === 'C' ? 'score-c' : 'score-d';
+  return `<span class="quality-score ${gradeCls}" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">${qs.total}<span class="qs-max">/100</span> <span class="qs-grade">${qs.grade}</span></span>`;
+}
+
+function renderScoreBreakdown(
+  qs: import('../analyzers/QualityScore.js').QualityScore | null | undefined,
+  fin: import('../types/financial.js').FinancialSummary | null | undefined,
+): string {
+  if (!qs) return '';
+  const b = qs.breakdown;
+  const latest = fin?.latestActual;
+  const revStr = latest?.revenue != null ? `${latest.revenue.toLocaleString('ko-KR')}억` : '—';
+  const debtStr = latest?.netDebtRatio != null ? `${latest.netDebtRatio.toFixed(1)}%` : '—';
+  const yoyStr = latest?.revenueYoy != null ? `${latest.revenueYoy >= 0 ? '+' : ''}${latest.revenueYoy.toFixed(1)}%` : '—';
+  const yearStr = latest?.year ?? '—';
+  return `
+          <details class="score-detail">
+            <summary>점수 상세 (${yearStr})</summary>
+            <div class="qs-rows">
+              <div><span>수익성 (ROE)</span><b>${b.profitability}/25</b></div>
+              <div><span>밸류 (PER·PBR)</span><b>${b.valuation}/20</b></div>
+              <div><span>성장 (매출 YoY ${yoyStr})</span><b>${b.growth}/15</b></div>
+              <div><span>안정 (순부채 ${debtStr})</span><b>${b.stability}/15</b></div>
+              <div><span>효율 (영업이익률)</span><b>${b.efficiency}/10</b></div>
+              <div><span>수급 (외인·기관)</span><b>${b.momentum}/15</b></div>
+              <div class="qs-rev"><span>매출액</span><b>${revStr}</b></div>
+            </div>
+          </details>`;
 }
 
 type TrendDecision = { type: 'buy' | 'sell' | null; stars: string };
