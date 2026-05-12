@@ -428,12 +428,17 @@ ${cards}
       s.changePercent == null
         ? ''
         : `<span class="${changeCls}">${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%</span>`;
-    // 20일 외인+기관 동반 매수 → 초록, 동반 매도 → 빨강
+    // 20일 외인+기관 동반 매수 → 초록(추천), 동반 매도 → 빨강(위험)
     const f20 = flow?.net20dForeigner;
     const i20 = flow?.net20dInstitutional;
     const bothBuy = f20 != null && i20 != null && f20 > 0 && i20 > 0;
     const bothSell = f20 != null && i20 != null && f20 < 0 && i20 < 0;
     const cardCls = bothBuy ? 'universe-card trend-buy' : bothSell ? 'universe-card trend-sell' : 'universe-card';
+    const trendLabel = bothBuy
+      ? '<span class="trend-label trend-label-buy">추천</span>'
+      : bothSell
+        ? '<span class="trend-label trend-label-sell">위험</span>'
+        : '';
     // 당일 외인·기관 순매수 — Toss API 실시간 데이터 (장중 갱신)
     const liveDot = flow?.todayInMarketTime ? ' <span class="live-mini" title="장중 실시간">●</span>' : '';
     const flowRows = flow
@@ -448,7 +453,7 @@ ${cards}
     return `      <article class="${cardCls}">
         <div class="u-rank">#${rank}</div>
         <div class="u-body">
-          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a></h3>
+          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a>${trendLabel}</h3>
           <div class="u-price"><span class="price-now">${price}</span> ${change}</div>
           ${flowRows}
         </div>
@@ -648,6 +653,9 @@ ${cards}
       .universe-card { background: #fff; border: 1px solid #ffe082; border-radius: 8px; padding: 10px 14px; display: flex; gap: 12px; transition: background .2s, border-color .2s; }
       .universe-card.trend-buy { background: #e8f5e9; border-color: #66bb6a; border-width: 2px; }
       .universe-card.trend-sell { background: #ffebee; border-color: #ef5350; border-width: 2px; }
+      .trend-label { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .75em; font-weight: 700; margin-left: 8px; vertical-align: middle; letter-spacing: .5px; }
+      .trend-label-buy { background: #2e7d32; color: #fff; }
+      .trend-label-sell { background: #c62828; color: #fff; }
       .u-rank { font-size: 1.4em; font-weight: 700; color: #ef6c00; min-width: 36px; text-align: center; padding-top: 2px; }
       .u-body { flex: 1; }
       .universe-card h3 { margin: 0 0 6px; font-size: 1em; }
