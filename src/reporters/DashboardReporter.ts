@@ -444,27 +444,20 @@ ${cards}
       s.changePercent == null
         ? ''
         : `<span class="${changeCls}">${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%</span>`;
-    // 20일 외인+기관 동반 매수 → 추천 / 동반 매도 → 위험.
-    // 20일이 혼조면 5일로 fallback (단기 추세 참고).
-    const f20 = flow?.net20dForeigner;
-    const i20 = flow?.net20dInstitutional;
-    const f5 = flow?.net5dForeigner;
-    const i5 = flow?.net5dInstitutional;
-    const both20Buy = f20 != null && i20 != null && f20 > 0 && i20 > 0;
-    const both20Sell = f20 != null && i20 != null && f20 < 0 && i20 < 0;
-    const both5Buy = f5 != null && i5 != null && f5 > 0 && i5 > 0;
-    const both5Sell = f5 != null && i5 != null && f5 < 0 && i5 < 0;
-    const isBuy = both20Buy || (!both20Sell && !both20Buy && both5Buy);
-    const isSell = both20Sell || (!both20Buy && !both20Sell && both5Sell);
-    const cardCls = isBuy ? 'universe-card trend-buy' : isSell ? 'universe-card trend-sell' : 'universe-card';
-    // 20일 충족이면 ★★, 5일 fallback이면 ★ — 시그널 강도 구분
-    const labelBuy = both20Buy ? '추천 ★★' : '추천 ★';
-    const labelSell = both20Sell ? '위험 ★★' : '위험 ★';
-    const trendLabel = isBuy
-      ? `<span class="trend-label trend-label-buy">${labelBuy}</span>`
-      : isSell
-        ? `<span class="trend-label trend-label-sell">${labelSell}</span>`
+    // 트렌드 결정: 20일 → 5일 → 60일 → 10일 → 오늘 → 가중 평균 순으로 라벨 확정.
+    // 모든 카드에 라벨이 표시되도록 fallback 다층화.
+    const trend = decideTrend(flow);
+    const cardCls = trend.type === 'buy' ? 'universe-card trend-buy'
+      : trend.type === 'sell' ? 'universe-card trend-sell'
+      : 'universe-card';
+    const labelText = trend.type === 'buy'
+      ? `추천 ${trend.stars}`
+      : trend.type === 'sell'
+        ? `위험 ${trend.stars}`
         : '';
+    const trendLabel = trend.type
+      ? `<span class="trend-label trend-label-${trend.type}">${labelText}</span>`
+      : '';
     // 당일 외인·기관 순매수 — Toss API 실시간 데이터 (장중 갱신)
     const liveDot = flow?.todayInMarketTime ? ' <span class="live-mini" title="장중 실시간">●</span>' : '';
     const flowRows = flow
@@ -752,6 +745,41 @@ ${cards}
       }
     `;
   }
+}
+
+type TrendDecision = { type: 'buy' | 'sell' | null; stars: string };
+function decideTrend(flow: import('../types/flow.js').FlowSummary | null | undefined): TrendDecision {
+  if (!flow) return { type: null, stars: '' };
+  // 우선순위: 20일(★★) → 5일/60일/10일/오늘(★) — 둘 다 같은 방향 충족 시 즉시 확정
+  const tiers: Array<{ f: number | null; i: number | null; stars: string }> = [
+    { f: flow.net20dForeigner, i: flow.net20dInstitutional, stars: '★★' },
+    { f: flow.net5dForeigner, i: flow.net5dInstitutional, stars: '★' },
+    { f: flow.net60dForeigner, i: flow.net60dInstitutional, stars: '★' },
+    { f: flow.net10dForeigner, i: flow.net10dInstitutional, stars: '★' },
+    { f: flow.todayForeignerNet, i: flow.todayInstitutionalNet, stars: '★' },
+  ];
+  for (const t of tiers) {
+    if (t.f != null && t.i != null) {
+      if (t.f > 0 && t.i > 0) return { type: 'buy', stars: t.stars };
+      if (t.f < 0 && t.i < 0) return { type: 'sell', stars: t.stars };
+    }
+  }
+  // Fallback: 가중 평균 (20일 ×3, 60일 ×2, 10일 ×2, 5일 ×1, 오늘 ×1)
+  const weighted = [
+    { f: flow.net20dForeigner, i: flow.net20dInstitutional, w: 3 },
+    { f: flow.net60dForeigner, i: flow.net60dInstitutional, w: 2 },
+    { f: flow.net10dForeigner, i: flow.net10dInstitutional, w: 2 },
+    { f: flow.net5dForeigner, i: flow.net5dInstitutional, w: 1 },
+    { f: flow.todayForeignerNet, i: flow.todayInstitutionalNet, w: 1 },
+  ];
+  let score = 0;
+  for (const x of weighted) {
+    if (x.f != null) score += x.w * Math.sign(x.f);
+    if (x.i != null) score += x.w * Math.sign(x.i);
+  }
+  if (score > 0) return { type: 'buy', stars: '◇' };
+  if (score < 0) return { type: 'sell', stars: '◇' };
+  return { type: null, stars: '' };
 }
 
 function esc(s: string): string {
