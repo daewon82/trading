@@ -323,14 +323,6 @@ ${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', 'KO
         if (d.price != null && d.high52 != null && d.low52 != null && d.high52 !== d.low52) {
           posPct = ((d.price - d.low52) / (d.high52 - d.low52)) * 100;
         }
-        var quart = posPct == null ? null : (posPct < 25 ? 1 : posPct < 50 ? 2 : posPct < 75 ? 3 : 4);
-
-        var badgeText = '평가 데이터 없음', badgeCls = 'badge-na';
-        if (quart === 1) { badgeText = '💰 저평가 영역 (Q1)'; badgeCls = 'badge-low'; }
-        else if (quart === 2) { badgeText = '◐ 중하단 (Q2)'; badgeCls = 'badge-mid-low'; }
-        else if (quart === 3) { badgeText = '◑ 중상단 (Q3)'; badgeCls = 'badge-mid-high'; }
-        else if (quart === 4) { badgeText = '⚠ 고평가 영역 (Q4)'; badgeCls = 'badge-high'; }
-
         var sma50 = sma(d.closes, 50);
         var sma200 = sma(d.closes, 200);
         var rsi14 = rsi(d.closes, 14);
@@ -347,7 +339,7 @@ ${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', 'KO
         }
 
         var changeStr = change == null ? '—' : (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
-        var posStr = posPct == null ? '52주 —' : '52주 ' + posPct.toFixed(0) + '% (Q' + quart + ')';
+        var posStr = posPct == null ? '52주 —' : '52주 ' + posPct.toFixed(0) + '%';
         var rsiStr = rsi14 == null ? '—' : rsi14.toFixed(0);
         var rsiNote = rsi14 == null ? '' : (rsi14 > 70 ? ' (과열)' : rsi14 < 30 ? ' (과매도)' : '');
         var pct200Str = pctVs200 == null ? '—' : (pctVs200 >= 0 ? '+' : '') + pctVs200.toFixed(1) + '%';
@@ -366,7 +358,7 @@ ${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', 'KO
         var headerLinked = '<a class="toss-link" href="' + tossUrl + '" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">' + headerInner + '</a>';
 
         return '<article class="insight-card">' +
-          '<h3>' + headerLinked + ' <span class="eval-badge ' + badgeCls + '">' + escHtml(badgeText) + '</span></h3>' +
+          '<h3>' + headerLinked + '</h3>' +
           '<div class="ic-head">' +
             '<span class="ic-price-current">' + formatPrice(d.price, d.currency) + '</span>' +
             '<span class="ic-price-change">' + changeStr + '</span>' +
@@ -436,13 +428,12 @@ ${cards}
       s.changePercent == null
         ? ''
         : `<span class="${changeCls}">${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%</span>`;
-    const q = c.quartile;
-    let badgeText = '평가 데이터 없음';
-    let badgeCls = 'badge-na';
-    if (q === 1) { badgeText = '💰 저평가 (Q1)'; badgeCls = 'badge-low'; }
-    else if (q === 2) { badgeText = '◐ 중하단 (Q2)'; badgeCls = 'badge-mid-low'; }
-    else if (q === 3) { badgeText = '◑ 중상단 (Q3)'; badgeCls = 'badge-mid-high'; }
-    else if (q === 4) { badgeText = '⚠ 고평가 (Q4)'; badgeCls = 'badge-high'; }
+    // 20일 외인+기관 동반 매수 → 초록, 동반 매도 → 빨강
+    const f20 = flow?.net20dForeigner;
+    const i20 = flow?.net20dInstitutional;
+    const bothBuy = f20 != null && i20 != null && f20 > 0 && i20 > 0;
+    const bothSell = f20 != null && i20 != null && f20 < 0 && i20 < 0;
+    const cardCls = bothBuy ? 'universe-card trend-buy' : bothSell ? 'universe-card trend-sell' : 'universe-card';
     // 당일 외인·기관 순매수 — Toss API 실시간 데이터 (장중 갱신)
     const liveDot = flow?.todayInMarketTime ? ' <span class="live-mini" title="장중 실시간">●</span>' : '';
     const flowRows = flow
@@ -454,10 +445,10 @@ ${cards}
           </tbody>
         </table>`
       : `<p class="flow-empty">수급 데이터 없음</p>`;
-    return `      <article class="universe-card">
+    return `      <article class="${cardCls}">
         <div class="u-rank">#${rank}</div>
         <div class="u-body">
-          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a> <span class="eval-badge ${badgeCls}">${esc(badgeText)}</span></h3>
+          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a></h3>
           <div class="u-price"><span class="price-now">${price}</span> ${change}</div>
           ${flowRows}
         </div>
@@ -543,12 +534,6 @@ ${cards}
       .insight-group:last-child { margin-bottom: 0; }
       .insight-group-title { font-size: 1.05em; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 2px solid #f5a623; color: #444; }
       .group-intro { margin: 0 0 12px; padding: 8px 12px; background: #fff3e0; border-left: 3px solid #ef6c00; border-radius: 4px; font-size: .85em; color: #555; line-height: 1.5; }
-      .eval-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .72em; font-weight: 600; margin-left: 4px; vertical-align: middle; }
-      .eval-badge.badge-low { background: #c8e6c9; color: #1b5e20; }
-      .eval-badge.badge-mid-low { background: #f0f4c3; color: #555; }
-      .eval-badge.badge-mid-high { background: #ffe0b2; color: #6d4c41; }
-      .eval-badge.badge-high { background: #ffcdd2; color: #b71c1c; }
-      .eval-badge.badge-na { background: #eee; color: #999; }
       .ic-head { display: flex; gap: 8px; align-items: baseline; padding: 4px 0 6px; flex-wrap: wrap; }
       .ic-price-current { font-size: 1.1em; font-weight: 700; font-variant-numeric: tabular-nums; }
       .ic-price-change { color: #555; font-size: .88em; font-variant-numeric: tabular-nums; }
@@ -660,7 +645,9 @@ ${cards}
       section.universe h2 { margin: 0 0 6px; font-size: 1.1em; color: #5d4037; }
       .universe-intro { font-size: .85em; color: #555; margin: 0 0 14px; padding: 8px 12px; background: #fff; border-left: 3px solid #ef6c00; border-radius: 4px; line-height: 1.5; }
       .universe-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 10px; }
-      .universe-card { background: #fff; border: 1px solid #ffe082; border-radius: 8px; padding: 10px 14px; display: flex; gap: 12px; }
+      .universe-card { background: #fff; border: 1px solid #ffe082; border-radius: 8px; padding: 10px 14px; display: flex; gap: 12px; transition: background .2s, border-color .2s; }
+      .universe-card.trend-buy { background: #e8f5e9; border-color: #66bb6a; border-width: 2px; }
+      .universe-card.trend-sell { background: #ffebee; border-color: #ef5350; border-width: 2px; }
       .u-rank { font-size: 1.4em; font-weight: 700; color: #ef6c00; min-width: 36px; text-align: center; padding-top: 2px; }
       .u-body { flex: 1; }
       .universe-card h3 { margin: 0 0 6px; font-size: 1em; }
