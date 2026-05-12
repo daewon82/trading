@@ -25,38 +25,61 @@ import type { FlowSummary } from '../src/types/flow.js';
 import { logger } from '../src/utils/logger.js';
 
 // 관심종목 4종 (고정): 삼성전자, LG전자, 기아, SK텔레콤
-// 관심종목 11종: 삼성전자, LG전자, 기아, SK텔레콤, 롯데쇼핑, 이마트,
-// LG디스플레이, LG유플러스, 엔씨소프트, 펄어비스(KOSDAQ), NAVER
-const DEFAULT_KR = '005930,066570,000270,017670,023530,139480,034220,032640,036570,263750,035420';
+// 관심종목 6종: 삼성전자, LG전자, 기아, SK텔레콤, 엔씨소프트, NAVER
+const DEFAULT_KR = '005930,066570,000270,017670,036570,035420';
 
-// 저평가 + 외인·기관 매수 추세 Top 5 후보 시드 (KOSPI 대형 가치주, 25종)
-// 관심종목 4종(005930·066570·000270·017670)은 별도 영역이라 제외
+// 저평가 + 외인·기관 매수 추세 + 품질 B 이상 Top 10 후보 시드 (KOSPI 대형 가치주, 40종)
+// 관심종목 11종은 별도 영역이라 제외 (중복 표시 방지)
 const DEFAULT_VALUE_KR = [
-  '005490', // POSCO홀딩스
-  '012330', // 현대모비스
-  '033780', // KT&G
+  // 금융
+  '105560', // KB금융
   '086790', // 하나금융지주
   '055550', // 신한지주
-  '032830', // 삼성생명
-  '024110', // 기업은행
-  '267250', // HD현대
-  '051910', // LG화학
-  '105560', // KB금융
   '316140', // 우리금융지주
+  '024110', // 기업은행
+  '032830', // 삼성생명
+  '000810', // 삼성화재
+  '138040', // 메리츠금융지주
+  '029780', // 삼성카드
+  '006800', // 미래에셋증권
+  '071050', // 한국금융지주
+  // 통신·전기
   '030200', // KT
   '015760', // 한국전력
-  '000810', // 삼성화재
+  // 화학·소재
+  '005490', // POSCO홀딩스
+  '051910', // LG화학
+  '011170', // 롯데케미칼
+  '010130', // 고려아연
+  '004020', // 현대제철
+  // 정유·에너지
   '096770', // SK이노베이션
   '010950', // S-Oil
-  '011170', // 롯데케미칼
+  // 자동차·부품
+  '012330', // 현대모비스
+  '005380', // 현대차
+  '161390', // 한국타이어
+  // 조선·기계·항공우주
+  '009540', // HD한국조선해양
+  '012450', // 한화에어로스페이스
+  '047810', // 한국항공우주(KAI)
+  // 건설·지주
+  '267250', // HD현대
   '006360', // GS건설
   '000720', // 현대건설
   '078930', // GS
   '001040', // CJ
   '028260', // 삼성물산
   '003550', // LG
-  '005380', // 현대차
-  '138040', // 메리츠금융지주
+  // 운송·물류·항공
+  '086280', // 현대글로비스
+  '011200', // HMM
+  '000120', // CJ대한통운
+  '003490', // 대한항공
+  // 소비재·서비스
+  '033780', // KT&G
+  '008770', // 호텔신라
+  '069960', // 현대백화점
 ].join(',');
 
 // KR 종목 코드 → 한글 종목명 매핑 (Yahoo chart longName이 영문이라 보정)
@@ -74,6 +97,12 @@ const KR_NAMES: Record<string, string> = {
   '000720': '현대건설', '078930': 'GS', '001040': 'CJ',
   '028260': '삼성물산', '003550': 'LG', '005380': '현대차',
   '138040': '메리츠금융지주',
+  '010130': '고려아연', '004020': '현대제철', '009540': 'HD한국조선해양',
+  '012450': '한화에어로스페이스', '047810': '한국항공우주',
+  '086280': '현대글로비스', '011200': 'HMM', '000120': 'CJ대한통운',
+  '003490': '대한항공', '161390': '한국타이어',
+  '006800': '미래에셋증권', '029780': '삼성카드', '071050': '한국금융지주',
+  '008770': '호텔신라', '069960': '현대백화점',
 };
 
 const krCodes = (process.env.KR_DASHBOARD_CODES ?? DEFAULT_KR)
@@ -285,21 +314,22 @@ test.afterAll(async () => {
   }
   krWatchTop = favoriteResults;
 
-  // 저평가 가치주 시드(25종) 중 외인·기관 20일 동반 순매수 Top 5
-  // "저평가" 정의 = 52주 위치가 아니라 KOSPI 전통 가치주(저PER/저PBR/고배당) 큐레이션 풀.
-  // 강세장에서는 가치주도 52주 고점 근처 가능하지만, 펀더멘털 기준으로는 여전히 저평가.
+  // 저평가 가치주 시드(40종) 중:
+  //   - 외인·기관 20일 동반 순매수 + 품질 점수 B 이상 (50점+) → Top 10
   const krValueForeignResults: UniverseTop[] = [];
   for (const ticker of valueKrCodes) {
     const flow = flowMap.get(ticker);
     if (!flow) continue;
     if (flow.net20dForeigner == null || flow.net20dForeigner <= 0) continue;
     if (flow.net20dInstitutional == null || flow.net20dInstitutional <= 0) continue;
+    const qs = scoreMap.get(ticker);
+    if (!qs || qs.total < 50) continue; // 신규: B 등급 이상 (50점+) 필터
     const card = buildCard(ticker);
     if (!card) continue;
     card.flow = flow;
     card.consensus = consensusMap.get(ticker) ?? null;
     card.financial = financialMap.get(ticker) ?? null;
-    card.qualityScore = scoreMap.get(ticker) ?? null;
+    card.qualityScore = qs;
     const ins = evaluateInsight(card, 'KR');
     krValueForeignResults.push({
       ticker,
@@ -312,7 +342,7 @@ test.afterAll(async () => {
     });
   }
   krValueForeignResults.sort((a, b) => b.score - a.score);
-  krValueForeignBuyTop = krValueForeignResults.slice(0, 5);
+  krValueForeignBuyTop = krValueForeignResults.slice(0, 10);
 
   logger.info('universe selection', {
     favorites: krWatchTop.map((r) => ({ ticker: r.ticker, score: r.score })),

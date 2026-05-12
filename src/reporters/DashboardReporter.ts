@@ -47,17 +47,17 @@ export class DashboardReporter {
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
   <section class="search">
-    <h2>🔎 종목 검색 (임시)</h2>
-    <p class="search-hint">티커 입력 (예: <code>005930</code> 삼성전자, <code>AAPL</code> Apple). KR은 6자리 숫자, US는 알파벳. 결과는 페이지에 영구 추가되지 않습니다 — 새로고침하면 사라짐.</p>
+    <h2>🔎 종목 검색</h2>
+    <p class="search-hint">티커 또는 종목명 입력 — 2자 이상 자동 검색 (예: <code>005930</code>, <code>삼성전자</code>, <code>유플러스</code>, <code>AAPL</code>). 결과는 새로고침하면 사라짐.</p>
     <form id="searchForm" class="search-form" onsubmit="return false">
-      <input type="text" id="searchInput" placeholder="005930 또는 AAPL" autocomplete="off">
+      <input type="text" id="searchInput" placeholder="종목명 또는 티커 (예: 삼성전자, AAPL)" autocomplete="off">
       <button type="submit" id="searchBtn">검색</button>
     </form>
     <div id="searchStatus" class="search-status"></div>
     <div id="searchResult" class="search-result"></div>
   </section>
 ${this.renderUniverse('💖 나의 관심종목 — 외인·기관 수급 동향', '오늘(외인 추정) / 5일 / 20일 / 60일 누적. 순매수 ↑ 매수, 순매도 ↓ 매도. 기관 당일은 장 마감 후 집계.', page.krWatchTop)}
-${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', 'KOSPI 가치주 시드(저PER·저PBR·고배당 큐레이션) 중 20일 외국인·기관 동반 순매수 합산 큰 순.', page.krValueForeignBuyTop)}
+${this.renderUniverse('💎 저평가 + 외인·기관 매수 + 품질 B 이상 Top 10', 'KOSPI 가치주 시드(40종) 중 20일 외인·기관 동반 순매수 + 품질 점수 B 등급(50점) 이상. 합산 매수 큰 순.', page.krValueForeignBuyTop)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
     // 홈화면 추가/PWA 대응 — 페이지 복귀 시 자동 새로고침
@@ -389,19 +389,33 @@ ${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', 'KO
           '</article>';
       }
 
-      form.addEventListener('submit', function () {
-        var raw = (input.value || '').trim();
-        if (!raw) { setStatus('티커를 입력해 주세요.', 'err'); return; }
-        setStatus('검색 중…', '');
+      var lastQuery = '';
+      function runSearch(raw) {
+        if (!raw) { setStatus('', ''); resultEl.innerHTML = ''; return; }
+        if (raw === lastQuery) return;
+        lastQuery = raw;
+        setStatus('검색 중… ' + raw, '');
         resultEl.innerHTML = '';
         fetchTicker(raw).then(function (data) {
+          if (raw !== lastQuery) return; // 입력 바뀌면 이전 응답 무시
           if (!data) {
-            setStatus('데이터 없음 — 티커 형식 확인 (예: 005930, AAPL)', 'err');
+            setStatus('데이터 없음 — "' + raw + '" 형식 확인 (예: 005930, 삼성전자, AAPL)', 'err');
             return;
           }
           setStatus('완료: ' + (data.longName || data.symbol), 'ok');
           resultEl.innerHTML = buildCardHtml(data, raw);
         });
+      }
+      form.addEventListener('submit', function () {
+        runSearch((input.value || '').trim());
+      });
+      // 자동 검색 — 입력 후 600ms 디바운스, 2자 이상일 때만
+      var searchDebounce = null;
+      input.addEventListener('input', function () {
+        clearTimeout(searchDebounce);
+        var raw = (input.value || '').trim();
+        if (raw.length < 2) { setStatus('', ''); lastQuery = ''; return; }
+        searchDebounce = setTimeout(function () { runSearch(raw); }, 600);
       });
     })();
   </script>
