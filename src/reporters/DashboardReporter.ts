@@ -60,6 +60,22 @@ ${this.renderUniverse('💖 나의 관심종목 — 외인·기관 수급 동향
 ${this.renderUniverse('💎 저평가 + 외인·기관 매수 추세 Top 5', 'KOSPI 가치주 시드(저PER·저PBR·고배당 큐레이션) 중 20일 외국인·기관 동반 순매수 합산 큰 순.', page.krValueForeignBuyTop)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
+    // 홈화면 추가/PWA 대응 — 페이지 복귀 시 자동 새로고침
+    // (meta refresh는 백그라운드에선 정지되므로 visibilitychange + pageshow로 보완)
+    (function () {
+      var REFRESH_MIN_MS = 60000; // 마지막 로드 후 60초 지나야 재로드
+      var loadedAt = Date.now();
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible' && Date.now() - loadedAt > REFRESH_MIN_MS) {
+          window.location.reload();
+        }
+      });
+      // bfcache 복원 시
+      window.addEventListener('pageshow', function (e) {
+        if (e.persisted) window.location.reload();
+      });
+    })();
+
     // 토스증권 — 모바일은 supertoss:// deep link로 앱 호출, PC는 웹 페이지
     window.openTossApp = function (e, webUrl) {
       var ua = navigator.userAgent || '';
