@@ -13,6 +13,8 @@
     "test:us": "playwright test tests/us-stock-comparison.spec.ts",
     "test:us:full": "CROSS_VERIFY=1 playwright test tests/us-stock-comparison.spec.ts",
     "test:dashboard": "playwright test tests/dashboard.spec.ts",
+    "test:value": "playwright test tests/value-screening.spec.ts",
+    "test:backtest": "playwright test tests/flow-backtest.spec.ts",
     "report:generate": "tsx scripts/generate-report.ts"
   },
   "devDependencies": {
