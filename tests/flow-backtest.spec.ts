@@ -10,18 +10,19 @@ import { logger } from '../src/utils/logger.js';
 /**
  * v1.5 — 외인+기관 동반 신호 사후 수익률 백테스트 spec.
  *
- * Universe: dashboard.spec.ts와 동일한 코스피 46종 (관심 6 + 가치 후보 40)
- * 데이터: Toss API 200일치 (약 10개월) — 사후 20일 수익률 측정에 충분
+ * Universe: dashboard.spec.ts와 동기화된 코스피 44종 (보유 5 + 가치 후보 39)
+ * 데이터: Toss API 200일치 (약 10개월) — API size 상한 200으로 확장 불가. 더 긴 기간이 필요하면 KRX/Naver 어댑터 추가 필요.
  * 결과: reports/flow-backtest-{ts}.{json,html}
  */
 
 const KR_UNIVERSE: Array<{ code: string; name: string }> = [
-  { code: '005930', name: '삼성전자' },
-  { code: '066570', name: 'LG전자' },
-  { code: '000270', name: '기아' },
+  // 보유 종목 5종 (dashboard.spec.ts DEFAULT_KR와 동기화)
   { code: '017670', name: 'SK텔레콤' },
-  { code: '036570', name: '엔씨소프트' },
-  { code: '035420', name: 'NAVER' },
+  { code: '000270', name: '기아' },
+  { code: '036570', name: 'NC' },
+  { code: '008770', name: '호텔신라' },
+  { code: '005930', name: '삼성전자' },
+  // 가치주 후보 39종 (dashboard.spec.ts DEFAULT_VALUE_KR와 동기화)
   { code: '105560', name: 'KB금융' },
   { code: '086790', name: '하나금융지주' },
   { code: '055550', name: '신한지주' },
@@ -60,7 +61,6 @@ const KR_UNIVERSE: Array<{ code: string; name: string }> = [
   { code: '000120', name: 'CJ대한통운' },
   { code: '003490', name: '대한항공' },
   { code: '033780', name: 'KT&G' },
-  { code: '008770', name: '호텔신라' },
   { code: '069960', name: '현대백화점' },
 ];
 

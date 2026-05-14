@@ -101,6 +101,19 @@ export interface DashboardCard {
   qualityScore?: import('../analyzers/QualityScore.js').QualityScore | null;
   /** v1.1 — 코스피 가치주 스크리너 점수. 필터 미통과 또는 KR 외 시장은 null. */
   valuation?: import('./valuation.js').ValueScore | null;
+  /** v1.6 — 코스피 지수 대비 20거래일 상대 강도(RS). 시계열 부족 시 null. */
+  relativeStrength?: RelativeStrength | null;
+}
+
+export interface RelativeStrength {
+  /** 종목 20거래일 수익률 (예: 0.07 = +7%) */
+  stockReturn20d: number;
+  /** 벤치마크(코스피) 20거래일 수익률 */
+  benchmarkReturn20d: number;
+  /** RS = stockReturn20d - benchmarkReturn20d. 양수면 outperform */
+  rsPct: number;
+  /** 벤치마크 심볼 (예: '^KS11') */
+  benchmarkSymbol: string;
 }
 
 export interface StockDashboardSection {

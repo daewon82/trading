@@ -1,4 +1,4 @@
-import type { DashboardCard } from '../types/stock.js';
+import type { DashboardCard, RelativeStrength } from '../types/stock.js';
 import type { FlowSummary } from '../types/flow.js';
 import type { IndicatorSet } from '../types/timeseries.js';
 import type { ValueScore } from '../types/valuation.js';
@@ -52,6 +52,11 @@ import {
  *   +8  recommendationMean ≤ 2.0 (강력 매수 컨센서스, 분석가 3+명)
  *   +4  recommendationMean ≤ 2.5 (매수 컨센서스)
  *   -4  recommendationMean ≥ 3.5 (매도 컨센서스)
+ *
+ * 상대 강도(RS) 팩터 (v1.6, 코스피 ^KS11 지수 대비 20거래일 outperform):
+ *   +5  RS > +5%p (강한 outperform — 추세 종목 가산)
+ *   +3  RS > +2%p (약한 outperform)
+ *   -3  RS < -5%p (강한 underperform — 시장 대비 약세)
  */
 export class TradingSignalEngine {
   evaluate(card: DashboardCard, fearGreed: FearGreedIndex | null = null): TradingSignal {
@@ -65,6 +70,7 @@ export class TradingSignalEngine {
     this.applyTechnicalFactors(card.indicators, factors);
     this.applyFearGreedFactors(fearGreed, factors);
     this.applyConsensusFactors(card.consensus, factors);
+    this.applyRelativeStrengthFactors(card.relativeStrength ?? null, factors);
 
     const raw = factors.reduce((acc, f) => acc + f.weight, 0);
     const score = clamp(Math.round(raw), -100, 100);
@@ -215,6 +221,34 @@ export class TradingSignalEngine {
     else if (m >= 3.5)
       factors.push({ category: '품질', weight: -4, status: 'negative',
         detail: `애널리스트 매도/중립 (${m.toFixed(2)}/5${label ? ` ${label}` : ''})` });
+  }
+
+  /**
+   * v1.6 — 코스피 지수 대비 20거래일 상대 강도(RS) 팩터.
+   * 시장 대비 추세적으로 강한 종목에 가산점, 약한 종목에 페널티.
+   * 가치주(저점 매수) 의도와 상충하지 않도록 underperform 페널티는 약하게(-3) 유지.
+   */
+  private applyRelativeStrengthFactors(
+    rs: RelativeStrength | null,
+    factors: SignalFactor[],
+  ): void {
+    if (!rs) return;
+    const rsPctDisplay = (rs.rsPct * 100).toFixed(1);
+    if (rs.rsPct > 0.05)
+      factors.push({
+        category: '기술', weight: 5, status: 'positive',
+        detail: `상대 강도 +${rsPctDisplay}%p (코스피 대비 20일 outperform)`,
+      });
+    else if (rs.rsPct > 0.02)
+      factors.push({
+        category: '기술', weight: 3, status: 'positive',
+        detail: `상대 강도 +${rsPctDisplay}%p (코스피 대비 우위)`,
+      });
+    else if (rs.rsPct < -0.05)
+      factors.push({
+        category: '기술', weight: -3, status: 'negative',
+        detail: `상대 강도 ${rsPctDisplay}%p (코스피 대비 20일 underperform)`,
+      });
   }
 
   private scoreToAction(score: number): SignalAction {
