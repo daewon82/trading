@@ -883,14 +883,31 @@ ${slotsHtml}
       .sell-warn-block h3 { margin: 0 0 8px; font-size: .98em; color: #1b5e20; }
       .sell-warn-list { display: flex; flex-direction: column; gap: 6px; }
       .sell-warn-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #fff; border-radius: 4px; flex-wrap: wrap; font-size: .88em; }
-      .warn-chip { background: #2e7d32; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: .72em; font-weight: 700; }
-      .warn-price { font-variant-numeric: tabular-nums; color: #555; }
-      .warn-reason { color: #666; font-size: .82em; flex: 1; min-width: 0; }
+      .sell-warn-item .toss-link { overflow-wrap: break-word; word-break: keep-all; }
+      .warn-chip { background: #2e7d32; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: .72em; font-weight: 700; flex-shrink: 0; }
+      .warn-price { font-variant-numeric: tabular-nums; color: #555; flex-shrink: 0; }
+      .warn-reason { color: #666; font-size: .82em; flex: 1; min-width: 0; overflow-wrap: break-word; word-break: keep-all; line-height: 1.45; }
       .plan-method { font-size: .8em; color: #888; margin: 12px 0 0; padding: 8px 10px; background: rgba(255,255,255,0.6); border-radius: 4px; line-height: 1.5; }
       @media (max-width: 600px) {
+        section.portfolio-plan { padding: 18px 14px; }
+        .plan-grid { grid-template-columns: 1fr; gap: 8px; }
+        .plan-slot { padding: 12px 12px; gap: 8px; }
+        .plan-rank { font-size: 1.4em; min-width: 32px; }
         .plan-trade { grid-template-columns: 1fr 1fr; }
         .plan-summary { gap: 6px; }
-        .plan-meta { flex: 1; min-width: 0; padding: 6px 10px; }
+        .plan-meta { flex: 1; min-width: 110px; padding: 6px 10px; }
+        .plan-meta b { font-size: .92em; }
+        .sell-warn-block { padding: 10px 12px; margin-top: 12px; }
+        .sell-warn-list { gap: 8px; }
+        .sell-warn-item {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+          padding: 8px 10px;
+          font-size: .85em;
+        }
+        .sell-warn-item .toss-link { width: 100%; line-height: 1.4; }
+        .warn-reason { width: 100%; font-size: .78em; }
       }
       section.universe.value-screener { background: #f0f7ff; border-top: 1px solid #cfd8dc; border-bottom: 1px solid #cfd8dc; }
       section.value-screener h2 { color: #0d47a1; }
