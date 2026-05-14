@@ -267,9 +267,19 @@ npm run lint
 npm run report:generate -- reports/from-mcp.json
 ```
 
-## 7. 현재 상태 (v1.5)
+## 7. 현재 상태 (v1.6)
 
-### v1.5 — Flow Signal Backtest 인프라 (신규, 2026-05)
+### v1.6 — 컨센서스·RS·헤더 요약 + 보유 종목 전환 (2026-05-14)
+
+- `TradingSignalEngine.applyConsensusFactors` — NaverKr 컨센서스(1=매수~5=매도) → ±4/+8점
+- `TradingSignalEngine.applyRelativeStrengthFactors` — 코스피 ^KS11 20일 대비 ±3~+5점
+- `DashboardCard.relativeStrength` 필드 + dashboard.spec.ts에서 ^KS11 fetch 및 종목별 RS 계산
+- `DashboardReporter.renderHeaderSummary` — F&G · 매수 N · 매도경고 N · Top 종목 chip
+- **DEFAULT_KR**: 관심종목 6종 → 보유 종목 5종 (SK텔레콤·기아·NC·호텔신라·삼성전자)
+- 헤더 섹션 "💖 나의 관심종목" → "💼 내 보유 종목"
+- `flow-backtest.spec.ts` 유니버스를 dashboard와 동기화 (보유 5 + 가치 후보 39)
+
+### v1.5 — Flow Signal Backtest 인프라 (2026-05)
 
 **핵심**: 외인+기관 동반 신호의 사후 5/10/20일 수익률을 12,000건 통계로 검증.
 
@@ -365,33 +375,36 @@ v1.2 추가:
 
 관심종목 4종(삼성전자·LG전자·기아·SK텔레콤) + 저평가/외인기관 Top 5
 
-### 진행 중 / 다음 할 일 (v1.5 시점)
+### 진행 중 / 다음 할 일 (v1.6 시점)
 
-#### Phase 1 (즉시)
+#### Phase 1 (즉시) — 완료
 
 - ✅ [v1.5] `src/backtest/` analyzer + spec + 첫 실행 (2026-05 완료)
-- 🔧 [v1.5] healthcheck spec에 TossKr, Wisereport, FearGreed, NaverKr.extractValuation 추가
-- 🔧 [v1.5+] 매도 가중치 약화 — 백테스트 결과(적중률 31~37%)에 따라 TradingSignalEngine 매도 페널티 절반으로 (-25→-12, -20→-10 등)
+- ✅ [v1.5] healthcheck spec에 TossKr, Wisereport, FearGreed, NaverKr.extractValuation 추가 (source-health.spec.ts:60)
+- ✅ [v1.5+] 매도 가중치 약화 — 백테스트 결과(적중률 31~37%)에 따라 TradingSignalEngine 매도 페널티 절반으로 (-25→-12, -20→-10, -15→-6)
 
-#### Phase 2 (1주)
+#### Phase 2 (1주) — 대부분 완료
 
-- 🔧 [v1.6] 컨센서스 팩터 신호 엔진 통합 (NaverKr.extractConsensus 이미 수집 중인데 미사용)
-- 🔧 [v1.6] 대시보드 헤더에 한 줄 요약 위젯 ("F&G N · 매수 N종 · 매도경고 N종")
-- 🔧 [v1.6] 상대 강도(RS) 팩터 — 코스피 대비 N일 outperform 가산
-- 🔧 [v1.6] F&G 7일 추이 sparkline
+- ✅ [v1.6] 컨센서스 팩터 신호 엔진 통합 (`applyConsensusFactors`, ±4/+8점)
+- ✅ [v1.6] 대시보드 헤더에 한 줄 요약 위젯 (`renderHeaderSummary` — F&G·매수·매도경고·Top chip)
+- ✅ [v1.6] 상대 강도(RS) 팩터 — 코스피 ^KS11 20일 대비 ±3~+5점 (`applyRelativeStrengthFactors`)
+- 🔧 [v1.7] F&G 7일 추이 sparkline — fearandgreed.kr API 히스토리 엔드포인트 조사 필요 또는 로컬 캐시 누적
 
-#### Phase 3 (2주)
+#### Phase 3 (2~4주)
 
 - 🔧 [v1.7] localStorage 보유 종목 P&L 추적
 - 🔧 [v1.7] 신호 임계값 재보정 (백테스트 hit rate 기준)
 - 🔧 [v1.7] cron + 텔레그램/이메일 알림 (강력매수 발생 시)
+- 🔧 [v1.7] **백테스트 윈도우 확장** — Toss API size=200 한계로 KRX 또는 Naver frgn.naver 어댑터 추가 필요
+- 🔧 [v1.7] **regime별 백테스트 분리** — 강세장(2025~2026 코스피 7000) vs 약세장 결과 분리
 
 #### Phase 4 (장기)
 
 - 🔧 LLM 종목 리뷰 (Claude API) — 매수 후보 위험 요약
-- 🔧 KRX 공식 데이터 백업 소스 (Toss 장애 대비)
+- 🔧 KRX 공식 데이터 백업 소스 (Toss 장애 대비, 백테스트 윈도우 확장과 동일 작업)
 - 🔧 모바일 PWA 최적화 (홈화면 추가 + 푸시 알림)
-- ⏳ `git push -u origin main`
+- 🔧 **ML 도입(LightGBM/XGBoost)** — 5팩터 비선형 결합. 런타임 의존성 없음 원칙과 충돌하므로 별도 워크플로(예: Python 빌드 단계)로 격리 필요
+- 🔧 **대안 데이터(DART NLP)** — 한국 공시 NLP, 글로벌 AI 픽커가 미커버하는 alpha 원천
 
 ## 8. 깨질 가능성이 높은 지점 (취약 순)
 
@@ -524,5 +537,5 @@ v1.2 추가:
 | 조선      | HD한국조선해양(009540)                             | 수주 잔고 풍부       |
 | 방산      | 한화에어로스페이스(012450)                         | K-방산 글로벌 수출   |
 
-_최종 업데이트: 2026년 5월 12일_
+_최종 업데이트: 2026년 5월 14일 (v1.6 — 컨센서스·RS·헤더 요약·보유 종목 전환)_
 _작성: Claude (Anthropic) + QA/자동화 엔지니어_
