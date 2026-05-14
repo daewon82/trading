@@ -6,6 +6,18 @@ import { TossKrFlowSource } from '../src/sources/toss-kr/TossKrFlowSource.js';
 import { NaverWiseReportSource } from '../src/sources/naver-kr/NaverWiseReportSource.js';
 import type { FinancialSummary } from '../src/types/financial.js';
 import { computeQualityScore, type QualityScore } from '../src/analyzers/QualityScore.js';
+import { ValueScreener, rankValueScores } from '../src/analyzers/ValueScreener.js';
+import { TradingSignalEngine } from '../src/analyzers/TradingSignalEngine.js';
+import { PortfolioPlanner } from '../src/analyzers/PortfolioPlanner.js';
+import type { PortfolioPlan, TradingSignal } from '../src/types/trading-signal.js';
+import { KrFearGreedSource } from '../src/sources/macro/KrFearGreedSource.js';
+import type { FearGreedIndex } from '../src/types/fear-greed.js';
+import {
+  KR_SECTOR_MAP,
+  type SectorTag,
+  type ValuationMetrics,
+  type ValueScore,
+} from '../src/types/valuation.js';
 import {
   fetchDailyChart,
   resolveCandidates,
@@ -117,11 +129,15 @@ const closesMap = new Map<string, number[]>();
 const flowMap = new Map<string, FlowSummary>();
 const financialMap = new Map<string, FinancialSummary>();
 const scoreMap = new Map<string, QualityScore>();
+const valueScoreMap = new Map<string, ValueScore>();
 const range52Map = new Map<string, { high: number | null; low: number | null }>();
 const consensusMap = new Map<string, AnalystConsensus>();
 const nameMap = new Map<string, string>();
 let krWatchTop: UniverseTop[] = [];
 let krValueForeignBuyTop: UniverseTop[] = [];
+let krValueScreenerTop: UniverseTop[] = [];
+let krPortfolioPlan: PortfolioPlan | null = null;
+let krFearGreed: FearGreedIndex | null = null;
 const SPARKLINE_DAYS = 60;
 
 test.describe.configure({ mode: 'serial' });
@@ -194,6 +210,14 @@ test('재무 — Naver Wisereport 병렬 fetch (매출/영업이익/순부채/RO
         debt: f.latestActual.netDebtRatio,
       } : null,
     })),
+  });
+});
+
+test('코스피 공포·탐욕 지수 — fearandgreed.kr (머신러너 방법론)', async () => {
+  const src = new KrFearGreedSource();
+  krFearGreed = await src.fetch();
+  logger.info('fear/greed fetched', {
+    value: krFearGreed?.value, zone: krFearGreed?.zone, label: krFearGreed?.label,
   });
 });
 
@@ -292,6 +316,33 @@ test.afterAll(async () => {
     sample: [...scoreMap.entries()].slice(0, 3).map(([c, s]) => ({ code: c, total: s.total, grade: s.grade })),
   });
 
+  // v1.1 — 코스피 가치주 스크리너 (claude.md §4.5)
+  // 관심종목(6) + 가치 후보(40) 전체에 대해 멀티팩터 점수 산출
+  const screener = new ValueScreener();
+  const allSnaps = new Map<string, StockSnapshot>();
+  for (const s of [...krSnaps, ...valueKrSnaps]) allSnaps.set(s.code, s);
+  for (const [code, snap] of allSnaps) {
+    const sector: SectorTag = KR_SECTOR_MAP[code] ?? '기타';
+    const metrics: ValuationMetrics = {
+      code,
+      name: snap.name || KR_NAMES[code] || code,
+      pbr: snap.pbr,
+      per: snap.per,
+      roe: snap.roe,
+      marketCap: snap.marketCap,
+      sector,
+    };
+    const score = screener.screen(metrics, flowMap.get(code) ?? null);
+    if (score) valueScoreMap.set(code, score);
+  }
+  logger.info('value screener computed', {
+    universe: allSnaps.size,
+    passed: valueScoreMap.size,
+    sample: [...valueScoreMap.values()].slice(0, 3).map((s) => ({
+      code: s.code, name: s.name, total: s.total, badge: s.badge,
+    })),
+  });
+
   // 관심종목
   const favoriteResults: UniverseTop[] = [];
   for (const ticker of krCodes) {
@@ -344,9 +395,77 @@ test.afterAll(async () => {
   krValueForeignResults.sort((a, b) => b.score - a.score);
   krValueForeignBuyTop = krValueForeignResults.slice(0, 10);
 
+  // v1.1 — 가치주 스크리너 Top 5 (UniverseTop 어댑터)
+  const topValueScores = rankValueScores([...valueScoreMap.values()], 5);
+  const valueScreenerResults: UniverseTop[] = [];
+  for (const vs of topValueScores) {
+    const card = buildCard(vs.code);
+    if (!card) continue;
+    card.flow = flowMap.get(vs.code) ?? null;
+    card.consensus = consensusMap.get(vs.code) ?? null;
+    card.financial = financialMap.get(vs.code) ?? null;
+    card.qualityScore = scoreMap.get(vs.code) ?? null;
+    card.valuation = vs;
+    // PBR/PER/ROE/시총은 NaverKr snapshot에서 보강 (buildCard는 Yahoo chart 기반이라 null)
+    const naverSnap = allSnaps.get(vs.code);
+    if (naverSnap) {
+      card.snapshot.pbr = naverSnap.pbr;
+      card.snapshot.per = naverSnap.per;
+      card.snapshot.roe = naverSnap.roe;
+      card.snapshot.marketCap = naverSnap.marketCap;
+    }
+    const ins = evaluateInsight(card, 'KR');
+    valueScreenerResults.push({
+      ticker: vs.code,
+      name: vs.name,
+      market: 'KR',
+      card,
+      insight: ins,
+      score: vs.total,
+      consensus: card.consensus,
+    });
+  }
+  krValueScreenerTop = valueScreenerResults;
+
+  // v1.3 — 100만원 코스피 매매 시그널 (관심+가치 후보 46종 전체 평가)
+  const engine = new TradingSignalEngine();
+  const allSignals: TradingSignal[] = [];
+  for (const [code, snap] of allSnaps) {
+    const card = buildCard(code);
+    if (!card) continue;
+    // NaverKr snapshot 데이터로 보강 (price/pbr/per/roe/52주)
+    card.snapshot.price = snap.price ?? card.snapshot.price;
+    card.snapshot.pbr = snap.pbr;
+    card.snapshot.per = snap.per;
+    card.snapshot.roe = snap.roe;
+    card.snapshot.marketCap = snap.marketCap;
+    card.snapshot.fiftyTwoWeekHigh = snap.fiftyTwoWeekHigh ?? card.snapshot.fiftyTwoWeekHigh;
+    card.snapshot.fiftyTwoWeekLow = snap.fiftyTwoWeekLow ?? card.snapshot.fiftyTwoWeekLow;
+    card.flow = flowMap.get(code) ?? null;
+    card.financial = financialMap.get(code) ?? null;
+    card.qualityScore = scoreMap.get(code) ?? null;
+    card.valuation = valueScoreMap.get(code) ?? null;
+    card.consensus = consensusMap.get(code) ?? null;
+    allSignals.push(engine.evaluate(card, krFearGreed));
+  }
+  const planner = new PortfolioPlanner();
+  krPortfolioPlan = planner.suggest(allSignals, { totalCapital: 1_000_000, slotCount: 3 });
+  logger.info('trading signal plan', {
+    totalSignals: allSignals.length,
+    buyCount: allSignals.filter((s) => s.action === 'STRONG_BUY' || s.action === 'BUY').length,
+    sellCount: allSignals.filter((s) => s.action === 'STRONG_SELL' || s.action === 'SELL').length,
+    plan: krPortfolioPlan.slots.map((s) => ({
+      code: s.signal.code, name: s.signal.name, action: s.signal.action,
+      score: s.signal.score, shares: s.shares, cost: s.estimatedCost,
+    })),
+  });
+
   logger.info('universe selection', {
     favorites: krWatchTop.map((r) => ({ ticker: r.ticker, score: r.score })),
     valueForeignBuy: krValueForeignBuyTop.map((r) => ({ ticker: r.ticker, score: r.score })),
+    valueScreener: krValueScreenerTop.map((r) => ({
+      ticker: r.ticker, total: r.card.valuation?.total, badge: r.card.valuation?.badge,
+    })),
   });
 
   const today = todayInSeoul();
@@ -355,6 +474,9 @@ test.afterAll(async () => {
     today,
     krWatchTop,
     krValueForeignBuyTop,
+    krValueScreenerTop,
+    krPortfolioPlan,
+    krFearGreed,
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });

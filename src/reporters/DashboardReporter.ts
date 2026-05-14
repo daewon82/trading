@@ -22,6 +22,12 @@ export interface DashboardPage {
   today: string;
   krWatchTop: UniverseTop[];
   krValueForeignBuyTop: UniverseTop[];
+  /** v1.1 — 코스피 가치주 스크리너 Top 5 (멀티팩터 점수). 각 card.valuation 채워짐. */
+  krValueScreenerTop?: UniverseTop[];
+  /** v1.3 — 100만원 코스피 매매 시그널 + 포트폴리오 분배 */
+  krPortfolioPlan?: import('../types/trading-signal.js').PortfolioPlan | null;
+  /** v1.4 — 코스피 공포·탐욕 지수 (머신러너 방법론 차용) */
+  krFearGreed?: import('../types/fear-greed.js').FearGreedIndex | null;
 }
 
 export class DashboardReporter {
@@ -44,10 +50,14 @@ export class DashboardReporter {
   <header>
     <h1>오늘의 대시보드 <span class="live-dot" title="장중 5분 자동 갱신">●</span></h1>
     <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)} · <span class="refresh-note">5분마다 자동 새로고침</span></div>
+    ${this.renderHeaderSummary(page)}
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
-${this.renderUniverse('💖 나의 관심종목 — 외인·기관 수급 동향', '오늘(외인 추정) / 5일 / 20일 / 60일 누적. 순매수 ↑ 매수, 순매도 ↓ 매도. 기관 당일은 장 마감 후 집계.', page.krWatchTop)}
+${this.renderFearGreed(page.krFearGreed)}
+${this.renderPortfolioPlan(page.krPortfolioPlan)}
+${this.renderUniverse('💖 나의 관심종목 — 외인·기관 수급 동향', '각 컬럼은 정확히 그 기간 데이터 (Toss 원본, 거래대금 단위 원/억/조). 오늘=당일, 5/20/60일=직전 거래일 누적 순매수. ↑ 빨강=순매수, ↓ 초록=순매도, ⏱=장중 미확정. 카드 라벨은 <b>오늘 데이터 우선</b>(외인+기관 동반 일치) → 5일 → 20일 → 60일 순.', page.krWatchTop)}
 ${this.renderUniverse('💎 저평가 + 외인·기관 매수 + 품질 B 이상 Top 10', 'KOSPI 가치주 시드(40종) 중 20일 외인·기관 동반 순매수 + 품질 점수 B 등급(50점) 이상. 합산 매수 큰 순.', page.krValueForeignBuyTop)}
+${this.renderValueScreener(page.krValueScreenerTop)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
     // 홈화면 추가/PWA 대응 — 페이지 복귀 시 자동 새로고침
@@ -230,16 +240,262 @@ ${cards}
   </section>`;
   }
 
+  /**
+   * v1.1 — 🏆 코스피 가치주 스크리너 Top 5 (claude.md §4.5).
+   * 멀티팩터(PBR·PER·ROE·외인·기관·섹터) 점수 70↑ 💎 가치 우량, 50~69 🔍 가치 후보.
+   */
+  private renderValueScreener(top: UniverseTop[] | undefined): string {
+    if (!top || top.length === 0) {
+      return `  <section class="universe value-screener">
+    <h2>🏆 코스피 가치주 스크리너 Top 5</h2>
+    <p class="universe-intro value-intro">조건(AND): <code>PBR ≤ 1.0</code> · <code>PER ≤ 15</code> · <code>ROE ≥ 8%</code> · 외인+기관 20일 동반 순매수 · 시총 ≥ 5,000억원. 주도 섹터(반도체·조선·방산·은행/금융) +5 보너스.</p>
+    <p class="value-empty">현재 조건을 모두 충족하는 종목이 없습니다 — 시장 전반 고평가 구간으로 추정됩니다.</p>
+  </section>`;
+    }
+    const cards = top.map((t, i) => this.renderValueScreenerCard(t, i + 1)).join('\n');
+    return `  <section class="universe value-screener">
+    <h2>🏆 코스피 가치주 스크리너 Top 5</h2>
+    <p class="universe-intro value-intro">조건(AND): <code>PBR ≤ 1.0</code> · <code>PER ≤ 15</code> · <code>ROE ≥ 8%</code> · 외인+기관 20일 동반 순매수 · 시총 ≥ 5,000억원. 주도 섹터(반도체·조선·방산·은행/금융) +5 보너스. 점수 70↑ 💎 가치 우량, 50~69 🔍 가치 후보.</p>
+    <div class="universe-list">
+${cards}
+    </div>
+  </section>`;
+  }
+
+  private renderValueScreenerCard(t: UniverseTop, rank: number): string {
+    const c = t.card;
+    const s = c.snapshot;
+    const v = c.valuation;
+    if (!v) return '';
+    const price = formatPrice(s.price, 'KRW');
+    const changeCls = s.changePercent == null ? '' : s.changePercent >= 0 ? 'price-up' : 'price-down';
+    const change = s.changePercent == null
+      ? ''
+      : `<span class="${changeCls}">${s.changePercent >= 0 ? '+' : ''}${s.changePercent.toFixed(2)}%</span>`;
+    const pos = c.fiftyTwoWeekPosition;
+    const posStr = pos == null ? '' : `<span class="u-pos">52주 위치 ${pos.toFixed(0)}%</span>`;
+    const badge = v.badge === '가치 우량'
+      ? `<span class="value-badge badge-premium">💎 가치 우량</span>`
+      : v.badge === '가치 후보'
+        ? `<span class="value-badge badge-candidate">🔍 가치 후보</span>`
+        : '';
+    const leadSectors = ['반도체', '조선', '방산', '은행/금융'];
+    const sectorCls = leadSectors.includes(v.sector) ? 'sector-tag lead' : 'sector-tag';
+    const sectorIcon = sectorEmoji(v.sector);
+    const sectorChip = `<span class="${sectorCls}">${sectorIcon} ${esc(v.sector)}</span>`;
+    const pbrStrCls = pbrClass(v.metrics.pbr);
+    const perStrCls = perClass(v.metrics.per);
+    const roeStrCls = roeClass(v.metrics.roe);
+    const flow = c.flow;
+    const flowRows = renderFlowTable(flow);
+    const cardCls = v.badge === '가치 우량' ? 'universe-card value-card gold' : 'universe-card value-card';
+    return `      <article class="${cardCls}">
+        <div class="u-rank">#${rank}</div>
+        <div class="u-body">
+          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">${esc(v.name)} <span class="ticker">${esc(v.code)}</span></a>${badge}${sectorChip}</h3>
+          <div class="u-price"><span class="price-now">${price}</span> ${change} ${posStr}</div>
+          <div class="value-gauge" title="가치 점수 ${v.total}/100">
+            <div class="value-bar"><div class="value-bar-fill" style="width: ${v.total}%"></div></div>
+            <div class="value-total">${v.total}<span class="value-max">/100</span></div>
+          </div>
+          <div class="value-metrics">
+            <div class="vm-cell ${pbrStrCls}"><div class="vm-k">PBR</div><div class="vm-v">${fmtMetric(v.metrics.pbr, 2)}</div></div>
+            <div class="vm-cell ${perStrCls}"><div class="vm-k">PER</div><div class="vm-v">${fmtMetric(v.metrics.per, 2)}</div></div>
+            <div class="vm-cell ${roeStrCls}"><div class="vm-k">ROE</div><div class="vm-v">${fmtMetric(v.metrics.roe, 1)}%</div></div>
+          </div>
+          <details class="score-detail">
+            <summary>점수 상세</summary>
+            <div class="qs-rows">
+              <div><span>PBR</span><b>${v.breakdown.pbr.toFixed(1)}/20</b></div>
+              <div><span>PER</span><b>${v.breakdown.per.toFixed(1)}/20</b></div>
+              <div><span>ROE</span><b>${v.breakdown.roe.toFixed(1)}/20</b></div>
+              <div><span>외인 20d</span><b>${v.breakdown.foreignerFlow.toFixed(1)}/20</b></div>
+              <div><span>기관 20d</span><b>${v.breakdown.institutionalFlow.toFixed(1)}/20</b></div>
+              <div><span>섹터 보너스</span><b>${v.breakdown.sectorBonus}/5</b></div>
+            </div>
+          </details>
+          ${flowRows}
+        </div>
+      </article>`;
+  }
+
+  /**
+   * v1.6 — 헤더 한 줄 요약 위젯.
+   * F&G 지수 + 매수/매도 카운트 + 강력매수 Top 1 종목을 압축 표시.
+   * 매일 첫 화면 진입 시 즉시 시장·신호 상태 인지 가능.
+   */
+  private renderHeaderSummary(page: DashboardPage): string {
+    const plan = page.krPortfolioPlan;
+    const fg = page.krFearGreed;
+    if (!plan && !fg) return '';
+    const parts: string[] = [];
+    if (fg) {
+      const fgCls = `fg-zone-${fg.zone.replace('_', '-')}`;
+      parts.push(`<span class="hs-chip ${fgCls}">🌡️ F&amp;G <b>${fg.value}</b> ${esc(fg.label)}</span>`);
+    }
+    if (plan) {
+      const buyN = plan.slots.length;
+      const strongBuyTop = plan.slots.find((s) => s.signal.action === 'STRONG_BUY');
+      const buyChip = buyN > 0
+        ? `<span class="hs-chip hs-buy">💡 매수 후보 <b>${buyN}</b>종</span>`
+        : `<span class="hs-chip hs-neutral">💡 매수 후보 없음 (관망)</span>`;
+      parts.push(buyChip);
+      const sellN = plan.sellWarnings.length;
+      if (sellN > 0)
+        parts.push(`<span class="hs-chip hs-sell">⚠️ 매도 경고 <b>${sellN}</b>종</span>`);
+      if (strongBuyTop) {
+        const s = strongBuyTop.signal;
+        parts.push(`<span class="hs-chip hs-top">🥇 Top <b>${esc(s.name)}</b> <span class="hs-score">+${s.score}점</span></span>`);
+      }
+    }
+    return `<div class="header-summary">${parts.join('')}</div>`;
+  }
+
+  /**
+   * v1.4 — 🌡️ 코스피 공포·탐욕 지수 위젯 (머신러너 방법론).
+   * 시장 전체 regime을 0~100 게이지로 시각화 + 의미 라벨.
+   */
+  private renderFearGreed(fg: import('../types/fear-greed.js').FearGreedIndex | null | undefined): string {
+    if (!fg) return '';
+    const zoneCls = `fg-zone-${fg.zone.replace('_', '-')}`;
+    const insight =
+      fg.zone === 'extreme_fear' ? '극도의 공포 — 역사적으로 매수 기회 영역. 다만 단기 추가 하락 가능성 존재.'
+      : fg.zone === 'fear' ? '공포 — 매수 우호 영역. 분할 매수 고려.'
+      : fg.zone === 'neutral' ? '중립 — 시장 방향성 모호. 개별 종목 시그널에 집중.'
+      : fg.zone === 'greed' ? '탐욕 — 추격 매수 주의. 신규 진입은 보수적으로.'
+      : '극도의 탐욕 — 차익 실현 검토 영역. 신규 진입 위험 ↑.';
+    return `  <section class="fear-greed-widget">
+    <div class="fg-header">
+      <h2>🌡️ 코스피 공포·탐욕 지수 <span class="fg-source">(fearandgreed.kr)</span></h2>
+      <span class="fg-time">${esc(fg.capturedAt)}</span>
+    </div>
+    <div class="fg-body">
+      <div class="fg-gauge">
+        <div class="fg-bar">
+          <div class="fg-segment fg-seg-extreme-fear" style="width: 25%"></div>
+          <div class="fg-segment fg-seg-fear" style="width: 20%"></div>
+          <div class="fg-segment fg-seg-neutral" style="width: 10%"></div>
+          <div class="fg-segment fg-seg-greed" style="width: 20%"></div>
+          <div class="fg-segment fg-seg-extreme-greed" style="width: 25%"></div>
+          <div class="fg-needle" style="left: ${fg.value}%" title="${fg.value}/100"></div>
+        </div>
+        <div class="fg-scale">
+          <span>0</span><span>25</span><span>45</span><span>55</span><span>75</span><span>100</span>
+        </div>
+      </div>
+      <div class="fg-value-block ${zoneCls}">
+        <div class="fg-value">${fg.value}<span class="fg-max">/100</span></div>
+        <div class="fg-label">${esc(fg.label)}</div>
+      </div>
+    </div>
+    <p class="fg-insight ${zoneCls}">${esc(insight)} <span class="fg-note">— 시장 regime 보정으로 매매 시그널에 ±5점 반영.</span></p>
+  </section>`;
+  }
+
+  /**
+   * v1.3 — 💡 100만원 코스피 매매 시그널 + 포트폴리오 분배.
+   * claude.md §10: 개별 매수가·손절가·익절가 단정 추천 금지 — 점수/근거만 노출.
+   */
+  private renderPortfolioPlan(plan: import('../types/trading-signal.js').PortfolioPlan | null | undefined): string {
+    if (!plan) return '';
+    const capStr = plan.totalCapital.toLocaleString('ko-KR');
+    const slotsHtml = plan.slots.length === 0
+      ? `<div class="plan-empty">현재 매수 후보가 없습니다 — 관망 추천. (모든 종목 점수 25 미만)</div>`
+      : plan.slots.map((s, i) => this.renderPortfolioSlot(s, i + 1)).join('\n');
+    const sellHtml = plan.sellWarnings.length === 0
+      ? ''
+      : `<div class="sell-warn-block">
+          <h3>⚠️ 매도 경고 (보유 중이면 점검)</h3>
+          <div class="sell-warn-list">
+            ${plan.sellWarnings.slice(0, 5).map((s) => this.renderSellWarning(s)).join('')}
+          </div>
+        </div>`;
+    const utilization = plan.slots.reduce((a, s) => a + s.estimatedCost, 0);
+    const utilPct = (utilization / plan.totalCapital * 100).toFixed(1);
+    return `  <section class="portfolio-plan">
+    <h2>💡 ${capStr}원 코스피 매매 시그널 — AI 종합 점수 기반</h2>
+    <p class="plan-disclaimer">⚠️ 본 시그널은 룰 기반 종합 점수이며 <b>매매 권유가 아닙니다</b>. 매수가·손절가·익절가를 명시하지 않으며, 모든 투자 판단과 결과 책임은 사용자에게 있습니다. 거래비용·세금·슬리피지 미반영.</p>
+    <div class="plan-summary">
+      <div class="plan-meta"><span>자본</span><b>${capStr}원</b></div>
+      <div class="plan-meta"><span>거래비용 reserve</span><b>${plan.reservedForFees.toLocaleString('ko-KR')}원</b></div>
+      <div class="plan-meta"><span>매수 후보 슬롯</span><b>${plan.slots.length}종목</b></div>
+      <div class="plan-meta"><span>활용률</span><b>${utilPct}%</b></div>
+      <div class="plan-meta"><span>잔여 현금</span><b>${plan.unspentCash.toLocaleString('ko-KR')}원</b></div>
+    </div>
+    <div class="plan-grid">
+${slotsHtml}
+    </div>
+    ${sellHtml}
+    <p class="plan-method">📐 점수 산출: 수급 ±60 + 가치 +15 + 품질 ±10 + 52주 위치 ±15 + 기술지표 ±10. 점수 +50↑ 강매수, +25↑ 매수, -25↓ 매도, -50↓ 강매도.</p>
+  </section>`;
+  }
+
+  private renderPortfolioSlot(slot: import('../types/trading-signal.js').PortfolioSlot, rank: number): string {
+    const s = slot.signal;
+    const actionCls = s.action.toLowerCase().replace('_', '-');
+    const actionLabel: Record<string, string> = {
+      STRONG_BUY: '강력 매수 후보',
+      BUY: '매수 후보',
+      HOLD: '관망',
+      SELL: '매도 경고',
+      STRONG_SELL: '강력 매도 경고',
+    };
+    const priceStr = s.pricePerShare != null ? s.pricePerShare.toLocaleString('ko-KR') + '원' : '—';
+    const costStr = slot.estimatedCost.toLocaleString('ko-KR');
+    const posStr = s.references.fiftyTwoWeekPositionPct != null
+      ? `52주 위치 ${s.references.fiftyTwoWeekPositionPct.toFixed(0)}%`
+      : '';
+    const rsiStr = s.references.rsi != null ? `RSI ${s.references.rsi.toFixed(0)}` : '';
+    const lowHigh = s.references.fiftyTwoWeekLow != null && s.references.fiftyTwoWeekHigh != null
+      ? `52주 ${Math.round(s.references.fiftyTwoWeekLow).toLocaleString('ko-KR')} ~ ${Math.round(s.references.fiftyTwoWeekHigh).toLocaleString('ko-KR')}원`
+      : '';
+    const factorList = s.factors
+      .filter((f) => f.weight !== 0)
+      .map((f) => `<li class="factor-${f.status}"><span class="fc-cat">${esc(f.category)}</span> ${esc(f.detail)} <span class="fc-w">${f.weight > 0 ? '+' : ''}${f.weight}</span></li>`)
+      .join('');
+    return `      <article class="plan-slot action-${actionCls}">
+        <div class="plan-rank">#${rank}</div>
+        <div class="plan-body">
+          <h3>
+            <a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a>
+            <span class="action-chip action-${actionCls}">${actionLabel[s.action]}</span>
+            <span class="signal-score">${s.score > 0 ? '+' : ''}${s.score}점</span>
+          </h3>
+          <div class="plan-trade">
+            <div><span>현재가</span><b>${priceStr}</b></div>
+            <div><span>매수 시뮬</span><b>${slot.shares}주</b></div>
+            <div><span>예상 매수금</span><b>${costStr}원</b></div>
+            <div><span>자본 비중</span><b>${slot.allocationPct.toFixed(1)}%</b></div>
+          </div>
+          <div class="plan-ref">참고: ${esc([posStr, rsiStr, lowHigh].filter(Boolean).join(' · '))}</div>
+          <details class="plan-factors">
+            <summary>판정 근거 (${s.factors.filter((f) => f.weight !== 0).length}개 팩터)</summary>
+            <ul>${factorList}</ul>
+          </details>
+        </div>
+      </article>`;
+  }
+
+  private renderSellWarning(s: import('../types/trading-signal.js').TradingSignal): string {
+    const actionLabel = s.action === 'STRONG_SELL' ? '강력 매도 경고' : '매도 경고';
+    const priceStr = s.pricePerShare != null ? s.pricePerShare.toLocaleString('ko-KR') + '원' : '—';
+    const reasons = s.factors
+      .filter((f) => f.status === 'negative')
+      .map((f) => f.detail)
+      .slice(0, 3)
+      .join(' · ');
+    return `<div class="sell-warn-item">
+      <a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a>
+      <span class="warn-chip">${actionLabel} ${s.score}점</span>
+      <span class="warn-price">${priceStr}</span>
+      <span class="warn-reason">${esc(reasons)}</span>
+    </div>`;
+  }
+
   private renderUniverseCard(t: UniverseTop, rank: number, currency: Currency): string {
     const c = t.card;
     const s = c.snapshot;
     const flow = c.flow;
-    const cell = (v: number | null | undefined): string => {
-      if (v == null) return `<td class="flow-na">—</td>`;
-      if (v > 0) return `<td class="flow-buy">↑ 매수</td>`;
-      if (v < 0) return `<td class="flow-sell">↓ 매도</td>`;
-      return `<td class="flow-na">—</td>`;
-    };
     const price = formatPrice(s.price, currency);
     const changeCls =
       s.changePercent == null ? '' : s.changePercent >= 0 ? 'price-up' : 'price-down';
@@ -261,17 +517,7 @@ ${cards}
     const trendLabel = trend.type
       ? `<span class="trend-label trend-label-${trend.type}">${labelText}</span>`
       : '';
-    // 당일 외인·기관 순매수 — Toss API 실시간 데이터 (장중 갱신)
-    const liveDot = flow?.todayInMarketTime ? ' <span class="live-mini" title="장중 실시간">●</span>' : '';
-    const flowRows = flow
-      ? `<table class="flow-table">
-          <thead><tr><th></th><th>오늘${liveDot}</th><th>5일</th><th>20일</th><th>60일</th></tr></thead>
-          <tbody>
-            <tr><th>외국인</th>${cell(flow.todayForeignerNet)}${cell(flow.net5dForeigner)}${cell(flow.net20dForeigner)}${cell(flow.net60dForeigner)}</tr>
-            <tr><th>기관</th>${cell(flow.todayInstitutionalNet)}${cell(flow.net5dInstitutional)}${cell(flow.net20dInstitutional)}${cell(flow.net60dInstitutional)}</tr>
-          </tbody>
-        </table>`
-      : `<p class="flow-empty">수급 데이터 없음</p>`;
+    const flowRows = renderFlowTable(flow);
     return `      <article class="${cardCls}">
         <div class="u-rank">#${rank}</div>
         <div class="u-body">
@@ -341,9 +587,16 @@ ${cards}
       .flow-table thead th { font-weight: 500; color: #888; padding: 4px 6px; text-align: center; border-bottom: 1px solid #eee; font-size: .85em; }
       .flow-table tbody th { text-align: left; padding: 6px 6px; font-weight: 500; color: #555; min-width: 60px; }
       .flow-table tbody td { text-align: center; padding: 6px 6px; font-variant-numeric: tabular-nums; }
-      .flow-buy { color: #c62828; font-weight: 600; }
-      .flow-sell { color: #2e7d32; font-weight: 600; }
+      .flow-buy { color: #c62828; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .flow-sell { color: #2e7d32; font-weight: 600; font-variant-numeric: tabular-nums; }
       .flow-na { color: #bbb; }
+      .flow-live { background: #fff8e1; position: relative; }
+      .flow-live::after { content: "⏱"; font-size: .7em; opacity: .5; position: absolute; top: 2px; right: 2px; }
+      .flow-table tbody td { font-size: .85em; padding: 5px 4px; }
+      @media (max-width: 600px) {
+        .flow-table tbody td { font-size: .78em; padding: 4px 2px; }
+        .flow-table thead th { font-size: .78em; }
+      }
       .flow-empty { color: #888; font-size: .9em; margin: 6px 0 0; }
       .bull { color: #c62828; font-weight: 600; }
       .bear { color: #2e7d32; font-weight: 600; }
@@ -535,6 +788,137 @@ ${cards}
       .pattern-head .ratio { color: #888; font-weight: normal; margin-left: 4px; }
       .pattern-desc { color: #777; font-size: .92em; margin-top: 2px; }
       .insight-note { margin: 10px 0 0; padding: 8px 10px; font-size: .82em; color: #666; background: #f7f9fc; border-radius: 4px; line-height: 1.5; }
+      .header-summary { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+      .hs-chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 14px; font-size: .82em; font-weight: 600; border: 1px solid #e0e0e0; background: #f7f9fc; color: #444; }
+      .hs-chip b { font-variant-numeric: tabular-nums; font-weight: 700; }
+      .hs-chip.fg-zone-extreme-fear { background: #e3f2fd; color: #0d47a1; border-color: #90caf9; }
+      .hs-chip.fg-zone-fear { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
+      .hs-chip.fg-zone-neutral { background: #f5f5f5; color: #555; }
+      .hs-chip.fg-zone-greed { background: #fff3e0; color: #e65100; border-color: #ffcc80; }
+      .hs-chip.fg-zone-extreme-greed { background: #ffebee; color: #b71c1c; border-color: #ef9a9a; }
+      .hs-chip.hs-buy { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
+      .hs-chip.hs-sell { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+      .hs-chip.hs-neutral { background: #eceff1; color: #455a64; }
+      .hs-chip.hs-top { background: #fff8e1; color: #bf360c; border-color: #f9a825; }
+      .hs-score { color: #c62828; font-weight: 700; font-size: .9em; margin-left: 2px; }
+      section.fear-greed-widget { padding: 20px 24px; background: #fff; border-top: 1px solid #e6e6e6; border-bottom: 1px solid #e6e6e6; }
+      .fg-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+      .fg-header h2 { margin: 0; font-size: 1.1em; color: #333; }
+      .fg-source { font-size: .7em; color: #888; font-weight: normal; margin-left: 4px; }
+      .fg-time { color: #888; font-size: .82em; }
+      .fg-body { display: grid; grid-template-columns: 3fr 1fr; gap: 20px; align-items: center; }
+      .fg-gauge { position: relative; }
+      .fg-bar { position: relative; display: flex; height: 24px; border-radius: 12px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+      .fg-segment { height: 100%; }
+      .fg-seg-extreme-fear { background: linear-gradient(90deg, #1565c0, #1976d2); }
+      .fg-seg-fear { background: linear-gradient(90deg, #1976d2, #66bb6a); }
+      .fg-seg-neutral { background: #e0e0e0; }
+      .fg-seg-greed { background: linear-gradient(90deg, #f9a825, #ef6c00); }
+      .fg-seg-extreme-greed { background: linear-gradient(90deg, #ef6c00, #c62828); }
+      .fg-needle { position: absolute; top: -4px; width: 4px; height: 32px; background: #212121; border-radius: 2px; transform: translateX(-2px); box-shadow: 0 2px 4px rgba(0,0,0,0.4); transition: left .5s ease; }
+      .fg-needle::before { content: ''; position: absolute; top: -6px; left: -4px; width: 12px; height: 12px; background: #212121; border-radius: 50%; }
+      .fg-scale { display: flex; justify-content: space-between; margin-top: 4px; font-size: .72em; color: #888; font-variant-numeric: tabular-nums; }
+      .fg-scale span:nth-child(1) { color: #1565c0; font-weight: 700; }
+      .fg-scale span:nth-child(2) { color: #1976d2; }
+      .fg-scale span:nth-child(5) { color: #ef6c00; }
+      .fg-scale span:nth-child(6) { color: #c62828; font-weight: 700; }
+      .fg-value-block { text-align: center; padding: 10px; border-radius: 8px; }
+      .fg-value-block.fg-zone-extreme-fear { background: #e3f2fd; color: #0d47a1; }
+      .fg-value-block.fg-zone-fear { background: #e8f5e9; color: #1b5e20; }
+      .fg-value-block.fg-zone-neutral { background: #f5f5f5; color: #555; }
+      .fg-value-block.fg-zone-greed { background: #fff3e0; color: #e65100; }
+      .fg-value-block.fg-zone-extreme-greed { background: #ffebee; color: #b71c1c; }
+      .fg-value { font-size: 2em; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+      .fg-max { font-size: .5em; opacity: .6; font-weight: 500; }
+      .fg-label { font-size: .9em; font-weight: 700; margin-top: 4px; }
+      .fg-insight { margin: 12px 0 0; padding: 10px 14px; border-radius: 6px; font-size: .9em; line-height: 1.5; border-left: 3px solid; }
+      .fg-insight.fg-zone-extreme-fear { background: #e3f2fd; border-color: #1565c0; color: #0d47a1; }
+      .fg-insight.fg-zone-fear { background: #e8f5e9; border-color: #2e7d32; color: #1b5e20; }
+      .fg-insight.fg-zone-neutral { background: #f5f5f5; border-color: #757575; color: #555; }
+      .fg-insight.fg-zone-greed { background: #fff3e0; border-color: #ef6c00; color: #e65100; }
+      .fg-insight.fg-zone-extreme-greed { background: #ffebee; border-color: #c62828; color: #b71c1c; }
+      .fg-note { color: #888; font-size: .85em; font-weight: normal; margin-left: 4px; }
+      @media (max-width: 600px) {
+        .fg-body { grid-template-columns: 1fr; gap: 14px; }
+        .fg-value { font-size: 1.6em; }
+      }
+      section.portfolio-plan { padding: 24px; background: linear-gradient(180deg, #fff3e0 0%, #fffaf3 100%); border-top: 3px solid #ef6c00; border-bottom: 3px solid #ef6c00; }
+      section.portfolio-plan h2 { margin: 0 0 8px; color: #bf360c; font-size: 1.25em; }
+      .plan-disclaimer { background: #fff; border-left: 4px solid #d32f2f; padding: 10px 14px; margin: 0 0 14px; font-size: .88em; color: #555; line-height: 1.5; border-radius: 4px; }
+      .plan-summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+      .plan-meta { background: #fff; padding: 8px 14px; border-radius: 8px; border: 1px solid #ffcc80; min-width: 110px; }
+      .plan-meta span { display: block; font-size: .78em; color: #888; }
+      .plan-meta b { font-size: 1em; font-variant-numeric: tabular-nums; color: #bf360c; }
+      .plan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
+      .plan-empty { grid-column: 1/-1; background: #fff; border-radius: 8px; padding: 24px; text-align: center; color: #888; font-size: .95em; }
+      .plan-slot { background: #fff; border: 2px solid #ffcc80; border-radius: 10px; padding: 14px 16px; display: flex; gap: 12px; }
+      .plan-slot.action-strong-buy { border-color: #c62828; background: linear-gradient(180deg, #ffebee 0%, #fff 30%); }
+      .plan-slot.action-buy { border-color: #f57c00; }
+      .plan-rank { font-size: 1.7em; font-weight: 700; color: #bf360c; min-width: 40px; text-align: center; }
+      .plan-body { flex: 1; min-width: 0; }
+      .plan-body h3 { margin: 0 0 8px; font-size: 1.05em; display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+      .action-chip { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .72em; font-weight: 700; vertical-align: middle; letter-spacing: .5px; }
+      .action-chip.action-strong-buy { background: #c62828; color: #fff; }
+      .action-chip.action-buy { background: #ef6c00; color: #fff; }
+      .action-chip.action-hold { background: #757575; color: #fff; }
+      .action-chip.action-sell { background: #558b2f; color: #fff; }
+      .action-chip.action-strong-sell { background: #1b5e20; color: #fff; }
+      .signal-score { font-size: .9em; color: #bf360c; font-weight: 700; font-variant-numeric: tabular-nums; margin-left: auto; }
+      .plan-trade { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin: 8px 0; padding: 8px; background: #fafafa; border-radius: 6px; }
+      .plan-trade > div { text-align: center; }
+      .plan-trade > div > span { display: block; font-size: .72em; color: #888; }
+      .plan-trade > div > b { font-size: .92em; font-variant-numeric: tabular-nums; color: #333; }
+      .plan-ref { font-size: .78em; color: #666; padding: 4px 8px; background: #f7f9fc; border-radius: 4px; margin: 4px 0; }
+      .plan-factors { margin-top: 6px; }
+      .plan-factors summary { cursor: pointer; color: #666; font-size: .85em; }
+      .plan-factors ul { margin: 6px 0 0; padding-left: 0; list-style: none; font-size: .82em; }
+      .plan-factors li { padding: 4px 8px; margin: 2px 0; border-radius: 4px; display: flex; align-items: baseline; gap: 6px; }
+      .plan-factors li.factor-positive { background: #ffebee; }
+      .plan-factors li.factor-negative { background: #e8f5e9; }
+      .plan-factors li.factor-neutral { background: #f5f5f5; }
+      .fc-cat { display: inline-block; min-width: 36px; font-weight: 700; font-size: .82em; color: #555; }
+      .fc-w { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; color: #bf360c; }
+      .factor-negative .fc-w { color: #2e7d32; }
+      .sell-warn-block { margin-top: 14px; padding: 12px 14px; background: #e8f5e9; border-left: 4px solid #2e7d32; border-radius: 6px; }
+      .sell-warn-block h3 { margin: 0 0 8px; font-size: .98em; color: #1b5e20; }
+      .sell-warn-list { display: flex; flex-direction: column; gap: 6px; }
+      .sell-warn-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #fff; border-radius: 4px; flex-wrap: wrap; font-size: .88em; }
+      .warn-chip { background: #2e7d32; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: .72em; font-weight: 700; }
+      .warn-price { font-variant-numeric: tabular-nums; color: #555; }
+      .warn-reason { color: #666; font-size: .82em; flex: 1; min-width: 0; }
+      .plan-method { font-size: .8em; color: #888; margin: 12px 0 0; padding: 8px 10px; background: rgba(255,255,255,0.6); border-radius: 4px; line-height: 1.5; }
+      @media (max-width: 600px) {
+        .plan-trade { grid-template-columns: 1fr 1fr; }
+        .plan-summary { gap: 6px; }
+        .plan-meta { flex: 1; min-width: 0; padding: 6px 10px; }
+      }
+      section.universe.value-screener { background: #f0f7ff; border-top: 1px solid #cfd8dc; border-bottom: 1px solid #cfd8dc; }
+      section.value-screener h2 { color: #0d47a1; }
+      .value-screener .universe-card.value-card { border-color: #90caf9; }
+      .value-screener .universe-card.value-card.gold { background: #fff8e1; border-color: #f9a825; border-width: 2px; }
+      .value-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .75em; font-weight: 700; margin-left: 8px; vertical-align: middle; letter-spacing: .5px; }
+      .badge-premium { background: #1565c0; color: #fff; }
+      .badge-candidate { background: #f9a825; color: #fff; }
+      .sector-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .75em; background: #eceff1; color: #455a64; margin-left: 6px; vertical-align: middle; }
+      .sector-tag.lead { background: #d32f2f; color: #fff; }
+      .u-pos { color: #888; font-size: .82em; margin-left: 8px; font-variant-numeric: tabular-nums; }
+      .value-gauge { display: flex; align-items: center; gap: 10px; margin: 8px 0 6px; }
+      .value-bar { flex: 1; height: 10px; background: #eceff1; border-radius: 5px; overflow: hidden; }
+      .value-bar-fill { height: 100%; background: linear-gradient(90deg, #66bb6a 0%, #1976d2 70%, #0d47a1 100%); transition: width .3s; }
+      .value-total { font-weight: 700; font-size: 1.05em; color: #0d47a1; font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
+      .value-max { font-size: .75em; color: #888; font-weight: 500; }
+      .value-metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin: 6px 0; }
+      .vm-cell { padding: 6px 8px; border-radius: 4px; background: #f7f9fc; text-align: center; }
+      .vm-cell .vm-k { font-size: .78em; color: #888; margin-bottom: 2px; }
+      .vm-cell .vm-v { font-size: 1em; font-weight: 700; font-variant-numeric: tabular-nums; }
+      .vm-cell.vm-good { background: #e8f5e9; color: #1b5e20; }
+      .vm-cell.vm-good .vm-v { color: #1b5e20; }
+      .vm-cell.vm-ok { background: #fff8e1; color: #6d4c00; }
+      .vm-cell.vm-ok .vm-v { color: #6d4c00; }
+      .vm-cell.vm-bad { background: #ffebee; color: #b71c1c; }
+      .vm-cell.vm-bad .vm-v { color: #b71c1c; }
+      .vm-cell.vm-na .vm-v { color: #aaa; }
+      .value-empty { padding: 20px 16px; text-align: center; color: #888; background: #fff; border-radius: 6px; font-size: .9em; }
       section.value-candidates { padding: 20px 24px; background: #f0f7ff; border-top: 1px solid #cfd8dc; border-bottom: 1px solid #cfd8dc; }
       .value-intro { font-size: .9em; color: #555; line-height: 1.55; margin: 0 0 14px; padding: 10px 12px; background: #fff; border-left: 3px solid #1976d2; border-radius: 4px; }
       .value-intro code { background: #eee; padding: 1px 5px; border-radius: 3px; font-size: .9em; }
@@ -601,15 +985,30 @@ function renderScoreBreakdown(
 }
 
 type TrendDecision = { type: 'buy' | 'sell' | null; stars: string };
+/**
+ * 카드 상단 추천/위험 라벨 결정.
+ * 우선순위: **오늘 (외인+기관 동반 일치)** → 5일 → 20일 → 60일 → 10일.
+ * 사용자 피드백(2026-05): 카드 라벨이 누적 기반이면 "오늘 매도인데 추천" 같은 혼란 발생 →
+ * 오늘 동반 일치를 최우선으로. 장중(inMarketTime) 라벨에는 ⏱ 마커.
+ */
 function decideTrend(flow: import('../types/flow.js').FlowSummary | null | undefined): TrendDecision {
   if (!flow) return { type: null, stars: '' };
-  // 우선순위: 20일(★★) → 5일/60일/10일/오늘(★) — 둘 다 같은 방향 충족 시 즉시 확정
+
+  // 1순위: 오늘 — 외인+기관 동반 일치 시 즉시 확정
+  const tf = flow.todayForeignerNet;
+  const ti = flow.todayInstitutionalNet;
+  const todayMarker = flow.todayInMarketTime ? '⏱ 오늘' : '★ 오늘';
+  if (tf != null && ti != null) {
+    if (tf > 0 && ti > 0) return { type: 'buy', stars: todayMarker };
+    if (tf < 0 && ti < 0) return { type: 'sell', stars: todayMarker };
+  }
+
+  // 2~5순위: 단기→중기→장기 누적 (기간 라벨 명시)
   const tiers: Array<{ f: number | null; i: number | null; stars: string }> = [
-    { f: flow.net20dForeigner, i: flow.net20dInstitutional, stars: '★★' },
-    { f: flow.net5dForeigner, i: flow.net5dInstitutional, stars: '★' },
-    { f: flow.net60dForeigner, i: flow.net60dInstitutional, stars: '★' },
-    { f: flow.net10dForeigner, i: flow.net10dInstitutional, stars: '★' },
-    { f: flow.todayForeignerNet, i: flow.todayInstitutionalNet, stars: '★' },
+    { f: flow.net5dForeigner, i: flow.net5dInstitutional, stars: '★ 5일' },
+    { f: flow.net20dForeigner, i: flow.net20dInstitutional, stars: '★★ 20일' },
+    { f: flow.net60dForeigner, i: flow.net60dInstitutional, stars: '★ 60일' },
+    { f: flow.net10dForeigner, i: flow.net10dInstitutional, stars: '★ 10일' },
   ];
   for (const t of tiers) {
     if (t.f != null && t.i != null) {
@@ -617,37 +1016,131 @@ function decideTrend(flow: import('../types/flow.js').FlowSummary | null | undef
       if (t.f < 0 && t.i < 0) return { type: 'sell', stars: t.stars };
     }
   }
-  // Fallback: 가중 평균 (20일 ×3, 60일 ×2, 10일 ×2, 5일 ×1, 오늘 ×1)
+
+  // Fallback: 가중 평균 (오늘 ×3, 5일 ×2, 20일 ×2, 60일 ×1, 10일 ×1)
+  // 오늘 우선 정책에 맞춰 가중치 재조정
   const weighted = [
-    { f: flow.net20dForeigner, i: flow.net20dInstitutional, w: 3 },
-    { f: flow.net60dForeigner, i: flow.net60dInstitutional, w: 2 },
-    { f: flow.net10dForeigner, i: flow.net10dInstitutional, w: 2 },
-    { f: flow.net5dForeigner, i: flow.net5dInstitutional, w: 1 },
-    { f: flow.todayForeignerNet, i: flow.todayInstitutionalNet, w: 1 },
+    { f: tf, i: ti, w: 3 },
+    { f: flow.net5dForeigner, i: flow.net5dInstitutional, w: 2 },
+    { f: flow.net20dForeigner, i: flow.net20dInstitutional, w: 2 },
+    { f: flow.net60dForeigner, i: flow.net60dInstitutional, w: 1 },
+    { f: flow.net10dForeigner, i: flow.net10dInstitutional, w: 1 },
   ];
   let score = 0;
   for (const x of weighted) {
     if (x.f != null) score += x.w * Math.sign(x.f);
     if (x.i != null) score += x.w * Math.sign(x.i);
   }
-  if (score > 0) return { type: 'buy', stars: '◇' };
-  if (score < 0) return { type: 'sell', stars: '◇' };
-  // 동률(score == 0) — 최근 신호로 tiebreak (오늘 > 5일 > 어떤 사용 가능한 값이든)
+  if (score > 0) return { type: 'buy', stars: '◇ 가중' };
+  if (score < 0) return { type: 'sell', stars: '◇ 가중' };
+  // 동률 — 가장 최근(오늘) 신호로 tiebreak
   const tiebreakers: Array<number | null | undefined> = [
-    flow.todayForeignerNet,
-    flow.todayInstitutionalNet,
-    flow.net5dForeigner,
-    flow.net5dInstitutional,
-    flow.net20dForeigner,
-    flow.net20dInstitutional,
+    tf, ti,
+    flow.net5dForeigner, flow.net5dInstitutional,
+    flow.net20dForeigner, flow.net20dInstitutional,
   ];
   for (const v of tiebreakers) {
     if (v != null && v !== 0) {
       return { type: v > 0 ? 'buy' : 'sell', stars: '◇' };
     }
   }
-  // 정말 모든 데이터가 0 또는 null — 매우 드물지만 가능
   return { type: null, stars: '' };
+}
+
+function fmtMetric(v: number | null, digits: number): string {
+  return v == null ? '—' : v.toFixed(digits);
+}
+
+/**
+ * 외인·기관 수급 표 렌더 — 토스 API 원본을 정확한 단위(거래대금 원)로 분리 표시.
+ *
+ * 컬럼 정의:
+ * - **오늘**: 당일(body[0]) 외인/기관 순매수 거래대금. 장중은 ⏱(미확정, 마감 시 확정).
+ * - **5일 누적**: 직전 5거래일 순매수 거래대금 합계.
+ * - **20일 누적**: 직전 20거래일 합계 (펀드매니저 표준 중기 추세).
+ * - **60일 누적**: 직전 60거래일 합계 (장기 사이클).
+ *
+ * 데이터 부족 시 (예: 60일 fetch 안 됨) sumNet이 null 반환 → "—" 표시.
+ * 누적값은 단순 합산이라 부분 매수+부분 매도가 상쇄될 수 있음 — 컬럼별로 부호가 다를 수 있다.
+ */
+function renderFlowTable(flow: import('../types/flow.js').FlowSummary | null | undefined): string {
+  if (!flow) return `<p class="flow-empty">수급 데이터 없음 (Toss API)</p>`;
+  const live = flow.todayInMarketTime;
+  const liveTag = live
+    ? ' <span class="live-mini" title="장중 실시간 — 마감 시 확정">⏱</span>'
+    : '';
+  return `<table class="flow-table">
+          <thead><tr>
+            <th></th>
+            <th title="당일 단일 일자 데이터${live ? ' (장중)' : ''}">오늘${liveTag}</th>
+            <th title="직전 5거래일 순매수 거래대금 합계">5일 누적</th>
+            <th title="직전 20거래일 누적 (중기 추세)">20일 누적</th>
+            <th title="직전 60거래일 누적 (장기 사이클)">60일 누적</th>
+          </tr></thead>
+          <tbody>
+            <tr><th>외국인</th>${fmtFlowCell(flow.todayForeignerNetValue, live)}${fmtFlowCell(flow.net5dForeignerValue)}${fmtFlowCell(flow.net20dForeignerValue)}${fmtFlowCell(flow.net60dForeignerValue)}</tr>
+            <tr><th>기관</th>${fmtFlowCell(flow.todayInstitutionalNetValue, live)}${fmtFlowCell(flow.net5dInstitutionalValue)}${fmtFlowCell(flow.net20dInstitutionalValue)}${fmtFlowCell(flow.net60dInstitutionalValue)}</tr>
+          </tbody>
+        </table>`;
+}
+
+/**
+ * 거래대금 셀 포맷터 — Toss 원본 데이터 단위(원)에서 직접 환산.
+ * 양수: 빨강 ↑ 매수 / 음수: 초록 ↓ 매도 / null: dash.
+ * 장중 데이터에는 ⏱ + flow-live 클래스 부여.
+ */
+function fmtFlowCell(value: number | null | undefined, isLive = false): string {
+  if (value == null) return `<td class="flow-na">—</td>`;
+  if (value === 0) return `<td class="flow-na">0</td>`;
+  const cls = value > 0 ? 'flow-buy' : 'flow-sell';
+  const arrow = value > 0 ? '↑' : '↓';
+  const liveCls = isLive ? ' flow-live' : '';
+  return `<td class="${cls}${liveCls}">${arrow} ${fmtKrwSigned(value)}</td>`;
+}
+
+function fmtKrwSigned(v: number): string {
+  const sign = v >= 0 ? '+' : '-';
+  const abs = Math.abs(v);
+  if (abs >= 1e12) return `${sign}${(abs / 1e12).toFixed(1)}조`;
+  if (abs >= 1e10) return `${sign}${Math.round(abs / 1e8).toLocaleString('ko-KR')}억`;
+  if (abs >= 1e8) return `${sign}${(abs / 1e8).toFixed(0)}억`;
+  if (abs >= 1e7) return `${sign}${(abs / 1e8).toFixed(1)}억`;
+  return `${sign}${Math.round(abs / 1e4).toLocaleString('ko-KR')}만`;
+}
+
+function pbrClass(v: number | null): string {
+  if (v == null) return 'vm-na';
+  if (v <= 0.7) return 'vm-good';
+  if (v <= 1.0) return 'vm-ok';
+  return 'vm-bad';
+}
+
+function perClass(v: number | null): string {
+  if (v == null || v <= 0) return 'vm-na';
+  if (v <= 8) return 'vm-good';
+  if (v <= 15) return 'vm-ok';
+  return 'vm-bad';
+}
+
+function roeClass(v: number | null): string {
+  if (v == null) return 'vm-na';
+  if (v >= 15) return 'vm-good';
+  if (v >= 8) return 'vm-ok';
+  return 'vm-bad';
+}
+
+function sectorEmoji(s: import('../types/valuation.js').SectorTag): string {
+  switch (s) {
+    case '반도체': return '💻';
+    case '조선': return '🚢';
+    case '방산': return '🛡️';
+    case '은행/금융': return '🏦';
+    case '자동차': return '🚗';
+    case '통신': return '📡';
+    case '전자': return '🔌';
+    case '에너지': return '⚡';
+    default: return '🏷️';
+  }
 }
 
 function esc(s: string): string {
