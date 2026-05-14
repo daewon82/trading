@@ -99,6 +99,8 @@ export interface DashboardCard {
   consensus: import('./consensus.js').AnalystConsensus | null;
   financial?: import('./financial.js').FinancialSummary | null;
   qualityScore?: import('../analyzers/QualityScore.js').QualityScore | null;
+  /** v1.1 — 코스피 가치주 스크리너 점수. 필터 미통과 또는 KR 외 시장은 null. */
+  valuation?: import('./valuation.js').ValueScore | null;
 }
 
 export interface StockDashboardSection {

@@ -5,6 +5,7 @@ import type {
   CheckResult,
 } from '../../types/stock.js';
 import type { AnalystConsensus } from '../../types/consensus.js';
+import type { SectorTag, ValuationMetrics } from '../../types/valuation.js';
 import type { StockSource } from '../StockSource.js';
 import { logger, parseKoreanNumber } from '../../utils/logger.js';
 
@@ -142,6 +143,27 @@ export class NaverKrSource implements StockSource {
       logger.warn('NaverKr consensus extract failed', { code, err: String(err) });
       return null;
     }
+  }
+
+  /**
+   * v1.1 가치주 스크리너용 — PBR/PER/ROE + 시총 + 섹터 태그를 묶어 반환.
+   * 섹터는 페이지에서 파싱 불가하므로 호출자(스크리너 유니버스)가 주입한다.
+   */
+  async extractValuation(
+    page: Page,
+    code: string,
+    sector: SectorTag,
+  ): Promise<ValuationMetrics> {
+    const snap = await this.extractSnapshot(page, code);
+    return {
+      code,
+      name: snap.name || code,
+      pbr: snap.pbr,
+      per: snap.per,
+      roe: snap.roe,
+      marketCap: snap.marketCap,
+      sector,
+    };
   }
 
   async healthCheck(page: Page, sample: string): Promise<HealthCheckResult> {
