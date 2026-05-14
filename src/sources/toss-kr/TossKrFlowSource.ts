@@ -66,20 +66,30 @@ export class TossKrFlowSource {
       const body = json?.result?.body ?? [];
       if (body.length === 0) return null;
 
-      const daily: DailyFlow[] = body.map((row) => ({
-        date: row.baseDate,
-        close: row.close ?? null,
-        changePercent:
-          row.base != null && row.close != null && row.base !== 0
-            ? ((row.close - row.base) / row.base) * 100
-            : null,
-        volume: null,
-        institutionalNet: row.netInstitutionBuyVolume ?? null,
-        foreignerNet: row.netForeignerBuyVolume ?? null,
-        foreignerHoldingRatio: row.foreignerRatio ?? null,
-      }));
+      const daily: DailyFlow[] = body.map((row) => {
+        const close = row.close ?? null;
+        const f = row.netForeignerBuyVolume ?? null;
+        const i = row.netInstitutionBuyVolume ?? null;
+        return {
+          date: row.baseDate,
+          close,
+          changePercent:
+            row.base != null && row.close != null && row.base !== 0
+              ? ((row.close - row.base) / row.base) * 100
+              : null,
+          volume: null,
+          institutionalNet: i,
+          foreignerNet: f,
+          institutionalNetValue: i != null && close != null ? i * close : null,
+          foreignerNetValue: f != null && close != null ? f * close : null,
+          foreignerHoldingRatio: row.foreignerRatio ?? null,
+        };
+      });
 
       const today = body[0];
+      const todayClose = today?.close ?? null;
+      const todayF = today?.netForeignerBuyVolume ?? null;
+      const todayI = today?.netInstitutionBuyVolume ?? null;
       return {
         code,
         daily,
@@ -91,8 +101,18 @@ export class TossKrFlowSource {
         net20dForeigner: sumNet(daily, 20, 'foreignerNet'),
         net60dInstitutional: sumNet(daily, 60, 'institutionalNet'),
         net60dForeigner: sumNet(daily, 60, 'foreignerNet'),
-        todayForeignerNet: today?.netForeignerBuyVolume ?? null,
-        todayInstitutionalNet: today?.netInstitutionBuyVolume ?? null,
+        net5dInstitutionalValue: sumNet(daily, 5, 'institutionalNetValue'),
+        net5dForeignerValue: sumNet(daily, 5, 'foreignerNetValue'),
+        net10dInstitutionalValue: sumNet(daily, 10, 'institutionalNetValue'),
+        net10dForeignerValue: sumNet(daily, 10, 'foreignerNetValue'),
+        net20dInstitutionalValue: sumNet(daily, 20, 'institutionalNetValue'),
+        net20dForeignerValue: sumNet(daily, 20, 'foreignerNetValue'),
+        net60dInstitutionalValue: sumNet(daily, 60, 'institutionalNetValue'),
+        net60dForeignerValue: sumNet(daily, 60, 'foreignerNetValue'),
+        todayForeignerNet: todayF,
+        todayInstitutionalNet: todayI,
+        todayForeignerNetValue: todayF != null && todayClose != null ? todayF * todayClose : null,
+        todayInstitutionalNetValue: todayI != null && todayClose != null ? todayI * todayClose : null,
         todayInMarketTime: today?.inMarketTime ?? false,
         todayDate: today?.baseDate ?? null,
       };
@@ -107,19 +127,31 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * 정확한 n일 누적. 데이터가 n일치보다 적으면 null 반환 (혼동 방지).
+ * 예: size=30으로 fetch했는데 60일 누적을 요청하면 null.
+ */
 function sumNet(
   rows: DailyFlow[],
   n: number,
-  key: 'institutionalNet' | 'foreignerNet',
+  key:
+    | 'institutionalNet'
+    | 'foreignerNet'
+    | 'institutionalNetValue'
+    | 'foreignerNetValue',
 ): number | null {
+  const window = rows.slice(0, n);
+  if (window.length < n) return null;
   let total = 0;
   let count = 0;
-  for (const r of rows.slice(0, n)) {
+  for (const r of window) {
     const v = r[key];
     if (v != null) {
       total += v;
       count++;
     }
   }
-  return count > 0 ? total : null;
+  // 윈도우 내 일부 null 허용(휴장 등) — 70% 미만이면 무효
+  if (count < Math.ceil(n * 0.7)) return null;
+  return total;
 }
