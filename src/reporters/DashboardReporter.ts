@@ -55,7 +55,7 @@ export class DashboardReporter {
   </header>
 ${this.renderFearGreed(page.krFearGreed)}
 ${this.renderPortfolioPlan(page.krPortfolioPlan)}
-${this.renderUniverse('💖 나의 관심종목 — 외인·기관 수급 동향', '각 컬럼은 정확히 그 기간 데이터 (Toss 원본, 거래대금 단위 원/억/조). 오늘=당일, 5/20/60일=직전 거래일 누적 순매수. ↑ 빨강=순매수, ↓ 초록=순매도, ⏱=장중 미확정. 카드 라벨은 <b>오늘 데이터 우선</b>(외인+기관 동반 일치) → 5일 → 20일 → 60일 순.', page.krWatchTop)}
+${this.renderUniverse('💼 내 보유 종목 — 외인·기관 수급 동향', '각 컬럼은 정확히 그 기간 데이터 (Toss 원본, 거래대금 단위 원/억/조). 오늘=당일, 5/20/60일=직전 거래일 누적 순매수. ↑ 빨강=순매수, ↓ 초록=순매도, ⏱=장중 미확정. 카드 라벨은 <b>오늘 데이터 우선</b>(외인+기관 동반 일치) → 5일 → 20일 → 60일 순.', page.krWatchTop)}
 ${this.renderUniverse('💎 저평가 + 외인·기관 매수 + 품질 B 이상 Top 10', 'KOSPI 가치주 시드(40종) 중 20일 외인·기관 동반 순매수 + 품질 점수 B 등급(50점) 이상. 합산 매수 큰 순.', page.krValueForeignBuyTop)}
 ${this.renderValueScreener(page.krValueScreenerTop)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>

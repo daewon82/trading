@@ -36,12 +36,11 @@ import type { IndicatorSet } from '../src/types/timeseries.js';
 import type { FlowSummary } from '../src/types/flow.js';
 import { logger } from '../src/utils/logger.js';
 
-// 관심종목 4종 (고정): 삼성전자, LG전자, 기아, SK텔레콤
-// 관심종목 6종: 삼성전자, LG전자, 기아, SK텔레콤, 엔씨소프트, NAVER
-const DEFAULT_KR = '005930,066570,000270,017670,036570,035420';
+// 보유 종목 5종 (고정): SK텔레콤, 기아, NC(엔씨소프트), 호텔신라, 삼성전자
+const DEFAULT_KR = '017670,000270,036570,008770,005930';
 
-// 저평가 + 외인·기관 매수 추세 + 품질 B 이상 Top 10 후보 시드 (KOSPI 대형 가치주, 40종)
-// 관심종목 11종은 별도 영역이라 제외 (중복 표시 방지)
+// 저평가 + 외인·기관 매수 추세 + 품질 B 이상 Top 10 후보 시드 (KOSPI 대형 가치주)
+// 보유 종목은 별도 영역이라 제외 (중복 표시 방지)
 const DEFAULT_VALUE_KR = [
   // 금융
   '105560', // KB금융
@@ -90,7 +89,6 @@ const DEFAULT_VALUE_KR = [
   '003490', // 대한항공
   // 소비재·서비스
   '033780', // KT&G
-  '008770', // 호텔신라
   '069960', // 현대백화점
 ].join(',');
 
@@ -317,7 +315,7 @@ test.afterAll(async () => {
   });
 
   // v1.1 — 코스피 가치주 스크리너 (claude.md §4.5)
-  // 관심종목(6) + 가치 후보(40) 전체에 대해 멀티팩터 점수 산출
+  // 보유 종목(5) + 가치 후보(39) 전체에 대해 멀티팩터 점수 산출
   const screener = new ValueScreener();
   const allSnaps = new Map<string, StockSnapshot>();
   for (const s of [...krSnaps, ...valueKrSnaps]) allSnaps.set(s.code, s);
@@ -343,7 +341,7 @@ test.afterAll(async () => {
     })),
   });
 
-  // 관심종목
+  // 보유 종목
   const favoriteResults: UniverseTop[] = [];
   for (const ticker of krCodes) {
     const card = buildCard(ticker);
