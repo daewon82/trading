@@ -38,8 +38,8 @@ import type { IndicatorSet } from '../src/types/timeseries.js';
 import type { FlowSummary } from '../src/types/flow.js';
 import { logger } from '../src/utils/logger.js';
 
-// 보유 종목 5종 (고정): SK텔레콤, 기아, NC(엔씨소프트), 호텔신라, 삼성전자
-const DEFAULT_KR = '017670,000270,036570,008770,005930';
+// 보유 종목 7종 (고정): 한화시스템, 이마트, 대한항공, SK텔레콤, LG전자, 호텔신라, 삼성전자
+const DEFAULT_KR = '272210,139480,003490,017670,066570,008770,005930';
 
 // 저평가 + 외인·기관 매수 추세 + 품질 B 이상 Top 10 후보 시드 (KOSPI 대형 가치주)
 // 보유 종목은 별도 영역이라 제외 (중복 표시 방지)
@@ -88,7 +88,6 @@ const DEFAULT_VALUE_KR = [
   '086280', // 현대글로비스
   '011200', // HMM
   '000120', // CJ대한통운
-  '003490', // 대한항공
   // 소비재·서비스
   '033780', // KT&G
   '069960', // 현대백화점
@@ -97,6 +96,7 @@ const DEFAULT_VALUE_KR = [
 // KR 종목 코드 → 한글 종목명 매핑 (Yahoo chart longName이 영문이라 보정)
 const KR_NAMES: Record<string, string> = {
   '005930': '삼성전자', '066570': 'LG전자', '000270': '기아', '017670': 'SK텔레콤',
+  '272210': '한화시스템',
   '023530': '롯데쇼핑', '139480': '이마트', '034220': 'LG디스플레이',
   '032640': 'LG유플러스', '036570': '엔씨소프트', '263750': '펄어비스',
   '035420': 'NAVER',

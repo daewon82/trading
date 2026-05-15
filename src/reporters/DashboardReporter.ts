@@ -65,10 +65,8 @@ export class DashboardReporter {
 ${this.renderVolumeTop10(page.volumeTop10)}
 ${this.renderEodPicks(page.eodPicks)}
 ${this.renderPortfolioPlan(page.krPortfolioPlan)}
-${this.renderFearGreed(page.krFearGreed)}
-${this.renderUniverse('💼 내 보유 종목 — 외인·기관 수급 동향', '각 컬럼은 정확히 그 기간 데이터 (Toss 원본, 거래대금 단위 원/억/조). 오늘=당일, 5/20/60일=직전 거래일 누적 순매수. ↑ 빨강=순매수, ↓ 초록=순매도, ⏱=장중 미확정. 카드 라벨은 <b>오늘 데이터 우선</b>(외인+기관 동반 일치) → 5일 → 20일 → 60일 순.', page.krWatchTop)}
+${this.renderUniverse('💼 보유 종목 대응 전략 — 외인·기관 수급 동향', '각 컬럼은 정확히 그 기간 데이터 (Toss 원본, 거래대금 단위 원/억/조). 오늘=당일, 5/20/60일=직전 거래일 누적 순매수. ↑ 빨강=순매수, ↓ 초록=순매도, ⏱=장중 미확정. 카드 라벨은 <b>오늘 데이터 우선</b>(외인+기관 동반 일치) → 5일 → 20일 → 60일 순.', page.krWatchTop)}
 ${this.renderUniverse('💎 저평가 + 외인·기관 매수 + 품질 B 이상 Top 10', 'KOSPI 가치주 시드(40종) 중 20일 외인·기관 동반 순매수 + 품질 점수 B 등급(50점) 이상. 합산 매수 큰 순.', page.krValueForeignBuyTop)}
-${this.renderValueScreener(page.krValueScreenerTop)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
     // 홈화면 추가/PWA 대응 — 페이지 복귀 시 자동 새로고침
@@ -385,14 +383,14 @@ ${cards}
    */
   private renderVolumeTop10(rows: DashboardPage['volumeTop10']): string {
     if (!rows || rows.length === 0) return '';
-    const trs = rows.map((r) => {
+    const trs = rows.map((r, i) => {
       const chCls = r.changePct == null ? '' : r.changePct >= 0 ? 'up' : 'down';
       const chStr = r.changePct == null ? '—'
         : `${r.changePct >= 0 ? '+' : ''}${r.changePct.toFixed(2)}%`;
       const tv = formatKrwShort(r.tradingValue);
       const vol = r.volume.toLocaleString('ko-KR');
       return `<tr>
-        <td class="rank">${r.rank}</td>
+        <td class="rank">${i + 1}</td>
         <td class="name"><a href="https://finance.naver.com/item/main.naver?code=${esc(r.code)}" target="_blank" rel="noopener">${esc(r.name)}</a></td>
         <td class="num">${r.price.toLocaleString('ko-KR')}</td>
         <td class="num ${chCls}">${chStr}</td>
@@ -539,14 +537,6 @@ ${cards}
     const slotsHtml = plan.slots.length === 0
       ? `<div class="plan-empty">현재 매수 후보가 없습니다 — 관망 추천. (모든 종목 점수 25 미만)</div>`
       : plan.slots.map((s, i) => this.renderPortfolioSlot(s, i + 1)).join('\n');
-    const sellHtml = plan.sellWarnings.length === 0
-      ? ''
-      : `<div class="sell-warn-block">
-          <h3>⚠️ 매도 경고 (보유 중이면 점검)</h3>
-          <div class="sell-warn-list">
-            ${plan.sellWarnings.slice(0, 5).map((s) => this.renderSellWarning(s)).join('')}
-          </div>
-        </div>`;
     const utilization = plan.slots.reduce((a, s) => a + s.estimatedCost, 0);
     const utilPct = (utilization / plan.totalCapital * 100).toFixed(1);
     return `  <section class="portfolio-plan">
@@ -562,7 +552,6 @@ ${cards}
     <div class="plan-grid">
 ${slotsHtml}
     </div>
-    ${sellHtml}
     <p class="plan-method">📐 점수 산출: 수급 ±60 + 가치 +15 + 품질 ±10 + 52주 위치 ±15 + 기술지표 ±10. 점수 +50↑ 강매수, +25↑ 매수, -25↓ 매도, -50↓ 강매도.</p>
   </section>`;
   }
