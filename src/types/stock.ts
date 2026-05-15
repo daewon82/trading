@@ -103,6 +103,10 @@ export interface DashboardCard {
   valuation?: import('./valuation.js').ValueScore | null;
   /** v1.6 — 코스피 지수 대비 20거래일 상대 강도(RS). 시계열 부족 시 null. */
   relativeStrength?: RelativeStrength | null;
+  /** v1.7 — 섹터 구조 리스크. 분류 없는 종목은 neutral. */
+  structuralRisk?: import('./structural-risk.js').StructuralRiskResult | null;
+  /** v1.7 — 보유 종목 손익 (HoldingPosition + 현재가 기반). 보유하지 않으면 null. */
+  pnl?: import('./portfolio.js').PositionPnL | null;
 }
 
 export interface RelativeStrength {

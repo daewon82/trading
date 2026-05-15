@@ -5,3 +5,9 @@ playwright-report/
 .DS_Store
 *.log
 docs/history/
+# v1.7 — 보안: 웹훅 URL·API 키 (절대 커밋 금지, CLAUDE.md §10)
+.env
+.env.*
+!.env.example
+# v1.7 — 잔디 알림 발송 캐시 (중복 방지)
+cache/

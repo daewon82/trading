@@ -36,6 +36,8 @@ export interface DashboardPage {
   eodPicks?: import('../analyzers/EndOfDayPicker.js').EndOfDayPick[];
   /** v1.7 — 시장 이벤트 (옵션 만기일·쿼드러플 위칭·배당락 등) */
   marketEvents?: import('../analyzers/MarketEventCalendar.js').MarketEvent[];
+  /** v1.7 — 보유 종목 손익 스냅샷 (HOLDINGS_JSON 환경변수 기반) */
+  portfolioPnL?: import('../types/portfolio.js').PortfolioSnapshot | null;
 }
 
 export class DashboardReporter {
@@ -65,6 +67,7 @@ export class DashboardReporter {
 ${this.renderVolumeTop10(page.volumeTop10)}
 ${this.renderEodPicks(page.eodPicks)}
 ${this.renderPortfolioPlan(page.krPortfolioPlan)}
+${this.renderPortfolioPnL(page.portfolioPnL)}
 ${this.renderUniverse('💼 보유 종목 대응 전략 — 외인·기관 수급 동향', '각 컬럼은 정확히 그 기간 데이터 (Toss 원본, 거래대금 단위 원/억/조). 오늘=당일, 5/20/60일=직전 거래일 누적 순매수. ↑ 빨강=순매수, ↓ 초록=순매도, ⏱=장중 미확정. 카드 라벨은 <b>오늘 데이터 우선</b>(외인+기관 동반 일치) → 5일 → 20일 → 60일 순.', page.krWatchTop)}
 ${this.renderUniverse('💎 저평가 + 외인·기관 매수 + 품질 B 이상 Top 10', 'KOSPI 가치주 시드(40종) 중 20일 외인·기관 동반 순매수 + 품질 점수 B 등급(50점) 이상. 합산 매수 큰 순.', page.krValueForeignBuyTop)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
@@ -647,11 +650,55 @@ ${slotsHtml}
     return `      <article class="${cardCls}">
         <div class="u-rank">#${rank}</div>
         <div class="u-body">
-          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a>${trendLabel}${renderQualityScore(c.qualityScore)}</h3>
-          <div class="u-price"><span class="price-now">${price}</span> ${change}</div>${renderScoreBreakdown(c.qualityScore, c.financial)}
+          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A${esc(s.code)}" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">${esc(s.name)} <span class="ticker">${esc(s.code)}</span></a>${trendLabel}${renderStructuralRisk(c.structuralRisk ?? null)}${renderQualityScore(c.qualityScore)}</h3>
+          <div class="u-price"><span class="price-now">${price}</span> ${change}${renderPnL(c.pnl ?? null)}</div>${renderScoreBreakdown(c.qualityScore, c.financial)}
           ${flowRows}
         </div>
       </article>`;
+  }
+
+  /**
+   * v1.7 — 보유 종목 손익 합계 섹션 (CLAUDE.md §4.8).
+   * 보유 7종 카드 위에 합산 손익 요약.
+   */
+  private renderPortfolioPnL(snap: import('../types/portfolio.js').PortfolioSnapshot | null | undefined): string {
+    if (!snap || snap.positions.length === 0) return '';
+    const invested = snap.totalInvested.toLocaleString('ko-KR');
+    const current = snap.totalCurrent.toLocaleString('ko-KR');
+    const pnlCls = snap.totalPnL > 0 ? 'pnl-up' : snap.totalPnL < 0 ? 'pnl-down' : 'pnl-flat';
+    const pnlEmoji = snap.totalPnL > 0 ? '🟢' : snap.totalPnL < 0 ? '🔴' : '⚪';
+    const sign = snap.totalPnL >= 0 ? '+' : '';
+    const rows = snap.positions.map((p) => {
+      const pos = p.position;
+      const pnl = p.pnl;
+      const pnlPct = p.pnlPct;
+      const cur = p.currentPrice;
+      const rowCls = pnl == null ? 'pnl-na' : pnl > 0 ? 'pnl-up' : pnl < 0 ? 'pnl-down' : 'pnl-flat';
+      const pnlStr = pnl == null ? '—'
+        : `${pnl >= 0 ? '+' : ''}${pnl.toLocaleString('ko-KR')} (${pnlPct != null ? (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%' : '—'})`;
+      return `<tr class="${rowCls}">
+        <td class="pnl-name">${esc(pos.name)}<span class="pnl-code">${esc(pos.code)}</span></td>
+        <td class="num">${pos.quantity}주</td>
+        <td class="num">${pos.buyPrice.toLocaleString('ko-KR')}원</td>
+        <td class="num">${cur != null ? cur.toLocaleString('ko-KR') + '원' : '—'}</td>
+        <td class="num pnl-cell">${pnlStr}</td>
+      </tr>`;
+    }).join('');
+    return `  <section class="portfolio-pnl">
+    <h2>💼 보유 종목 실시간 손익</h2>
+    <table class="pnl-tbl">
+      <thead><tr>
+        <th>종목</th><th>수량</th><th>매수가</th><th>현재가</th><th>손익</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="pnl-summary ${pnlCls}">
+      <div><span>총 투자금액</span><b>${invested}원</b></div>
+      <div><span>현재 평가액</span><b>${current}원</b></div>
+      <div class="pnl-total"><span>총 손익</span><b>${sign}${snap.totalPnL.toLocaleString('ko-KR')}원 (${sign}${snap.totalPnLPct.toFixed(2)}%) ${pnlEmoji}</b></div>
+    </div>
+    <p class="pnl-note">📌 매수가·수량은 <code>HOLDINGS_JSON</code> 환경변수로 설정.</p>
+  </section>`;
   }
 
   private css(): string {
@@ -723,6 +770,40 @@ ${slotsHtml}
       .eod-factors .f-cat { display: inline-block; min-width: 50px; color: #1976d2; font-weight: 600; }
       .eod-factors b { color: #c62828; margin-left: 4px; }
       .eod-factors .f-det { color: #555; }
+      /* v1.7 — 구조 리스크 태그 */
+      .sr-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .76em; font-weight: 600; margin-left: 6px; vertical-align: middle; white-space: nowrap; }
+      .sr-tag.sr-high { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+      .sr-tag.sr-medium { background: #fff3e0; color: #ef6c00; border: 1px solid #ffcc80; }
+      .sr-tag.sr-low { background: #fffde7; color: #9e7e00; border: 1px solid #fff59d; }
+      .sr-tag.sr-positive { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+      /* v1.7 — 카드 인라인 손익 */
+      .pnl-inline { display: inline-block; margin-left: 8px; font-size: .85em; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .pnl-inline.pnl-up { color: #c62828; }
+      .pnl-inline.pnl-down { color: #2e7d32; }
+      .pnl-inline.pnl-flat { color: #888; }
+      /* v1.7 — 보유 종목 손익 섹션 */
+      section.portfolio-pnl { padding: 20px 24px; background: #f9fbe7; border-top: 2px solid #c5e1a5; border-bottom: 2px solid #c5e1a5; }
+      section.portfolio-pnl h2 { margin: 0 0 12px; color: #33691e; font-size: 1.15em; }
+      .pnl-tbl { width: 100%; border-collapse: collapse; background: #fff; font-size: .9em; font-variant-numeric: tabular-nums; }
+      .pnl-tbl thead th { background: #f4f4f4; padding: 7px 10px; border: 1px solid #e6e6e6; font-size: .85em; }
+      .pnl-tbl tbody td { padding: 6px 10px; border: 1px solid #f0f0f0; }
+      .pnl-tbl td.num { text-align: right; }
+      .pnl-tbl td.pnl-name { font-weight: 600; }
+      .pnl-tbl .pnl-code { font-size: .8em; color: #888; margin-left: 4px; font-weight: normal; }
+      .pnl-tbl .pnl-cell { font-weight: 600; }
+      .pnl-tbl tr.pnl-up .pnl-cell { color: #c62828; }
+      .pnl-tbl tr.pnl-down .pnl-cell { color: #2e7d32; }
+      .pnl-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; padding: 12px 14px; background: #fff; border-radius: 8px; font-size: .92em; }
+      .pnl-summary > div { display: flex; flex-direction: column; gap: 2px; }
+      .pnl-summary > div span { color: #777; font-size: .85em; }
+      .pnl-summary > div b { font-variant-numeric: tabular-nums; font-size: 1.05em; }
+      .pnl-summary.pnl-up .pnl-total b { color: #c62828; }
+      .pnl-summary.pnl-down .pnl-total b { color: #2e7d32; }
+      .pnl-note { margin: 10px 0 0; font-size: .82em; color: #777; }
+      .pnl-note code { background: #fff; padding: 1px 5px; border-radius: 3px; }
+      @media (max-width: 640px) {
+        .pnl-summary { grid-template-columns: 1fr; gap: 6px; }
+      }
       section { padding: 20px 24px; }
       h2 { margin: 0 0 12px; font-size: 1.2em; }
       .weather-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -1360,6 +1441,28 @@ function formatKrwShort(v: number): string {
   if (v >= 1e8) return `${(v / 1e8).toFixed(0)}억`;
   if (v >= 1e4) return `${(v / 1e4).toFixed(0)}만`;
   return v.toLocaleString('ko-KR');
+}
+
+function renderStructuralRisk(
+  risk: import('../types/structural-risk.js').StructuralRiskResult | null,
+): string {
+  if (!risk || risk.riskLevel === 'neutral' || !risk.riskTag) return '';
+  const cls = `sr-${risk.riskLevel}`;
+  const icon = risk.riskLevel === 'high' ? '🔴'
+    : risk.riskLevel === 'medium' ? '🟠'
+    : risk.riskLevel === 'low' ? '🟡'
+    : '🟢';
+  const title = risk.warning ? esc(risk.warning) : esc(risk.riskTag);
+  return ` <span class="sr-tag ${cls}" title="${title}">${icon} ${esc(risk.riskTag)}</span>`;
+}
+
+function renderPnL(
+  pnl: import('../types/portfolio.js').PositionPnL | null,
+): string {
+  if (!pnl || pnl.pnl == null || pnl.pnlPct == null) return '';
+  const cls = pnl.pnl > 0 ? 'pnl-up' : pnl.pnl < 0 ? 'pnl-down' : 'pnl-flat';
+  const sign = pnl.pnl >= 0 ? '+' : '';
+  return ` <span class="pnl-inline ${cls}">${sign}${pnl.pnl.toLocaleString('ko-KR')}원 (${sign}${pnl.pnlPct.toFixed(2)}%)</span>`;
 }
 
 function formatFlow(n: number | null): string {

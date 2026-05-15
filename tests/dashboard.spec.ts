@@ -14,6 +14,12 @@ import { KrFearGreedSource } from '../src/sources/macro/KrFearGreedSource.js';
 import type { FearGreedIndex } from '../src/types/fear-greed.js';
 import { NaverVolumeRankSource, type VolumeRankRow } from '../src/sources/naver-kr/NaverVolumeRankSource.js';
 import { EndOfDayPicker, type EndOfDayPick } from '../src/analyzers/EndOfDayPicker.js';
+import { PortfolioTracker } from '../src/analyzers/PortfolioTracker.js';
+import type { PortfolioSnapshot } from '../src/types/portfolio.js';
+import { JandiSignalNotifier } from '../src/notifications/JandiSignalNotifier.js';
+import { loadEnv } from '../src/utils/loadEnv.js';
+
+loadEnv();
 import {
   KR_SECTOR_MAP,
   type SectorTag,
@@ -143,6 +149,7 @@ let kospiIndexValue: number | null = null;
 let kospiIndexChangePct: number | null = null;
 let volumeTop10: VolumeRankRow[] = [];
 let eodPicks: EndOfDayPick[] = [];
+let portfolioPnL: PortfolioSnapshot | null = null;
 const volumeMap = new Map<string, number[]>(); // code → 최근 30거래일 일별 거래량
 const SPARKLINE_DAYS = 60;
 const BENCHMARK_SYMBOL = '^KS11';
@@ -432,7 +439,25 @@ test.afterAll(async () => {
     })),
   });
 
-  // 보유 종목
+  // 보유 종목 + v1.7: 손익 + 구조 리스크 태그
+  const { StructuralRiskFilter } = await import('../src/analyzers/StructuralRiskFilter.js');
+  const srFilter = new StructuralRiskFilter();
+  const holdings = PortfolioTracker.parseFromEnv(process.env.HOLDINGS_JSON);
+  const priceMap = new Map<string, number>();
+  for (const [code, closes] of closesMap) {
+    if (closes.length > 0) priceMap.set(code, closes[closes.length - 1]!);
+  }
+  if (holdings.length > 0) {
+    portfolioPnL = new PortfolioTracker().compute(holdings, priceMap);
+    logger.info('portfolio pnl computed', {
+      positions: portfolioPnL.positions.length,
+      totalPnL: portfolioPnL.totalPnL,
+      totalPnLPct: portfolioPnL.totalPnLPct.toFixed(2) + '%',
+    });
+  }
+  const holdingsPnLMap = new Map<string, import('../src/types/portfolio.js').PositionPnL>();
+  if (portfolioPnL) for (const p of portfolioPnL.positions) holdingsPnLMap.set(p.position.code, p);
+
   const favoriteResults: UniverseTop[] = [];
   for (const ticker of krCodes) {
     const card = buildCard(ticker);
@@ -441,6 +466,8 @@ test.afterAll(async () => {
     card.consensus = consensusMap.get(ticker) ?? null;
     card.financial = financialMap.get(ticker) ?? null;
     card.qualityScore = scoreMap.get(ticker) ?? null;
+    card.structuralRisk = srFilter.assess(ticker);
+    card.pnl = holdingsPnLMap.get(ticker) ?? null;
     const ins = evaluateInsight(card, 'KR');
     favoriteResults.push({
       ticker,
@@ -516,7 +543,13 @@ test.afterAll(async () => {
   }
   krValueScreenerTop = valueScreenerResults;
 
-  // v1.3 — 100만원 코스피 매매 시그널 (관심+가치 후보 전체 평가) + v1.6 RS 팩터
+  // v1.3 — 100만원 코스피 매매 시그널 (관심+가치 후보 전체 평가) + v1.6 RS 팩터 + v1.7 구조 리스크/옵션만기 보정
+  const { MarketEventCalendar: MEC } = await import('../src/analyzers/MarketEventCalendar.js');
+  const eventsForSignal = MEC.getEvents();
+  const isOptionExpiryDay = eventsForSignal.some(
+    (e) => e.daysUntil === 0 && (e.kind === 'option_expiry' || e.kind === 'quadruple_witching'),
+  );
+  logger.info('signal engine context', { isOptionExpiryDay });
   const engine = new TradingSignalEngine();
   const allSignals: TradingSignal[] = [];
   for (const [code, snap] of allSnaps) {
@@ -552,7 +585,7 @@ test.afterAll(async () => {
         }
       }
     }
-    allSignals.push(engine.evaluate(card, krFearGreed));
+    allSignals.push(engine.evaluate(card, { fearGreed: krFearGreed, isOptionExpiryDay }));
   }
   const planner = new PortfolioPlanner();
   krPortfolioPlan = planner.suggest(allSignals, { totalCapital: 1_000_000, slotCount: 3 });
@@ -575,13 +608,34 @@ test.afterAll(async () => {
   });
 
   const today = todayInSeoul();
-  const { MarketEventCalendar } = await import('../src/analyzers/MarketEventCalendar.js');
-  const marketEvents = MarketEventCalendar.getEvents();
+  // v1.7 — 시장 이벤트 (이미 위에서 fetch했지만 표시용으로 다시 한번)
+  const marketEvents = eventsForSignal;
   logger.info('market events', {
     upcoming: marketEvents.slice(0, 5).map((e) => ({
       kind: e.kind, date: e.date, daysUntil: e.daysUntil, severity: e.severity,
     })),
   });
+
+  // v1.7 — 잔디 강력매수 알림 (75점+ STRONG_BUY · 구조리스크 HIGH 제외 · 52주 70% 이하 · 5d 동반 매수)
+  const has5dBothBuy = new Map<string, boolean>();
+  const structuralRiskMap = new Map<string, import('../src/types/structural-risk.js').StructuralRiskResult>();
+  const position52wMap = new Map<string, number | null>();
+  for (const sig of allSignals) {
+    const flow = flowMap.get(sig.code);
+    has5dBothBuy.set(sig.code,
+      !!(flow && flow.net5dForeigner != null && flow.net5dInstitutional != null
+        && flow.net5dForeigner > 0 && flow.net5dInstitutional > 0));
+    structuralRiskMap.set(sig.code, srFilter.assess(sig.code));
+    position52wMap.set(sig.code, sig.references.fiftyTwoWeekPositionPct);
+  }
+  const notifier = new JandiSignalNotifier();
+  const dashboardUrl = process.env.DASHBOARD_PUBLIC_URL;
+  const notifyResult = await notifier.notify(allSignals, {
+    has5dBothBuy, structuralRisk: structuralRiskMap, position52w: position52wMap,
+    ...(dashboardUrl ? { dashboardUrl } : {}),
+  });
+  logger.info('jandi notify result', notifyResult);
+
   const dashboard: DashboardPage = {
     generatedAt: new Date().toISOString(),
     today,
@@ -594,6 +648,7 @@ test.afterAll(async () => {
     volumeTop10,
     eodPicks,
     marketEvents,
+    portfolioPnL,
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });

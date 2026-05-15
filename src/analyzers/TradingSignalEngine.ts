@@ -4,7 +4,9 @@ import type { IndicatorSet } from '../types/timeseries.js';
 import type { ValueScore } from '../types/valuation.js';
 import type { FearGreedIndex } from '../types/fear-greed.js';
 import type { AnalystConsensus } from '../types/consensus.js';
+import type { StructuralRiskResult } from '../types/structural-risk.js';
 import type { QualityScore } from './QualityScore.js';
+import { StructuralRiskFilter } from './StructuralRiskFilter.js';
 import {
   ACTION_THRESHOLDS,
   type SignalAction,
@@ -57,9 +59,36 @@ import {
  *   +5  RS > +5%p (강한 outperform — 추세 종목 가산)
  *   +3  RS > +2%p (약한 outperform)
  *   -3  RS < -5%p (강한 underperform — 시장 대비 약세)
+ *
+ * 구조 리스크 보정 (v1.7, CLAUDE.md §4.7 — StructuralRiskFilter):
+ *  -15  🔴 HIGH    온라인 유통 등 구조적 위험 섹터
+ *  -10  🟠 MEDIUM  면세·호텔 등 회복 모멘텀 불확실
+ *   -5  🟡 LOW     성숙기 통신 (배당용 적합, 신규 매수 모멘텀 약함)
+ *   +5  🟢 POSITIVE 조선·방산·반도체 (슈퍼사이클·AI)
+ *
+ * 옵션만기일 보정 (v1.7, 매월 둘째 목요일):
+ *   -5  당일 옵션만기 — 차익청산으로 변동성 확대, 신호 신뢰도 하향
  */
+export interface SignalEvalContext {
+  fearGreed?: FearGreedIndex | null;
+  /** 오늘이 코스피200 옵션만기일(매월 둘째 목)인지 여부 — MarketEventCalendar로 사전 계산 */
+  isOptionExpiryDay?: boolean;
+}
+
 export class TradingSignalEngine {
-  evaluate(card: DashboardCard, fearGreed: FearGreedIndex | null = null): TradingSignal {
+  private readonly structuralRiskFilter = new StructuralRiskFilter();
+
+  evaluate(
+    card: DashboardCard,
+    fearGreedOrCtx: FearGreedIndex | SignalEvalContext | null = null,
+  ): TradingSignal {
+    // 후방 호환: 두 번째 인자가 FearGreedIndex 객체이면 그대로 fearGreed로 취급
+    const ctx: SignalEvalContext =
+      fearGreedOrCtx == null
+        ? {}
+        : 'zone' in (fearGreedOrCtx as FearGreedIndex)
+          ? { fearGreed: fearGreedOrCtx as FearGreedIndex }
+          : (fearGreedOrCtx as SignalEvalContext);
     const s = card.snapshot;
     const factors: SignalFactor[] = [];
 
@@ -68,9 +97,13 @@ export class TradingSignalEngine {
     this.applyQualityFactors(card.qualityScore ?? null, factors);
     this.applyPositionFactors(card.fiftyTwoWeekPosition, factors);
     this.applyTechnicalFactors(card.indicators, factors);
-    this.applyFearGreedFactors(fearGreed, factors);
+    this.applyFearGreedFactors(ctx.fearGreed ?? null, factors);
     this.applyConsensusFactors(card.consensus, factors);
     this.applyRelativeStrengthFactors(card.relativeStrength ?? null, factors);
+    const risk = this.structuralRiskFilter.assess(s.code);
+    card.structuralRisk = risk;
+    this.applyStructuralRiskFactors(risk, factors);
+    this.applyOptionExpiryFactors(ctx.isOptionExpiryDay, factors);
 
     const raw = factors.reduce((acc, f) => acc + f.weight, 0);
     const score = clamp(Math.round(raw), -100, 100);
@@ -249,6 +282,32 @@ export class TradingSignalEngine {
         category: '기술', weight: -3, status: 'negative',
         detail: `상대 강도 ${rsPctDisplay}%p (코스피 대비 20일 underperform)`,
       });
+  }
+
+  /**
+   * v1.7 — 섹터 구조 리스크 보정 (CLAUDE.md §4.7).
+   */
+  private applyStructuralRiskFactors(risk: StructuralRiskResult, factors: SignalFactor[]): void {
+    if (risk.riskLevel === 'neutral' || risk.scoreAdjustment === 0) return;
+    const category = '가치' as const;
+    const status = risk.scoreAdjustment >= 0 ? 'positive' : 'negative';
+    const prefix = risk.riskLevel === 'high' ? '🔴'
+      : risk.riskLevel === 'medium' ? '🟠'
+      : risk.riskLevel === 'low' ? '🟡'
+      : '🟢';
+    const detail = `${prefix} ${risk.riskTag}${risk.warning ? ` — ${risk.warning}` : ''}`;
+    factors.push({ category, weight: risk.scoreAdjustment, status, detail });
+  }
+
+  /**
+   * v1.7 — 옵션만기일 보정. 둘째 목요일 차익청산으로 신호 신뢰도 하향.
+   */
+  private applyOptionExpiryFactors(isExpiry: boolean | undefined, factors: SignalFactor[]): void {
+    if (!isExpiry) return;
+    factors.push({
+      category: '기술', weight: -5, status: 'negative',
+      detail: '📅 옵션만기일 — 차익청산 변동성, 당일 신호 신뢰도 하향',
+    });
   }
 
   private scoreToAction(score: number): SignalAction {

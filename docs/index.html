@@ -73,6 +73,40 @@
       .eod-factors .f-cat { display: inline-block; min-width: 50px; color: #1976d2; font-weight: 600; }
       .eod-factors b { color: #c62828; margin-left: 4px; }
       .eod-factors .f-det { color: #555; }
+      /* v1.7 — 구조 리스크 태그 */
+      .sr-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .76em; font-weight: 600; margin-left: 6px; vertical-align: middle; white-space: nowrap; }
+      .sr-tag.sr-high { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+      .sr-tag.sr-medium { background: #fff3e0; color: #ef6c00; border: 1px solid #ffcc80; }
+      .sr-tag.sr-low { background: #fffde7; color: #9e7e00; border: 1px solid #fff59d; }
+      .sr-tag.sr-positive { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+      /* v1.7 — 카드 인라인 손익 */
+      .pnl-inline { display: inline-block; margin-left: 8px; font-size: .85em; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .pnl-inline.pnl-up { color: #c62828; }
+      .pnl-inline.pnl-down { color: #2e7d32; }
+      .pnl-inline.pnl-flat { color: #888; }
+      /* v1.7 — 보유 종목 손익 섹션 */
+      section.portfolio-pnl { padding: 20px 24px; background: #f9fbe7; border-top: 2px solid #c5e1a5; border-bottom: 2px solid #c5e1a5; }
+      section.portfolio-pnl h2 { margin: 0 0 12px; color: #33691e; font-size: 1.15em; }
+      .pnl-tbl { width: 100%; border-collapse: collapse; background: #fff; font-size: .9em; font-variant-numeric: tabular-nums; }
+      .pnl-tbl thead th { background: #f4f4f4; padding: 7px 10px; border: 1px solid #e6e6e6; font-size: .85em; }
+      .pnl-tbl tbody td { padding: 6px 10px; border: 1px solid #f0f0f0; }
+      .pnl-tbl td.num { text-align: right; }
+      .pnl-tbl td.pnl-name { font-weight: 600; }
+      .pnl-tbl .pnl-code { font-size: .8em; color: #888; margin-left: 4px; font-weight: normal; }
+      .pnl-tbl .pnl-cell { font-weight: 600; }
+      .pnl-tbl tr.pnl-up .pnl-cell { color: #c62828; }
+      .pnl-tbl tr.pnl-down .pnl-cell { color: #2e7d32; }
+      .pnl-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; padding: 12px 14px; background: #fff; border-radius: 8px; font-size: .92em; }
+      .pnl-summary > div { display: flex; flex-direction: column; gap: 2px; }
+      .pnl-summary > div span { color: #777; font-size: .85em; }
+      .pnl-summary > div b { font-variant-numeric: tabular-nums; font-size: 1.05em; }
+      .pnl-summary.pnl-up .pnl-total b { color: #c62828; }
+      .pnl-summary.pnl-down .pnl-total b { color: #2e7d32; }
+      .pnl-note { margin: 10px 0 0; font-size: .82em; color: #777; }
+      .pnl-note code { background: #fff; padding: 1px 5px; border-radius: 3px; }
+      @media (max-width: 640px) {
+        .pnl-summary { grid-template-columns: 1fr; gap: 6px; }
+      }
       section { padding: 20px 24px; }
       h2 { margin: 0 0 12px; font-size: 1.2em; }
       .weather-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -503,11 +537,11 @@
 <body>
   <header>
     <h1>오늘의 대시보드 <span class="live-dot" title="장중 5분 자동 갱신">●</span></h1>
-    <div class="meta">2026-05-15 (금요일) · 생성 2026-05-15T05:20:00.973Z · <span class="refresh-note">5분마다 자동 새로고침</span></div>
+    <div class="meta">2026-05-15 (금요일) · 생성 2026-05-15T05:59:10.471Z · <span class="refresh-note">5분마다 자동 새로고침</span></div>
     <div class="kospi-bar down">
       <span class="kospi-label">📈 코스피</span>
-      <span class="kospi-value">7,546.73</span>
-      <span class="kospi-change">-5.45%</span>
+      <span class="kospi-value">7,485.63</span>
+      <span class="kospi-change">-6.21%</span>
     </div>
     <div class="market-events">
       <div class="ev-title">⚠️ 시장 이벤트 캘린더 — 종가매매·단타 영향</div>
@@ -530,173 +564,173 @@
       <tbody><tr>
         <td class="rank">1</td>
         <td class="name"><a href="https://finance.naver.com/item/main.naver?code=003280" target="_blank" rel="noopener">흥아해운</a></td>
-        <td class="num">2,815</td>
-        <td class="num up">+3.11%</td>
-        <td class="num">76,919,345</td>
+        <td class="num">2,765</td>
+        <td class="num up">+1.28%</td>
+        <td class="num">80,156,249</td>
         <td class="num">2억</td>
-        <td class="num muted">22.2</td>
+        <td class="num muted">21.8</td>
       </tr><tr>
         <td class="rank">2</td>
-        <td class="name"><a href="https://finance.naver.com/item/main.naver?code=018880" target="_blank" rel="noopener">한온시스템</a></td>
-        <td class="num">5,120</td>
-        <td class="num up">+2.40%</td>
-        <td class="num">55,995,114</td>
-        <td class="num">3억</td>
-        <td class="num muted">-19.9</td>
+        <td class="name"><a href="https://finance.naver.com/item/main.naver?code=001740" target="_blank" rel="noopener">SK네트웍스</a></td>
+        <td class="num">8,870</td>
+        <td class="num up">+12.28%</td>
+        <td class="num">66,042,084</td>
+        <td class="num">6억</td>
+        <td class="num muted">39.4</td>
       </tr><tr>
         <td class="rank">3</td>
-        <td class="name"><a href="https://finance.naver.com/item/main.naver?code=001740" target="_blank" rel="noopener">SK네트웍스</a></td>
-        <td class="num">9,240</td>
-        <td class="num up">+16.96%</td>
-        <td class="num">54,339,897</td>
-        <td class="num">5억</td>
-        <td class="num muted">41.1</td>
+        <td class="name"><a href="https://finance.naver.com/item/main.naver?code=018880" target="_blank" rel="noopener">한온시스템</a></td>
+        <td class="num">5,000</td>
+        <td class="num up">+0.00%</td>
+        <td class="num">58,991,466</td>
+        <td class="num">3억</td>
+        <td class="num muted">-19.5</td>
       </tr><tr>
         <td class="rank">4</td>
         <td class="name"><a href="https://finance.naver.com/item/main.naver?code=034220" target="_blank" rel="noopener">LG디스플레이</a></td>
-        <td class="num">14,100</td>
-        <td class="num down">-8.08%</td>
-        <td class="num">33,223,221</td>
+        <td class="num">13,820</td>
+        <td class="num down">-9.91%</td>
+        <td class="num">34,530,010</td>
         <td class="num">5억</td>
-        <td class="num muted">31.1</td>
+        <td class="num muted">30.5</td>
       </tr><tr>
         <td class="rank">5</td>
-        <td class="name"><a href="https://finance.naver.com/item/main.naver?code=452260" target="_blank" rel="noopener">한화갤러리아</a></td>
-        <td class="num">3,355</td>
-        <td class="num up">+0.45%</td>
-        <td class="num">28,215,844</td>
-        <td class="num">9947만</td>
-        <td class="num muted">197.3</td>
+        <td class="name"><a href="https://finance.naver.com/item/main.naver?code=005930" target="_blank" rel="noopener">삼성전자</a></td>
+        <td class="num">268,000</td>
+        <td class="num down">-9.46%</td>
+        <td class="num">31,814,830</td>
+        <td class="num">90억</td>
+        <td class="num muted">40.8</td>
       </tr><tr>
         <td class="rank">6</td>
-        <td class="name"><a href="https://finance.naver.com/item/main.naver?code=005930" target="_blank" rel="noopener">삼성전자</a></td>
-        <td class="num">275,500</td>
-        <td class="num down">-6.93%</td>
-        <td class="num">27,523,109</td>
-        <td class="num">78억</td>
-        <td class="num muted">42.0</td>
+        <td class="name"><a href="https://finance.naver.com/item/main.naver?code=452260" target="_blank" rel="noopener">한화갤러리아</a></td>
+        <td class="num">3,300</td>
+        <td class="num down">-1.20%</td>
+        <td class="num">29,263,910</td>
+        <td class="num">1억</td>
+        <td class="num muted">194.1</td>
       </tr><tr>
         <td class="rank">7</td>
         <td class="name"><a href="https://finance.naver.com/item/main.naver?code=088350" target="_blank" rel="noopener">한화생명</a></td>
-        <td class="num">5,430</td>
-        <td class="num down">-1.09%</td>
-        <td class="num">20,705,851</td>
+        <td class="num">5,300</td>
+        <td class="num down">-3.46%</td>
+        <td class="num">21,650,976</td>
         <td class="num">1억</td>
-        <td class="num muted">7.4</td>
+        <td class="num muted">7.2</td>
       </tr><tr>
         <td class="rank">8</td>
         <td class="name"><a href="https://finance.naver.com/item/main.naver?code=001510" target="_blank" rel="noopener">SK증권</a></td>
-        <td class="num">4,155</td>
-        <td class="num down">-7.15%</td>
-        <td class="num">12,656,481</td>
-        <td class="num">5562만</td>
-        <td class="num muted">34.3</td>
+        <td class="num">4,080</td>
+        <td class="num down">-8.83%</td>
+        <td class="num">13,838,964</td>
+        <td class="num">6049만</td>
+        <td class="num muted">33.7</td>
       </tr><tr>
         <td class="rank">9</td>
         <td class="name"><a href="https://finance.naver.com/item/main.naver?code=047040" target="_blank" rel="noopener">대우건설</a></td>
-        <td class="num">28,450</td>
-        <td class="num down">-12.73%</td>
-        <td class="num">12,590,070</td>
+        <td class="num">27,850</td>
+        <td class="num down">-14.57%</td>
+        <td class="num">13,537,936</td>
         <td class="num">4억</td>
-        <td class="num muted">-13.0</td>
+        <td class="num muted">-12.7</td>
       </tr><tr>
         <td class="rank">10</td>
         <td class="name"><a href="https://finance.naver.com/item/main.naver?code=008350" target="_blank" rel="noopener">남선알미늄</a></td>
-        <td class="num">1,825</td>
-        <td class="num down">-10.32%</td>
-        <td class="num">9,286,432</td>
-        <td class="num">1760만</td>
-        <td class="num muted">65.2</td>
+        <td class="num">1,796</td>
+        <td class="num down">-11.74%</td>
+        <td class="num">9,838,994</td>
+        <td class="num">1860만</td>
+        <td class="num muted">64.1</td>
       </tr></tbody>
     </table>
   </section>
   <section class="eod-picks">
     <h2>📌 오늘 종가 매수 추천 <span class="src-note">— 돌팬티 종가매매 룰 (거래대금·수급·거래량·양봉·52주)</span></h2>
     <p class="intro">거래량 Top 10 중 5팩터 점수 정렬. <b>🔥 강력 추천 70+</b> / <b>⚡ 추천 50~69</b> / <b>💡 관망 30~49</b>. ⚠️ 매수가·손절가 단정 추천 없음 — 점수와 근거만 제공.</p>
-    <div class="eod-list"><div class="eod-card eod-buy">
+    <div class="eod-list"><div class="eod-card eod-strong">
         <div class="eod-head">
           <span class="eod-ord">#1</span>
           <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=001740" target="_blank" rel="noopener">SK네트웍스</a> <span class="eod-code">001740</span></span>
-          <span class="eod-rec">⚡ 추천 <b>67</b>점</span>
+          <span class="eod-rec">🔥 강력 추천 <b>70</b>점</span>
         </div>
         <div class="eod-stats">
-          <span>9,240원</span>
-          <span class="up">+16.96%</span>
-          <span>거래량 15.8×</span>
-          <span>52주 89%</span>
-          <span class="eod-flow">외인 <span class="down">↓29만</span> / 기관 <span class="up">↑33만</span></span>
+          <span>8,870원</span>
+          <span class="up">+12.28%</span>
+          <span>거래량 19.2×</span>
+          <span>52주 83%</span>
+          <span class="eod-flow">외인 <span class="down">↓107만</span> / 기관 <span class="up">↑128만</span></span>
         </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+12</b> <span class="f-det">거래량 순위 7위 · 거래대금 5억</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 기관 순매수 (장중)</span></li><li><span class="f-cat">거래량</span> <b>+20</b> <span class="f-det">거래량 평소 15.8× — 세력 매집 가능성</span></li><li><span class="f-cat">캔들</span> <b>+15</b> <span class="f-det">강한 양봉 +16.96% — 모멘텀 강</span></li><li><span class="f-cat">52주</span> <b>+10</b> <span class="f-det">52주 89% — 강세 추세 (신고가 근접)</span></li></ul>
+        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+15</b> <span class="f-det">거래량 순위 6위 · 거래대금 6억</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 기관 순매수 (장중)</span></li><li><span class="f-cat">거래량</span> <b>+20</b> <span class="f-det">거래량 평소 19.2× — 세력 매집 가능성</span></li><li><span class="f-cat">캔들</span> <b>+15</b> <span class="f-det">강한 양봉 +12.28% — 모멘텀 강</span></li><li><span class="f-cat">52주</span> <b>+10</b> <span class="f-det">52주 83% — 강세 추세 (신고가 근접)</span></li></ul>
       </div><div class="eod-card eod-buy">
         <div class="eod-head">
           <span class="eod-ord">#2</span>
           <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=003280" target="_blank" rel="noopener">흥아해운</a> <span class="eod-code">003280</span></span>
-          <span class="eod-rec">⚡ 추천 <b>66</b>점</span>
+          <span class="eod-rec">⚡ 추천 <b>61</b>점</span>
         </div>
         <div class="eod-stats">
-          <span>2,815원</span>
-          <span class="up">+3.11%</span>
-          <span>거래량 2.5×</span>
-          <span>52주 39%</span>
-          <span class="eod-flow">외인 <span class="down">↓95만</span> / 기관 <span class="up">↑5,000</span></span>
+          <span>2,765원</span>
+          <span class="up">+1.28%</span>
+          <span>거래량 2.6×</span>
+          <span>52주 38%</span>
+          <span class="eod-flow">외인 <span class="down">↓69만</span> / 기관 <span class="up">↑5,000</span></span>
         </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+21</b> <span class="f-det">거래량 순위 4위 · 거래대금 2억</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 기관 순매수 (장중)</span></li><li><span class="f-cat">거래량</span> <b>+20</b> <span class="f-det">거래량 평소 2.5× — 세력 매집 가능성</span></li><li><span class="f-cat">캔들</span> <b>+15</b> <span class="f-det">강한 양봉 +3.11% — 모멘텀 강</span></li></ul>
+        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+21</b> <span class="f-det">거래량 순위 4위 · 거래대금 2억</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 기관 순매수 (장중)</span></li><li><span class="f-cat">거래량</span> <b>+20</b> <span class="f-det">거래량 평소 2.6× — 세력 매집 가능성</span></li><li><span class="f-cat">캔들</span> <b>+10</b> <span class="f-det">양봉 +1.28%</span></li></ul>
       </div><div class="eod-card eod-buy">
         <div class="eod-head">
           <span class="eod-ord">#3</span>
           <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=018880" target="_blank" rel="noopener">한온시스템</a> <span class="eod-code">018880</span></span>
-          <span class="eod-rec">⚡ 추천 <b>66</b>점</span>
+          <span class="eod-rec">⚡ 추천 <b>61</b>점</span>
         </div>
         <div class="eod-stats">
-          <span>5,120원</span>
-          <span class="up">+2.40%</span>
-          <span>거래량 1.5×</span>
-          <span>52주 76%</span>
-          <span class="eod-flow">외인 <span class="up">↑191만</span> / 기관 <span class="up">↑9만</span></span>
+          <span>5,000원</span>
+          <span class="up">+0.00%</span>
+          <span>거래량 1.6×</span>
+          <span>52주 72%</span>
+          <span class="eod-flow">외인 <span class="up">↑161만</span> / 기관 <span class="up">↑8만</span></span>
         </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+15</b> <span class="f-det">거래량 순위 6위 · 거래대금 3억</span></li><li><span class="f-cat">수급</span> <b>+25</b> <span class="f-det">오늘 외인+기관 동반 순매수 (장중)</span></li><li><span class="f-cat">거래량</span> <b>+6</b> <span class="f-det">거래량 평소 1.5×</span></li><li><span class="f-cat">캔들</span> <b>+10</b> <span class="f-det">양봉 +2.40%</span></li><li><span class="f-cat">52주</span> <b>+10</b> <span class="f-det">52주 76% — 강세 추세 (신고가 근접)</span></li></ul>
+        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+9</b> <span class="f-det">거래량 순위 8위 · 거래대금 3억</span></li><li><span class="f-cat">수급</span> <b>+25</b> <span class="f-det">오늘 외인+기관 동반 순매수 (장중)</span></li><li><span class="f-cat">거래량</span> <b>+12</b> <span class="f-det">거래량 평소 1.6× — 관심 증가</span></li><li><span class="f-cat">캔들</span> <b>+5</b> <span class="f-det">약한 양봉 +0.00%</span></li><li><span class="f-cat">52주</span> <b>+10</b> <span class="f-det">52주 72% — 강세 추세 (신고가 근접)</span></li></ul>
       </div><div class="eod-card eod-hold">
         <div class="eod-head">
           <span class="eod-ord">#4</span>
-          <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=452260" target="_blank" rel="noopener">한화갤러리아</a> <span class="eod-code">452260</span></span>
-          <span class="eod-rec">💡 관망 <b>40</b>점</span>
-        </div>
-        <div class="eod-stats">
-          <span>3,355원</span>
-          <span class="up">+0.45%</span>
-          <span>거래량 1.8×</span>
-          <span>52주 75%</span>
-          <span class="eod-flow">외인 <span class="up">↑34만</span> / 기관 <span class="flat">·0</span></span>
-        </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 11위 · 거래대금 9947만</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 외인 순매수 (장중)</span></li><li><span class="f-cat">거래량</span> <b>+12</b> <span class="f-det">거래량 평소 1.8× — 관심 증가</span></li><li><span class="f-cat">캔들</span> <b>+5</b> <span class="f-det">약한 양봉 +0.45%</span></li><li><span class="f-cat">52주</span> <b>+10</b> <span class="f-det">52주 75% — 강세 추세 (신고가 근접)</span></li></ul>
-      </div><div class="eod-card eod-hold">
-        <div class="eod-head">
-          <span class="eod-ord">#5</span>
           <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=034220" target="_blank" rel="noopener">LG디스플레이</a> <span class="eod-code">034220</span></span>
           <span class="eod-rec">💡 관망 <b>38</b>점</span>
         </div>
         <div class="eod-stats">
-          <span>14,100원</span>
-          <span class="down">-8.08%</span>
-          <span>거래량 3.4×</span>
-          <span>52주 69%</span>
-          <span class="eod-flow">외인 <span class="up">↑178만</span> / 기관 <span class="down">↓17만</span></span>
+          <span>13,820원</span>
+          <span class="down">-9.91%</span>
+          <span>거래량 3.6×</span>
+          <span>52주 66%</span>
+          <span class="eod-flow">외인 <span class="up">↑190만</span> / 기관 <span class="down">↓22만</span></span>
         </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 10위 · 거래대금 5억</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 외인 순매수 (장중)</span></li><li><span class="f-cat">거래량</span> <b>+20</b> <span class="f-det">거래량 평소 3.4× — 세력 매집 가능성</span></li><li><span class="f-cat">52주</span> <b>+5</b> <span class="f-det">52주 69% — 중상단</span></li></ul>
+        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 11위 · 거래대금 5억</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 외인 순매수 (장중)</span></li><li><span class="f-cat">거래량</span> <b>+20</b> <span class="f-det">거래량 평소 3.6× — 세력 매집 가능성</span></li><li><span class="f-cat">52주</span> <b>+5</b> <span class="f-det">52주 66% — 중상단</span></li></ul>
       </div><div class="eod-card eod-hold">
         <div class="eod-head">
-          <span class="eod-ord">#6</span>
+          <span class="eod-ord">#5</span>
           <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=088350" target="_blank" rel="noopener">한화생명</a> <span class="eod-code">088350</span></span>
           <span class="eod-rec">💡 관망 <b>38</b>점</span>
         </div>
         <div class="eod-stats">
-          <span>5,430원</span>
-          <span class="down">-1.09%</span>
-          <span>거래량 2.6×</span>
-          <span>52주 58%</span>
-          <span class="eod-flow">외인 <span class="up">↑62만</span> / 기관 <span class="down">↓3,000</span></span>
+          <span>5,300원</span>
+          <span class="down">-3.46%</span>
+          <span>거래량 2.7×</span>
+          <span>52주 55%</span>
+          <span class="eod-flow">외인 <span class="up">↑55만</span> / 기관 <span class="down">↓2,000</span></span>
         </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 17위 · 거래대금 1억</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 외인 순매수 (장중)</span></li><li><span class="f-cat">거래량</span> <b>+20</b> <span class="f-det">거래량 평소 2.6× — 세력 매집 가능성</span></li><li><span class="f-cat">52주</span> <b>+5</b> <span class="f-det">52주 58% — 중상단</span></li></ul>
+        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 19위 · 거래대금 1억</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 외인 순매수 (장중)</span></li><li><span class="f-cat">거래량</span> <b>+20</b> <span class="f-det">거래량 평소 2.7× — 세력 매집 가능성</span></li><li><span class="f-cat">52주</span> <b>+5</b> <span class="f-det">52주 55% — 중상단</span></li></ul>
+      </div><div class="eod-card eod-hold">
+        <div class="eod-head">
+          <span class="eod-ord">#6</span>
+          <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=452260" target="_blank" rel="noopener">한화갤러리아</a> <span class="eod-code">452260</span></span>
+          <span class="eod-rec">💡 관망 <b>35</b>점</span>
+        </div>
+        <div class="eod-stats">
+          <span>3,300원</span>
+          <span class="down">-1.20%</span>
+          <span>거래량 1.8×</span>
+          <span>52주 74%</span>
+          <span class="eod-flow">외인 <span class="up">↑33만</span> / 기관 <span class="flat">·0</span></span>
+        </div>
+        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 13위 · 거래대금 1억</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 외인 순매수 (장중)</span></li><li><span class="f-cat">거래량</span> <b>+12</b> <span class="f-det">거래량 평소 1.8× — 관심 증가</span></li><li><span class="f-cat">52주</span> <b>+10</b> <span class="f-det">52주 74% — 강세 추세 (신고가 근접)</span></li></ul>
       </div><div class="eod-card eod-skip">
         <div class="eod-head">
           <span class="eod-ord">#7</span>
@@ -704,55 +738,55 @@
           <span class="eod-rec">미추천 <b>18</b>점</span>
         </div>
         <div class="eod-stats">
-          <span>4,155원</span>
-          <span class="down">-7.15%</span>
+          <span>4,080원</span>
+          <span class="down">-8.83%</span>
           <span>거래량 0.5×</span>
-          <span>52주 61%</span>
-          <span class="eod-flow">외인 <span class="down">↓40만</span> / 기관 <span class="up">↑5,000</span></span>
+          <span>52주 59%</span>
+          <span class="eod-flow">외인 <span class="down">↓43만</span> / 기관 <span class="up">↑5,000</span></span>
         </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 24위 · 거래대금 5562만</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 기관 순매수 (장중)</span></li><li><span class="f-cat">52주</span> <b>+5</b> <span class="f-det">52주 61% — 중상단</span></li></ul>
+        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 24위 · 거래대금 6049만</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 기관 순매수 (장중)</span></li><li><span class="f-cat">52주</span> <b>+5</b> <span class="f-det">52주 59% — 중상단</span></li></ul>
       </div><div class="eod-card eod-skip">
         <div class="eod-head">
           <span class="eod-ord">#8</span>
+          <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=005930" target="_blank" rel="noopener">삼성전자</a> <span class="eod-code">005930</span></span>
+          <span class="eod-rec">미추천 <b>8</b>점</span>
+        </div>
+        <div class="eod-stats">
+          <span>268,000원</span>
+          <span class="down">-9.46%</span>
+          <span>거래량 1.1×</span>
+          <span>52주 87%</span>
+          <span class="eod-flow">외인 <span class="down">↓458만</span> / 기관 <span class="down">↓67만</span></span>
+        </div>
+        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 12위 · 거래대금 90억</span></li><li><span class="f-cat">수급</span> <b>-5</b> <span class="f-det">오늘 외인+기관 동반 순매도 — 종가 베팅 부적합</span></li><li><span class="f-cat">52주</span> <b>+10</b> <span class="f-det">52주 87% — 강세 추세 (신고가 근접)</span></li></ul>
+      </div><div class="eod-card eod-skip">
+        <div class="eod-head">
+          <span class="eod-ord">#9</span>
           <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=047040" target="_blank" rel="noopener">대우건설</a> <span class="eod-code">047040</span></span>
           <span class="eod-rec">미추천 <b>3</b>점</span>
         </div>
         <div class="eod-stats">
-          <span>28,450원</span>
-          <span class="down">-12.73%</span>
+          <span>27,850원</span>
+          <span class="down">-14.57%</span>
           <span>거래량 0.4×</span>
-          <span>52주 68%</span>
-          <span class="eod-flow">외인 <span class="down">↓210만</span> / 기관 <span class="down">↓4만</span></span>
+          <span>52주 66%</span>
+          <span class="eod-flow">외인 <span class="down">↓324만</span> / 기관 <span class="down">↓5만</span></span>
         </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 25위 · 거래대금 4억</span></li><li><span class="f-cat">수급</span> <b>-5</b> <span class="f-det">오늘 외인+기관 동반 순매도 — 종가 베팅 부적합</span></li><li><span class="f-cat">52주</span> <b>+5</b> <span class="f-det">52주 68% — 중상단</span></li></ul>
+        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 25위 · 거래대금 4억</span></li><li><span class="f-cat">수급</span> <b>-5</b> <span class="f-det">오늘 외인+기관 동반 순매도 — 종가 베팅 부적합</span></li><li><span class="f-cat">52주</span> <b>+5</b> <span class="f-det">52주 66% — 중상단</span></li></ul>
       </div><div class="eod-card eod-skip">
         <div class="eod-head">
-          <span class="eod-ord">#9</span>
+          <span class="eod-ord">#10</span>
           <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=008350" target="_blank" rel="noopener">남선알미늄</a> <span class="eod-code">008350</span></span>
           <span class="eod-rec">미추천 <b>3</b>점</span>
         </div>
         <div class="eod-stats">
-          <span>1,825원</span>
-          <span class="down">-10.32%</span>
+          <span>1,796원</span>
+          <span class="down">-11.74%</span>
           <span>거래량 0.6×</span>
-          <span>52주 33%</span>
-          <span class="eod-flow">외인 <span class="down">↓96만</span> / 기관 <span class="flat">·0</span></span>
+          <span>52주 32%</span>
+          <span class="eod-flow">외인 <span class="down">↓83만</span> / 기관 <span class="flat">·0</span></span>
         </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 28위 · 거래대금 1760만</span></li></ul>
-      </div><div class="eod-card eod-skip">
-        <div class="eod-head">
-          <span class="eod-ord">#10</span>
-          <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=005930" target="_blank" rel="noopener">삼성전자</a> <span class="eod-code">005930</span></span>
-          <span class="eod-rec">미추천 <b>1</b>점</span>
-        </div>
-        <div class="eod-stats">
-          <span>275,500원</span>
-          <span class="down">-6.93%</span>
-          <span>거래량 1.0×</span>
-          <span>52주 90%</span>
-          <span class="eod-flow">외인 <span class="down">↓405만</span> / 기관 <span class="down">↓57만</span></span>
-        </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 12위 · 거래대금 78억</span></li><li><span class="f-cat">수급</span> <b>-5</b> <span class="f-det">오늘 외인+기관 동반 순매도 — 종가 베팅 부적합</span></li><li><span class="f-cat">52주</span> <b>+3</b> <span class="f-det">52주 90% — 고점 영역 (갭 부담)</span></li></ul>
+        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 29위 · 거래대금 1860만</span></li></ul>
       </div></div>
   </section>
   <section class="portfolio-plan">
@@ -762,12 +796,33 @@
       <div class="plan-meta"><span>자본</span><b>1,000,000원</b></div>
       <div class="plan-meta"><span>거래비용 reserve</span><b>5,000원</b></div>
       <div class="plan-meta"><span>매수 후보 슬롯</span><b>3종목</b></div>
-      <div class="plan-meta"><span>활용률</span><b>87.6%</b></div>
-      <div class="plan-meta"><span>잔여 현금</span><b>124,000원</b></div>
+      <div class="plan-meta"><span>활용률</span><b>86.4%</b></div>
+      <div class="plan-meta"><span>잔여 현금</span><b>136,500원</b></div>
     </div>
     <div class="plan-grid">
       <article class="plan-slot action-strong-buy">
         <div class="plan-rank">#1</div>
+        <div class="plan-body">
+          <h3>
+            <a class="toss-link" href="https://tossinvest.com/stocks/A008770" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)">호텔신라 <span class="ticker">008770</span></a>
+            <span class="action-chip action-strong-buy">강력 매수 후보</span>
+            <span class="signal-score">+53점</span>
+          </h3>
+          <div class="plan-trade">
+            <div><span>현재가</span><b>61,900원</b></div>
+            <div><span>매수 시뮬</span><b>5주</b></div>
+            <div><span>예상 매수금</span><b>309,500원</b></div>
+            <div><span>자본 비중</span><b>30.9%</b></div>
+          </div>
+          <div class="plan-ref">참고: 52주 위치 74% · RSI 59 · 52주 39,700 ~ 70,300원</div>
+          <details class="plan-factors">
+            <summary>판정 근거 (9개 팩터)</summary>
+            <ul><li class="factor-positive"><span class="fc-cat">수급</span> 오늘 외인+기관 동반 순매수 (장중) <span class="fc-w">+25</span></li><li class="factor-positive"><span class="fc-cat">수급</span> 5일 누적 외인+기관 동반 매수 <span class="fc-w">+20</span></li><li class="factor-positive"><span class="fc-cat">수급</span> 20일 누적 외인+기관 동반 매수 (중기) <span class="fc-w">+15</span></li><li class="factor-negative"><span class="fc-cat">품질</span> 품질 D 등급 (26/100) — 펀더멘털 취약 <span class="fc-w">-10</span></li><li class="factor-positive"><span class="fc-cat">기술</span> 정배열 (5일&gt;20일&gt;60일 이평선) <span class="fc-w">+5</span></li><li class="factor-negative"><span class="fc-cat">52주</span> 시장 탐욕 (F&amp;G 57) — 추격 매수 주의 <span class="fc-w">-3</span></li><li class="factor-positive"><span class="fc-cat">품질</span> 애널리스트 강력 매수 (2.00/5 매수) <span class="fc-w">+8</span></li><li class="factor-positive"><span class="fc-cat">기술</span> 상대 강도 +2.3%p (코스피 대비 우위) <span class="fc-w">+3</span></li><li class="factor-negative"><span class="fc-cat">가치</span> 🟠 면세업 회복 더딤 — 중국 단체관광 회복 지연 · 면세업 경쟁 심화 <span class="fc-w">-10</span></li></ul>
+          </details>
+        </div>
+      </article>
+      <article class="plan-slot action-strong-buy">
+        <div class="plan-rank">#2</div>
         <div class="plan-body">
           <h3>
             <a class="toss-link" href="https://tossinvest.com/stocks/A069960" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)">현대백화점 <span class="ticker">069960</span></a>
@@ -775,36 +830,15 @@
             <span class="signal-score">+50점</span>
           </h3>
           <div class="plan-trade">
-            <div><span>현재가</span><b>120,600원</b></div>
+            <div><span>현재가</span><b>118,100원</b></div>
             <div><span>매수 시뮬</span><b>2주</b></div>
-            <div><span>예상 매수금</span><b>241,200원</b></div>
-            <div><span>자본 비중</span><b>24.1%</b></div>
+            <div><span>예상 매수금</span><b>236,200원</b></div>
+            <div><span>자본 비중</span><b>23.6%</b></div>
           </div>
           <div class="plan-ref">참고: 52주 위치 87% · RSI 71 · 52주 64,600 ~ 128,000원</div>
           <details class="plan-factors">
             <summary>판정 근거 (8개 팩터)</summary>
-            <ul><li class="factor-positive"><span class="fc-cat">수급</span> 오늘 외인+기관 동반 순매수 (장중) <span class="fc-w">+25</span></li><li class="factor-positive"><span class="fc-cat">수급</span> 20일 누적 외인+기관 동반 매수 (중기) <span class="fc-w">+15</span></li><li class="factor-positive"><span class="fc-cat">품질</span> 품질 B 등급 (59/100) <span class="fc-w">+5</span></li><li class="factor-negative"><span class="fc-cat">52주</span> 52주 상단 (87%) <span class="fc-w">-10</span></li><li class="factor-positive"><span class="fc-cat">기술</span> 정배열 (5일&gt;20일&gt;60일 이평선) <span class="fc-w">+5</span></li><li class="factor-negative"><span class="fc-cat">52주</span> 시장 탐욕 (F&amp;G 57) — 추격 매수 주의 <span class="fc-w">-3</span></li><li class="factor-positive"><span class="fc-cat">품질</span> 애널리스트 강력 매수 (2.00/5 매수) <span class="fc-w">+8</span></li><li class="factor-positive"><span class="fc-cat">기술</span> 상대 강도 +15.7%p (코스피 대비 20일 outperform) <span class="fc-w">+5</span></li></ul>
-          </details>
-        </div>
-      </article>
-      <article class="plan-slot action-buy">
-        <div class="plan-rank">#2</div>
-        <div class="plan-body">
-          <h3>
-            <a class="toss-link" href="https://tossinvest.com/stocks/A139480" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)">이마트 <span class="ticker">139480</span></a>
-            <span class="action-chip action-buy">매수 후보</span>
-            <span class="signal-score">+35점</span>
-          </h3>
-          <div class="plan-trade">
-            <div><span>현재가</span><b>103,100원</b></div>
-            <div><span>매수 시뮬</span><b>3주</b></div>
-            <div><span>예상 매수금</span><b>309,300원</b></div>
-            <div><span>자본 비중</span><b>30.9%</b></div>
-          </div>
-          <div class="plan-ref">참고: 52주 위치 50% · RSI 50 · 52주 70,300 ~ 136,400원</div>
-          <details class="plan-factors">
-            <summary>판정 근거 (8개 팩터)</summary>
-            <ul><li class="factor-negative"><span class="fc-cat">수급</span> 오늘 외인+기관 동반 순매도 (장중) — 평균회귀 가능성 <span class="fc-w">-12</span></li><li class="factor-positive"><span class="fc-cat">수급</span> 5일 누적 외인+기관 동반 매수 <span class="fc-w">+20</span></li><li class="factor-positive"><span class="fc-cat">수급</span> 20일 누적 외인+기관 동반 매수 (중기) <span class="fc-w">+15</span></li><li class="factor-positive"><span class="fc-cat">기술</span> RSI 50 — 과매도 회복/중립 <span class="fc-w">+5</span></li><li class="factor-positive"><span class="fc-cat">기술</span> 정배열 (5일&gt;20일&gt;60일 이평선) <span class="fc-w">+5</span></li><li class="factor-negative"><span class="fc-cat">52주</span> 시장 탐욕 (F&amp;G 57) — 추격 매수 주의 <span class="fc-w">-3</span></li><li class="factor-positive"><span class="fc-cat">품질</span> 애널리스트 강력 매수 (2.00/5 매수) <span class="fc-w">+8</span></li><li class="factor-negative"><span class="fc-cat">기술</span> 상대 강도 -18.1%p (코스피 대비 20일 underperform) <span class="fc-w">-3</span></li></ul>
+            <ul><li class="factor-positive"><span class="fc-cat">수급</span> 오늘 외인+기관 동반 순매수 (장중) <span class="fc-w">+25</span></li><li class="factor-positive"><span class="fc-cat">수급</span> 20일 누적 외인+기관 동반 매수 (중기) <span class="fc-w">+15</span></li><li class="factor-positive"><span class="fc-cat">품질</span> 품질 B 등급 (59/100) <span class="fc-w">+5</span></li><li class="factor-negative"><span class="fc-cat">52주</span> 52주 상단 (87%) <span class="fc-w">-10</span></li><li class="factor-positive"><span class="fc-cat">기술</span> 정배열 (5일&gt;20일&gt;60일 이평선) <span class="fc-w">+5</span></li><li class="factor-negative"><span class="fc-cat">52주</span> 시장 탐욕 (F&amp;G 57) — 추격 매수 주의 <span class="fc-w">-3</span></li><li class="factor-positive"><span class="fc-cat">품질</span> 애널리스트 강력 매수 (2.00/5 매수) <span class="fc-w">+8</span></li><li class="factor-positive"><span class="fc-cat">기술</span> 상대 강도 +16.4%p (코스피 대비 20일 outperform) <span class="fc-w">+5</span></li></ul>
           </details>
         </div>
       </article>
@@ -817,20 +851,77 @@
             <span class="signal-score">+32점</span>
           </h3>
           <div class="plan-trade">
-            <div><span>현재가</span><b>46,500원</b></div>
+            <div><span>현재가</span><b>45,400원</b></div>
             <div><span>매수 시뮬</span><b>7주</b></div>
-            <div><span>예상 매수금</span><b>325,500원</b></div>
-            <div><span>자본 비중</span><b>32.6%</b></div>
+            <div><span>예상 매수금</span><b>317,800원</b></div>
+            <div><span>자본 비중</span><b>31.8%</b></div>
           </div>
           <div class="plan-ref">참고: 52주 위치 85% · RSI 66 · 52주 23,900 ~ 50,400원</div>
           <details class="plan-factors">
             <summary>판정 근거 (8개 팩터)</summary>
-            <ul><li class="factor-positive"><span class="fc-cat">수급</span> 오늘 외인+기관 동반 순매수 (장중) <span class="fc-w">+25</span></li><li class="factor-positive"><span class="fc-cat">수급</span> 5일 누적 외인+기관 동반 매수 <span class="fc-w">+20</span></li><li class="factor-negative"><span class="fc-cat">품질</span> 품질 D 등급 (18/100) — 펀더멘털 취약 <span class="fc-w">-10</span></li><li class="factor-negative"><span class="fc-cat">52주</span> 52주 상단 (85%) <span class="fc-w">-10</span></li><li class="factor-positive"><span class="fc-cat">기술</span> 정배열 (5일&gt;20일&gt;60일 이평선) <span class="fc-w">+5</span></li><li class="factor-negative"><span class="fc-cat">52주</span> 시장 탐욕 (F&amp;G 57) — 추격 매수 주의 <span class="fc-w">-3</span></li><li class="factor-positive"><span class="fc-cat">품질</span> 애널리스트 강력 매수 (2.00/5 매수) <span class="fc-w">+8</span></li><li class="factor-negative"><span class="fc-cat">기술</span> 상대 강도 -7.5%p (코스피 대비 20일 underperform) <span class="fc-w">-3</span></li></ul>
+            <ul><li class="factor-positive"><span class="fc-cat">수급</span> 오늘 외인+기관 동반 순매수 (장중) <span class="fc-w">+25</span></li><li class="factor-positive"><span class="fc-cat">수급</span> 5일 누적 외인+기관 동반 매수 <span class="fc-w">+20</span></li><li class="factor-negative"><span class="fc-cat">품질</span> 품질 D 등급 (18/100) — 펀더멘털 취약 <span class="fc-w">-10</span></li><li class="factor-negative"><span class="fc-cat">52주</span> 52주 상단 (85%) <span class="fc-w">-10</span></li><li class="factor-positive"><span class="fc-cat">기술</span> 정배열 (5일&gt;20일&gt;60일 이평선) <span class="fc-w">+5</span></li><li class="factor-negative"><span class="fc-cat">52주</span> 시장 탐욕 (F&amp;G 57) — 추격 매수 주의 <span class="fc-w">-3</span></li><li class="factor-positive"><span class="fc-cat">품질</span> 애널리스트 강력 매수 (2.00/5 매수) <span class="fc-w">+8</span></li><li class="factor-negative"><span class="fc-cat">기술</span> 상대 강도 -7.0%p (코스피 대비 20일 underperform) <span class="fc-w">-3</span></li></ul>
           </details>
         </div>
       </article>
     </div>
     <p class="plan-method">📐 점수 산출: 수급 ±60 + 가치 +15 + 품질 ±10 + 52주 위치 ±15 + 기술지표 ±10. 점수 +50↑ 강매수, +25↑ 매수, -25↓ 매도, -50↓ 강매도.</p>
+  </section>
+  <section class="portfolio-pnl">
+    <h2>💼 보유 종목 실시간 손익</h2>
+    <table class="pnl-tbl">
+      <thead><tr>
+        <th>종목</th><th>수량</th><th>매수가</th><th>현재가</th><th>손익</th>
+      </tr></thead>
+      <tbody><tr class="pnl-down">
+        <td class="pnl-name">삼성전자<span class="pnl-code">005930</span></td>
+        <td class="num">2주</td>
+        <td class="num">280,000원</td>
+        <td class="num">271,000원</td>
+        <td class="num pnl-cell">-18,000 (-3.21%)</td>
+      </tr><tr class="pnl-up">
+        <td class="pnl-name">한화시스템<span class="pnl-code">272210</span></td>
+        <td class="num">3주</td>
+        <td class="num">68,500원</td>
+        <td class="num">104,600원</td>
+        <td class="num pnl-cell">+108,300 (+52.70%)</td>
+      </tr><tr class="pnl-down">
+        <td class="pnl-name">이마트<span class="pnl-code">139480</span></td>
+        <td class="num">2주</td>
+        <td class="num">105,000원</td>
+        <td class="num">102,100원</td>
+        <td class="num pnl-cell">-5,800 (-2.76%)</td>
+      </tr><tr class="pnl-down">
+        <td class="pnl-name">대한항공<span class="pnl-code">003490</span></td>
+        <td class="num">12주</td>
+        <td class="num">27,500원</td>
+        <td class="num">26,000원</td>
+        <td class="num pnl-cell">-18,000 (-5.45%)</td>
+      </tr><tr class="pnl-down">
+        <td class="pnl-name">SK텔레콤<span class="pnl-code">017670</span></td>
+        <td class="num">3주</td>
+        <td class="num">102,000원</td>
+        <td class="num">100,900원</td>
+        <td class="num pnl-cell">-3,300 (-1.08%)</td>
+      </tr><tr class="pnl-up">
+        <td class="pnl-name">LG전자<span class="pnl-code">066570</span></td>
+        <td class="num">3주</td>
+        <td class="num">88,000원</td>
+        <td class="num">238,500원</td>
+        <td class="num pnl-cell">+451,500 (+171.02%)</td>
+      </tr><tr class="pnl-down">
+        <td class="pnl-name">호텔신라<span class="pnl-code">008770</span></td>
+        <td class="num">5주</td>
+        <td class="num">68,000원</td>
+        <td class="num">62,400원</td>
+        <td class="num pnl-cell">-28,000 (-8.24%)</td>
+      </tr></tbody>
+    </table>
+    <div class="pnl-summary pnl-up">
+      <div><span>총 투자금액</span><b>2,215,500원</b></div>
+      <div><span>현재 평가액</span><b>2,702,200원</b></div>
+      <div class="pnl-total"><span>총 손익</span><b>+486,700원 (+21.97%) 🟢</b></div>
+    </div>
+    <p class="pnl-note">📌 매수가·수량은 <code>HOLDINGS_JSON</code> 환경변수로 설정.</p>
   </section>
   <section class="universe">
     <h2>💼 보유 종목 대응 전략 — 외인·기관 수급 동향</h2>
@@ -839,8 +930,8 @@
       <article class="universe-card trend-buy">
         <div class="u-rank">#1</div>
         <div class="u-body">
-          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A272210" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">한화시스템 <span class="ticker">272210</span></a><span class="trend-label trend-label-buy">추천 ★ 5일</span><span class="quality-score score-c" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">45<span class="qs-max">/100</span> <span class="qs-grade">C</span></span></h3>
-          <div class="u-price"><span class="price-now">105,200원</span> <span class="price-down">-9.39%</span></div>
+          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A272210" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">한화시스템 <span class="ticker">272210</span></a><span class="trend-label trend-label-buy">추천 ★ 5일</span> <span class="sr-tag sr-positive" title="조선 슈퍼사이클 · K-방산 수출 모멘텀">🟢 성장 섹터</span><span class="quality-score score-c" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">45<span class="qs-max">/100</span> <span class="qs-grade">C</span></span></h3>
+          <div class="u-price"><span class="price-now">104,600원</span> <span class="price-down">-9.91%</span> <span class="pnl-inline pnl-up">+108,300원 (+52.70%)</span></div>
           <details class="score-detail">
             <summary>점수 상세 (2025(A))</summary>
             <div class="qs-rows">
@@ -862,8 +953,8 @@
             <th title="직전 60거래일 누적 (장기 사이클)">60일 누적</th>
           </tr></thead>
           <tbody>
-            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -157억</td><td class="flow-buy">↑ +167억</td><td class="flow-sell">↓ -648억</td><td class="flow-sell">↓ -1,617억</td></tr>
-            <tr><th>기관</th><td class="flow-buy flow-live">↑ +4억</td><td class="flow-buy">↑ +440억</td><td class="flow-sell">↓ -1,113억</td><td class="flow-sell">↓ -2,053억</td></tr>
+            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -147억</td><td class="flow-buy">↑ +176억</td><td class="flow-sell">↓ -639억</td><td class="flow-sell">↓ -1,607억</td></tr>
+            <tr><th>기관</th><td class="flow-buy flow-live">↑ +8억</td><td class="flow-buy">↑ +444억</td><td class="flow-sell">↓ -1,109억</td><td class="flow-sell">↓ -2,049억</td></tr>
           </tbody>
         </table>
         </div>
@@ -871,8 +962,8 @@
       <article class="universe-card trend-sell">
         <div class="u-rank">#2</div>
         <div class="u-body">
-          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A139480" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">이마트 <span class="ticker">139480</span></a><span class="trend-label trend-label-sell">위험 ⏱ 오늘</span><span class="quality-score score-c" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">40<span class="qs-max">/100</span> <span class="qs-grade">C</span></span></h3>
-          <div class="u-price"><span class="price-now">103,350원</span> <span class="price-down">-12.93%</span></div>
+          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A139480" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">이마트 <span class="ticker">139480</span></a><span class="trend-label trend-label-sell">위험 ⏱ 오늘</span> <span class="sr-tag sr-high" title="쿠팡·알리 경쟁 심화로 오프라인 유통 구조적 매출 감소 가능성">🔴 온라인 경쟁 취약</span><span class="quality-score score-c" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">40<span class="qs-max">/100</span> <span class="qs-grade">C</span></span></h3>
+          <div class="u-price"><span class="price-now">102,100원</span> <span class="price-down">-13.98%</span> <span class="pnl-inline pnl-down">-5,800원 (-2.76%)</span></div>
           <details class="score-detail">
             <summary>점수 상세 (2025(A))</summary>
             <div class="qs-rows">
@@ -894,8 +985,8 @@
             <th title="직전 60거래일 누적 (장기 사이클)">60일 누적</th>
           </tr></thead>
           <tbody>
-            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -81억</td><td class="flow-buy">↑ +65억</td><td class="flow-buy">↑ +523억</td><td class="flow-buy">↑ +827억</td></tr>
-            <tr><th>기관</th><td class="flow-sell flow-live">↓ -7억</td><td class="flow-buy">↑ +147억</td><td class="flow-buy">↑ +240억</td><td class="flow-sell">↓ -184억</td></tr>
+            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -77억</td><td class="flow-buy">↑ +69억</td><td class="flow-buy">↑ +527억</td><td class="flow-buy">↑ +831억</td></tr>
+            <tr><th>기관</th><td class="flow-sell flow-live">↓ -6억</td><td class="flow-buy">↑ +148억</td><td class="flow-buy">↑ +241억</td><td class="flow-sell">↓ -183억</td></tr>
           </tbody>
         </table>
         </div>
@@ -904,7 +995,7 @@
         <div class="u-rank">#3</div>
         <div class="u-body">
           <h3><a class="toss-link" href="https://tossinvest.com/stocks/A003490" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">대한항공 <span class="ticker">003490</span></a><span class="trend-label trend-label-buy">추천 ★ 10일</span><span class="quality-score score-b" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">52<span class="qs-max">/100</span> <span class="qs-grade">B</span></span></h3>
-          <div class="u-price"><span class="price-now">26,100원</span> <span class="price-down">-4.40%</span></div>
+          <div class="u-price"><span class="price-now">26,000원</span> <span class="price-down">-4.76%</span> <span class="pnl-inline pnl-down">-18,000원 (-5.45%)</span></div>
           <details class="score-detail">
             <summary>점수 상세 (2025(A))</summary>
             <div class="qs-rows">
@@ -926,7 +1017,7 @@
             <th title="직전 60거래일 누적 (장기 사이클)">60일 누적</th>
           </tr></thead>
           <tbody>
-            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -26억</td><td class="flow-buy">↑ +32억</td><td class="flow-buy">↑ +562억</td><td class="flow-buy">↑ +2,194억</td></tr>
+            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -29억</td><td class="flow-buy">↑ +29억</td><td class="flow-buy">↑ +558억</td><td class="flow-buy">↑ +2,190억</td></tr>
             <tr><th>기관</th><td class="flow-buy flow-live">↑ +8억</td><td class="flow-sell">↓ -27억</td><td class="flow-sell">↓ -16억</td><td class="flow-sell">↓ -837억</td></tr>
           </tbody>
         </table>
@@ -935,8 +1026,8 @@
       <article class="universe-card trend-sell">
         <div class="u-rank">#4</div>
         <div class="u-body">
-          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A017670" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">SK텔레콤 <span class="ticker">017670</span></a><span class="trend-label trend-label-sell">위험 ⏱ 오늘</span><span class="quality-score score-d" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">34<span class="qs-max">/100</span> <span class="qs-grade">D</span></span></h3>
-          <div class="u-price"><span class="price-now">101,500원</span> <span class="price-down">-1.17%</span></div>
+          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A017670" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">SK텔레콤 <span class="ticker">017670</span></a><span class="trend-label trend-label-sell">위험 ⏱ 오늘</span> <span class="sr-tag sr-low" title="성장 정체 — 배당 목적 보유에 적합. 신규 매수 모멘텀 약함">🟡 성장 정체</span><span class="quality-score score-d" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">34<span class="qs-max">/100</span> <span class="qs-grade">D</span></span></h3>
+          <div class="u-price"><span class="price-now">100,900원</span> <span class="price-down">-1.75%</span> <span class="pnl-inline pnl-down">-3,300원 (-1.08%)</span></div>
           <details class="score-detail">
             <summary>점수 상세 (2025(A))</summary>
             <div class="qs-rows">
@@ -958,8 +1049,8 @@
             <th title="직전 60거래일 누적 (장기 사이클)">60일 누적</th>
           </tr></thead>
           <tbody>
-            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -61억</td><td class="flow-buy">↑ +1,044억</td><td class="flow-buy">↑ +655억</td><td class="flow-buy">↑ +1,523억</td></tr>
-            <tr><th>기관</th><td class="flow-sell flow-live">↓ -14억</td><td class="flow-sell">↓ -119억</td><td class="flow-sell">↓ -788억</td><td class="flow-buy">↑ +992억</td></tr>
+            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -34억</td><td class="flow-buy">↑ +1,071억</td><td class="flow-buy">↑ +682억</td><td class="flow-buy">↑ +1,550억</td></tr>
+            <tr><th>기관</th><td class="flow-sell flow-live">↓ -17억</td><td class="flow-sell">↓ -122억</td><td class="flow-sell">↓ -791억</td><td class="flow-buy">↑ +989억</td></tr>
           </tbody>
         </table>
         </div>
@@ -968,7 +1059,7 @@
         <div class="u-rank">#5</div>
         <div class="u-body">
           <h3><a class="toss-link" href="https://tossinvest.com/stocks/A066570" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">LG전자 <span class="ticker">066570</span></a><span class="trend-label trend-label-sell">위험 ⏱ 오늘</span><span class="quality-score score-b" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">53<span class="qs-max">/100</span> <span class="qs-grade">B</span></span></h3>
-          <div class="u-price"><span class="price-now">236,500원</span> <span class="price-up">+8.99%</span></div>
+          <div class="u-price"><span class="price-now">238,500원</span> <span class="price-up">+9.91%</span> <span class="pnl-inline pnl-up">+451,500원 (+171.02%)</span></div>
           <details class="score-detail">
             <summary>점수 상세 (2025(A))</summary>
             <div class="qs-rows">
@@ -990,8 +1081,8 @@
             <th title="직전 60거래일 누적 (장기 사이클)">60일 누적</th>
           </tr></thead>
           <tbody>
-            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -2,090억</td><td class="flow-sell">↓ -1,954억</td><td class="flow-sell">↓ -120억</td><td class="flow-buy">↑ +2,776억</td></tr>
-            <tr><th>기관</th><td class="flow-sell flow-live">↓ -96억</td><td class="flow-buy">↑ +1,138억</td><td class="flow-buy">↑ +1,698억</td><td class="flow-buy">↑ +1,836억</td></tr>
+            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -2,001억</td><td class="flow-sell">↓ -1,865억</td><td class="flow-sell">↓ -30억</td><td class="flow-buy">↑ +2,866억</td></tr>
+            <tr><th>기관</th><td class="flow-sell flow-live">↓ -80억</td><td class="flow-buy">↑ +1,154억</td><td class="flow-buy">↑ +1,714억</td><td class="flow-buy">↑ +1,853억</td></tr>
           </tbody>
         </table>
         </div>
@@ -999,8 +1090,8 @@
       <article class="universe-card trend-buy">
         <div class="u-rank">#6</div>
         <div class="u-body">
-          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A008770" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">호텔신라 <span class="ticker">008770</span></a><span class="trend-label trend-label-buy">추천 ★ 5일</span><span class="quality-score score-d" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">26<span class="qs-max">/100</span> <span class="qs-grade">D</span></span></h3>
-          <div class="u-price"><span class="price-now">62,700원</span> <span class="price-down">-5.00%</span></div>
+          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A008770" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">호텔신라 <span class="ticker">008770</span></a><span class="trend-label trend-label-buy">추천 ⏱ 오늘</span> <span class="sr-tag sr-medium" title="중국 단체관광 회복 지연 · 면세업 경쟁 심화">🟠 면세업 회복 더딤</span><span class="quality-score score-d" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">26<span class="qs-max">/100</span> <span class="qs-grade">D</span></span></h3>
+          <div class="u-price"><span class="price-now">62,400원</span> <span class="price-down">-5.45%</span> <span class="pnl-inline pnl-down">-28,000원 (-8.24%)</span></div>
           <details class="score-detail">
             <summary>점수 상세 (2025(A))</summary>
             <div class="qs-rows">
@@ -1022,8 +1113,8 @@
             <th title="직전 60거래일 누적 (장기 사이클)">60일 누적</th>
           </tr></thead>
           <tbody>
-            <tr><th>외국인</th><td class="flow-buy flow-live">↑ +38억</td><td class="flow-buy">↑ +214억</td><td class="flow-buy">↑ +1,642억</td><td class="flow-buy">↑ +1,822억</td></tr>
-            <tr><th>기관</th><td class="flow-sell flow-live">↓ -0.6억</td><td class="flow-buy">↑ +153억</td><td class="flow-buy">↑ +1,071억</td><td class="flow-buy">↑ +1,150억</td></tr>
+            <tr><th>외국인</th><td class="flow-buy flow-live">↑ +36억</td><td class="flow-buy">↑ +212억</td><td class="flow-buy">↑ +1,640억</td><td class="flow-buy">↑ +1,820억</td></tr>
+            <tr><th>기관</th><td class="flow-buy flow-live">↑ +6억</td><td class="flow-buy">↑ +160억</td><td class="flow-buy">↑ +1,077억</td><td class="flow-buy">↑ +1,156억</td></tr>
           </tbody>
         </table>
         </div>
@@ -1031,8 +1122,8 @@
       <article class="universe-card trend-sell">
         <div class="u-rank">#7</div>
         <div class="u-body">
-          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A005930" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">삼성전자 <span class="ticker">005930</span></a><span class="trend-label trend-label-sell">위험 ⏱ 오늘</span><span class="quality-score score-a" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">67<span class="qs-max">/100</span> <span class="qs-grade">A</span></span></h3>
-          <div class="u-price"><span class="price-now">275,000원</span> <span class="price-down">-7.09%</span></div>
+          <h3><a class="toss-link" href="https://tossinvest.com/stocks/A005930" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">삼성전자 <span class="ticker">005930</span></a><span class="trend-label trend-label-sell">위험 ⏱ 오늘</span> <span class="sr-tag sr-positive" title="AI 수요 폭발 · HBM 공급 부족 · 실적 성장 사이클">🟢 성장 섹터</span><span class="quality-score score-a" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">67<span class="qs-max">/100</span> <span class="qs-grade">A</span></span></h3>
+          <div class="u-price"><span class="price-now">271,000원</span> <span class="price-down">-8.45%</span> <span class="pnl-inline pnl-down">-18,000원 (-3.21%)</span></div>
           <details class="score-detail">
             <summary>점수 상세 (2025(A))</summary>
             <div class="qs-rows">
@@ -1054,8 +1145,8 @@
             <th title="직전 60거래일 누적 (장기 사이클)">60일 누적</th>
           </tr></thead>
           <tbody>
-            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -1.1조</td><td class="flow-sell">↓ -7.0조</td><td class="flow-sell">↓ -8.5조</td><td class="flow-sell">↓ -40.8조</td></tr>
-            <tr><th>기관</th><td class="flow-sell flow-live">↓ -1,579억</td><td class="flow-buy">↑ +9,663억</td><td class="flow-buy">↑ +2.6조</td><td class="flow-buy">↑ +2.5조</td></tr>
+            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -1.2조</td><td class="flow-sell">↓ -7.1조</td><td class="flow-sell">↓ -8.6조</td><td class="flow-sell">↓ -40.9조</td></tr>
+            <tr><th>기관</th><td class="flow-sell flow-live">↓ -1,802억</td><td class="flow-buy">↑ +9,439억</td><td class="flow-buy">↑ +2.6조</td><td class="flow-buy">↑ +2.4조</td></tr>
           </tbody>
         </table>
         </div>
@@ -1070,7 +1161,7 @@
         <div class="u-rank">#1</div>
         <div class="u-body">
           <h3><a class="toss-link" href="https://tossinvest.com/stocks/A009540" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">HD한국조선해양 <span class="ticker">009540</span></a><span class="trend-label trend-label-buy">추천 ★★ 20일</span><span class="quality-score score-s" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">82<span class="qs-max">/100</span> <span class="qs-grade">S</span></span></h3>
-          <div class="u-price"><span class="price-now">415,500원</span> <span class="price-down">-5.03%</span></div>
+          <div class="u-price"><span class="price-now">415,000원</span> <span class="price-down">-5.14%</span></div>
           <details class="score-detail">
             <summary>점수 상세 (2025(A))</summary>
             <div class="qs-rows">
@@ -1092,8 +1183,8 @@
             <th title="직전 60거래일 누적 (장기 사이클)">60일 누적</th>
           </tr></thead>
           <tbody>
-            <tr><th>외국인</th><td class="flow-buy flow-live">↑ +186억</td><td class="flow-buy">↑ +997억</td><td class="flow-buy">↑ +1,194억</td><td class="flow-buy">↑ +2,002억</td></tr>
-            <tr><th>기관</th><td class="flow-sell flow-live">↓ -100억</td><td class="flow-sell">↓ -574억</td><td class="flow-buy">↑ +206억</td><td class="flow-buy">↑ +1,034억</td></tr>
+            <tr><th>외국인</th><td class="flow-buy flow-live">↑ +213억</td><td class="flow-buy">↑ +1,024억</td><td class="flow-buy">↑ +1,220억</td><td class="flow-buy">↑ +2,028억</td></tr>
+            <tr><th>기관</th><td class="flow-sell flow-live">↓ -115억</td><td class="flow-sell">↓ -588억</td><td class="flow-buy">↑ +191억</td><td class="flow-buy">↑ +1,020억</td></tr>
           </tbody>
         </table>
         </div>
@@ -1102,7 +1193,7 @@
         <div class="u-rank">#2</div>
         <div class="u-body">
           <h3><a class="toss-link" href="https://tossinvest.com/stocks/A069960" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">현대백화점 <span class="ticker">069960</span></a><span class="trend-label trend-label-buy">추천 ⏱ 오늘</span><span class="quality-score score-b" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">59<span class="qs-max">/100</span> <span class="qs-grade">B</span></span></h3>
-          <div class="u-price"><span class="price-now">119,800원</span> <span class="price-down">-4.16%</span></div>
+          <div class="u-price"><span class="price-now">119,500원</span> <span class="price-down">-4.40%</span></div>
           <details class="score-detail">
             <summary>점수 상세 (2025(A))</summary>
             <div class="qs-rows">
@@ -1125,7 +1216,7 @@
           </tr></thead>
           <tbody>
             <tr><th>외국인</th><td class="flow-buy flow-live">↑ +42억</td><td class="flow-sell">↓ -23억</td><td class="flow-buy">↑ +33억</td><td class="flow-buy">↑ +353억</td></tr>
-            <tr><th>기관</th><td class="flow-buy flow-live">↑ +6억</td><td class="flow-buy">↑ +171억</td><td class="flow-buy">↑ +219억</td><td class="flow-sell">↓ -216억</td></tr>
+            <tr><th>기관</th><td class="flow-buy flow-live">↑ +7억</td><td class="flow-buy">↑ +172억</td><td class="flow-buy">↑ +220억</td><td class="flow-sell">↓ -215억</td></tr>
           </tbody>
         </table>
         </div>
@@ -1134,7 +1225,7 @@
         <div class="u-rank">#3</div>
         <div class="u-body">
           <h3><a class="toss-link" href="https://tossinvest.com/stocks/A032830" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">삼성생명 <span class="ticker">032830</span></a><span class="trend-label trend-label-sell">위험 ⏱ 오늘</span><span class="quality-score score-b" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">58<span class="qs-max">/100</span> <span class="qs-grade">B</span></span></h3>
-          <div class="u-price"><span class="price-now">305,500원</span> <span class="price-down">-7.42%</span></div>
+          <div class="u-price"><span class="price-now">305,000원</span> <span class="price-down">-7.58%</span></div>
           <details class="score-detail">
             <summary>점수 상세 (2025(A))</summary>
             <div class="qs-rows">
@@ -1156,8 +1247,8 @@
             <th title="직전 60거래일 누적 (장기 사이클)">60일 누적</th>
           </tr></thead>
           <tbody>
-            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -20억</td><td class="flow-sell">↓ -323억</td><td class="flow-sell">↓ -125억</td><td class="flow-sell">↓ -503억</td></tr>
-            <tr><th>기관</th><td class="flow-sell flow-live">↓ -67억</td><td class="flow-buy">↑ +455억</td><td class="flow-buy">↑ +698억</td><td class="flow-buy">↑ +814억</td></tr>
+            <tr><th>외국인</th><td class="flow-sell flow-live">↓ -1.0억</td><td class="flow-sell">↓ -304억</td><td class="flow-sell">↓ -106억</td><td class="flow-sell">↓ -484억</td></tr>
+            <tr><th>기관</th><td class="flow-sell flow-live">↓ -172억</td><td class="flow-buy">↑ +351억</td><td class="flow-buy">↑ +594억</td><td class="flow-buy">↑ +710억</td></tr>
           </tbody>
         </table>
         </div>
@@ -1166,7 +1257,7 @@
         <div class="u-rank">#4</div>
         <div class="u-body">
           <h3><a class="toss-link" href="https://tossinvest.com/stocks/A028260" target="_blank" rel="noopener noreferrer" onclick="return openTossApp(event, this.href)" title="모바일: 토스 앱 / PC: 웹">삼성물산 <span class="ticker">028260</span></a><span class="trend-label trend-label-buy">추천 ★★ 20일</span><span class="quality-score score-b" title="기업 품질 점수 — 수익성·밸류에이션·성장성·안정성·효율성·수급 종합">57<span class="qs-max">/100</span> <span class="qs-grade">B</span></span></h3>
-          <div class="u-price"><span class="price-now">403,000원</span> <span class="price-down">-8.82%</span></div>
+          <div class="u-price"><span class="price-now">400,500원</span> <span class="price-down">-9.39%</span></div>
           <details class="score-detail">
             <summary>점수 상세 (2025(A))</summary>
             <div class="qs-rows">
@@ -1188,8 +1279,8 @@
             <th title="직전 60거래일 누적 (장기 사이클)">60일 누적</th>
           </tr></thead>
           <tbody>
-            <tr><th>외국인</th><td class="flow-buy flow-live">↑ +165억</td><td class="flow-sell">↓ -2,029억</td><td class="flow-sell">↓ -439억</td><td class="flow-sell">↓ -3,052억</td></tr>
-            <tr><th>기관</th><td class="flow-sell flow-live">↓ -48억</td><td class="flow-buy">↑ +453억</td><td class="flow-buy">↑ +464억</td><td class="flow-buy">↑ +350억</td></tr>
+            <tr><th>외국인</th><td class="flow-buy flow-live">↑ +250억</td><td class="flow-sell">↓ -1,944억</td><td class="flow-sell">↓ -354억</td><td class="flow-sell">↓ -2,967억</td></tr>
+            <tr><th>기관</th><td class="flow-sell flow-live">↓ -43억</td><td class="flow-buy">↑ +458억</td><td class="flow-buy">↑ +469억</td><td class="flow-buy">↑ +355억</td></tr>
           </tbody>
         </table>
         </div>
