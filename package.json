@@ -15,6 +15,7 @@
     "test:dashboard": "playwright test tests/dashboard.spec.ts",
     "test:value": "playwright test tests/value-screening.spec.ts",
     "test:backtest": "playwright test tests/flow-backtest.spec.ts",
+    "test:market": "playwright test tests/market-structure.spec.ts",
     "report:generate": "tsx scripts/generate-report.ts"
   },
   "devDependencies": {

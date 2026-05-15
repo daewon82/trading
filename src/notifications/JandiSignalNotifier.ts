@@ -48,6 +48,8 @@ export interface JandiNotifyContext {
   /** code → 추가 컨텍스트 텍스트 (PBR/PER/거래량 비율 등). 없으면 빈 문자열 */
   extra?: Map<string, string>;
   dashboardUrl?: string;
+  /** v1.8 — 시장 구조 (ADR 등). breadth가 narrow/concentrated이면 강력매수 알림 보류 */
+  marketStructure?: import('../types/market-structure.js').MarketStructureResult | null;
 }
 
 export class JandiSignalNotifier {
@@ -73,6 +75,19 @@ export class JandiSignalNotifier {
     if (kstHour < MIN_HOUR_KST || kstHour > MAX_HOUR_KST) {
       logger.info('jandi notify skipped — out of trading hours', { kstHour });
       return { sent: 0, skipped: signals.length, reasons: ['out_of_hours'] };
+    }
+    // v1.8 — 쏠림 장세 게이트: 강력매수 알림은 ADR ≥ 100%일 때만 발송
+    if (ctx.marketStructure
+        && (ctx.marketStructure.breadth === 'narrow' || ctx.marketStructure.breadth === 'concentrated')) {
+      logger.info('jandi notify skipped — narrow/concentrated breadth', {
+        adr: ctx.marketStructure.adrPct.toFixed(2),
+        breadth: ctx.marketStructure.breadth,
+      });
+      return {
+        sent: 0,
+        skipped: signals.length,
+        reasons: [`breadth_${ctx.marketStructure.breadth}`],
+      };
     }
 
     const cache = await this.loadCache();
@@ -218,6 +233,31 @@ export class JandiSignalNotifier {
   private kstHour(now: Date): number {
     // KST = UTC + 9. getUTCHours()에 +9 mod 24
     return (now.getUTCHours() + 9) % 24;
+  }
+
+  /**
+   * v1.8 — 순환매 감지 시 별도 잔디 알림.
+   * MarketStructureAnalyzer.detectRotation()이 true일 때만 호출.
+   */
+  async notifyRotation(
+    market: 'KOSPI' | 'KOSDAQ',
+    adrToday: number,
+    adrPrevAvg: number,
+    leadingSectors: string[],
+    dashboardUrl?: string,
+  ): Promise<boolean> {
+    const body =
+      `📢 순환매 감지!\n\n` +
+      `시장: ${market}\n` +
+      `ADR: ${adrPrevAvg.toFixed(1)}% → ${adrToday.toFixed(1)}% (쏠림 → 광범위 상승)\n\n` +
+      `📈 새로 상승하는 업종:\n${leadingSectors.map((s) => `• ${s}`).join('\n')}\n\n` +
+      `⚠️ 본 알림은 정보 제공용이며 매매 권유가 아닙니다.` +
+      (dashboardUrl ? `\n📎 대시보드: ${dashboardUrl}` : '');
+    return this.sendWebhook({
+      body,
+      connectColor: '#2E7D32',
+      connectInfo: [{ title: '순환매', description: `${market} ADR ${adrPrevAvg.toFixed(0)}→${adrToday.toFixed(0)}%` }],
+    });
   }
 }
 

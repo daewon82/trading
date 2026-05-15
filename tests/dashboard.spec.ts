@@ -17,6 +17,9 @@ import { EndOfDayPicker, type EndOfDayPick } from '../src/analyzers/EndOfDayPick
 import { PortfolioTracker } from '../src/analyzers/PortfolioTracker.js';
 import type { PortfolioSnapshot } from '../src/types/portfolio.js';
 import { JandiSignalNotifier } from '../src/notifications/JandiSignalNotifier.js';
+import { NaverMarketSource } from '../src/sources/naver-kr/NaverMarketSource.js';
+import { MarketStructureAnalyzer } from '../src/analyzers/MarketStructureAnalyzer.js';
+import type { MarketStructureResult } from '../src/types/market-structure.js';
 import { loadEnv } from '../src/utils/loadEnv.js';
 
 loadEnv();
@@ -150,6 +153,7 @@ let kospiIndexChangePct: number | null = null;
 let volumeTop10: VolumeRankRow[] = [];
 let eodPicks: EndOfDayPick[] = [];
 let portfolioPnL: PortfolioSnapshot | null = null;
+let marketStructure: MarketStructureResult | null = null;
 const volumeMap = new Map<string, number[]>(); // code → 최근 30거래일 일별 거래량
 const SPARKLINE_DAYS = 60;
 const BENCHMARK_SYMBOL = '^KS11';
@@ -257,6 +261,26 @@ test('코스피 지수 ^KS11 — 현재값 + 20거래일 수익률', async () =>
     indexValue: kospiIndexValue,
     todayChangePct: kospiIndexChangePct != null ? `${kospiIndexChangePct.toFixed(2)}%` : null,
     kospiReturn20d: kospiReturn20d != null ? `${(kospiReturn20d * 100).toFixed(2)}%` : null,
+  });
+});
+
+// v1.8 — 시장 구조(ADR) — KOSPI 상승/하락 종목 수 + 쏠림/순환매 판별
+test('시장 구조 — KOSPI ADR (광범위 상승 vs 쏠림 vs 순환매)', async () => {
+  const src = new NaverMarketSource();
+  const counts = await src.fetch('KOSPI');
+  if (!counts) {
+    logger.warn('market structure fetch failed');
+    return;
+  }
+  const analyzer = new MarketStructureAnalyzer();
+  marketStructure = analyzer.analyze(counts);
+  logger.info('market structure', {
+    market: counts.market,
+    advancing: counts.advancing, declining: counts.declining,
+    adrPct: marketStructure.adrPct.toFixed(2) + '%',
+    breadth: marketStructure.breadth,
+    label: marketStructure.label,
+    expectedLossProb: (marketStructure.expectedHoldingLossProbability * 100).toFixed(0) + '%',
   });
 });
 
@@ -632,6 +656,7 @@ test.afterAll(async () => {
   const dashboardUrl = process.env.DASHBOARD_PUBLIC_URL;
   const notifyResult = await notifier.notify(allSignals, {
     has5dBothBuy, structuralRisk: structuralRiskMap, position52w: position52wMap,
+    marketStructure,
     ...(dashboardUrl ? { dashboardUrl } : {}),
   });
   logger.info('jandi notify result', notifyResult);
@@ -649,6 +674,7 @@ test.afterAll(async () => {
     eodPicks,
     marketEvents,
     portfolioPnL,
+    marketStructure,
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });

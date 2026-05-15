@@ -38,6 +38,8 @@ export interface DashboardPage {
   marketEvents?: import('../analyzers/MarketEventCalendar.js').MarketEvent[];
   /** v1.7 — 보유 종목 손익 스냅샷 (HOLDINGS_JSON 환경변수 기반) */
   portfolioPnL?: import('../types/portfolio.js').PortfolioSnapshot | null;
+  /** v1.8 — 시장 구조 (ADR + 쏠림/순환매 판별) */
+  marketStructure?: import('../types/market-structure.js').MarketStructureResult | null;
 }
 
 export class DashboardReporter {
@@ -61,6 +63,7 @@ export class DashboardReporter {
     <h1>오늘의 대시보드 <span class="live-dot" title="장중 5분 자동 갱신">●</span></h1>
     <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)} · <span class="refresh-note">5분마다 자동 새로고침</span></div>
     ${this.renderKospiIndex(page.kospiIndex)}
+    ${this.renderMarketStructure(page.marketStructure)}
     ${this.renderMarketEvents(page.marketEvents)}
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
@@ -351,6 +354,31 @@ ${cards}
       <span class="kospi-label">📈 코스피</span>
       <span class="kospi-value">${v.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}</span>
       <span class="kospi-change">${chStr}</span>
+    </div>`;
+  }
+
+  /**
+   * v1.8 — 시장 구조 위젯 (ADR + 쏠림/순환매 판별).
+   * CLAUDE.md §4.10: 코스피 지수만 보면 보유 종목과 괴리 발생 → ADR로 진짜 시장 건강도 측정.
+   */
+  private renderMarketStructure(ms: DashboardPage['marketStructure']): string {
+    if (!ms) return '';
+    const c = ms.counts;
+    const adrCls = `ms-${ms.breadth}`;
+    const lossPct = (ms.expectedHoldingLossProbability * 100).toFixed(0);
+    return `<div class="market-structure ${adrCls}">
+      <div class="ms-row">
+        <span class="ms-label">📊 시장 폭(ADR)</span>
+        <span class="ms-adr">${ms.adrPct.toFixed(1)}%</span>
+        <span class="ms-breadth">${esc(ms.label)}</span>
+      </div>
+      <div class="ms-counts">
+        <span class="ms-up">↑ 상승 ${c.advancing}</span>
+        <span class="ms-flat">→ 보합 ${c.unchanged}</span>
+        <span class="ms-down">↓ 하락 ${c.declining}</span>
+        <span class="ms-edge">상한 ${c.upper} / 하한 ${c.lower}</span>
+      </div>
+      <p class="ms-insight">${esc(ms.insight)} <b>보유 종목 손실 가능성 ${lossPct}%</b></p>
     </div>`;
   }
 
@@ -718,6 +746,25 @@ ${slotsHtml}
       .kospi-bar.up .kospi-change { color: #ff5a5a; }
       .kospi-bar.down .kospi-change { color: #5ad17a; }
       .kospi-bar.flat .kospi-change { color: #aaa; }
+      /* v1.8 — 시장 구조(ADR) 위젯 */
+      .market-structure { margin: 10px 0 4px; padding: 12px 14px; border-radius: 8px; border-left: 4px solid #ccc; }
+      .market-structure.ms-strong { background: #e8f5e9; border-left-color: #2e7d32; }
+      .market-structure.ms-healthy { background: #f1f8e9; border-left-color: #689f38; }
+      .market-structure.ms-narrow { background: #fff8e1; border-left-color: #ef6c00; }
+      .market-structure.ms-concentrated { background: #ffebee; border-left-color: #c62828; }
+      .ms-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+      .ms-label { font-weight: 600; color: #333; }
+      .ms-adr { font-size: 1.3em; font-weight: 700; font-variant-numeric: tabular-nums; color: #1565c0; }
+      .market-structure.ms-concentrated .ms-adr { color: #c62828; }
+      .market-structure.ms-narrow .ms-adr { color: #ef6c00; }
+      .ms-breadth { font-size: .92em; color: #555; }
+      .ms-counts { display: flex; gap: 14px; flex-wrap: wrap; padding: 6px 0; font-size: .9em; font-variant-numeric: tabular-nums; }
+      .ms-counts .ms-up { color: #c62828; font-weight: 600; }
+      .ms-counts .ms-down { color: #2e7d32; font-weight: 600; }
+      .ms-counts .ms-flat { color: #888; }
+      .ms-counts .ms-edge { color: #777; }
+      .ms-insight { margin: 6px 0 0; font-size: .88em; color: #444; line-height: 1.5; }
+      .ms-insight b { color: #c62828; }
       /* v1.7 — 시장 이벤트 캘린더 */
       .market-events { margin: 10px 0; padding: 10px 14px; background: #fffaf0; border-left: 4px solid #ff9800; border-radius: 4px; }
       .ev-title { font-weight: 600; color: #e65100; margin-bottom: 8px; font-size: .95em; }
