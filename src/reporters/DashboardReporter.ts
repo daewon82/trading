@@ -62,10 +62,10 @@ export class DashboardReporter {
     ${this.renderMarketEvents(page.marketEvents)}
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
-${this.renderEodPicks(page.eodPicks)}
 ${this.renderVolumeTop10(page.volumeTop10)}
-${this.renderFearGreed(page.krFearGreed)}
+${this.renderEodPicks(page.eodPicks)}
 ${this.renderPortfolioPlan(page.krPortfolioPlan)}
+${this.renderFearGreed(page.krFearGreed)}
 ${this.renderUniverse('💼 내 보유 종목 — 외인·기관 수급 동향', '각 컬럼은 정확히 그 기간 데이터 (Toss 원본, 거래대금 단위 원/억/조). 오늘=당일, 5/20/60일=직전 거래일 누적 순매수. ↑ 빨강=순매수, ↓ 초록=순매도, ⏱=장중 미확정. 카드 라벨은 <b>오늘 데이터 우선</b>(외인+기관 동반 일치) → 5일 → 20일 → 60일 순.', page.krWatchTop)}
 ${this.renderUniverse('💎 저평가 + 외인·기관 매수 + 품질 B 이상 Top 10', 'KOSPI 가치주 시드(40종) 중 20일 외인·기관 동반 순매수 + 품질 점수 B 등급(50점) 이상. 합산 매수 큰 순.', page.krValueForeignBuyTop)}
 ${this.renderValueScreener(page.krValueScreenerTop)}
