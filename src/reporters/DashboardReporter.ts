@@ -28,6 +28,14 @@ export interface DashboardPage {
   krPortfolioPlan?: import('../types/trading-signal.js').PortfolioPlan | null;
   /** v1.4 — 코스피 공포·탐욕 지수 (머신러너 방법론 차용) */
   krFearGreed?: import('../types/fear-greed.js').FearGreedIndex | null;
+  /** v1.7 — 코스피 지수 현재값 + 당일 등락률 */
+  kospiIndex?: { value: number | null; changePct: number | null } | null;
+  /** v1.7 — 거래량 Top 10 (KOSPI 비ETF) */
+  volumeTop10?: import('../sources/naver-kr/NaverVolumeRankSource.js').VolumeRankRow[];
+  /** v1.7 — 돌팬티 종가매매 룰 기반 매수 추천 */
+  eodPicks?: import('../analyzers/EndOfDayPicker.js').EndOfDayPick[];
+  /** v1.7 — 시장 이벤트 (옵션 만기일·쿼드러플 위칭·배당락 등) */
+  marketEvents?: import('../analyzers/MarketEventCalendar.js').MarketEvent[];
 }
 
 export class DashboardReporter {
@@ -50,9 +58,13 @@ export class DashboardReporter {
   <header>
     <h1>오늘의 대시보드 <span class="live-dot" title="장중 5분 자동 갱신">●</span></h1>
     <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)} · <span class="refresh-note">5분마다 자동 새로고침</span></div>
+    ${this.renderKospiIndex(page.kospiIndex)}
+    ${this.renderMarketEvents(page.marketEvents)}
     ${this.renderHeaderSummary(page)}
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
+${this.renderVolumeTop10(page.volumeTop10)}
+${this.renderEodPicks(page.eodPicks)}
 ${this.renderFearGreed(page.krFearGreed)}
 ${this.renderPortfolioPlan(page.krPortfolioPlan)}
 ${this.renderUniverse('💼 내 보유 종목 — 외인·기관 수급 동향', '각 컬럼은 정확히 그 기간 데이터 (Toss 원본, 거래대금 단위 원/억/조). 오늘=당일, 5/20/60일=직전 거래일 누적 순매수. ↑ 빨강=순매수, ↓ 초록=순매도, ⏱=장중 미확정. 카드 라벨은 <b>오늘 데이터 우선</b>(외인+기관 동반 일치) → 5일 → 20일 → 60일 순.', page.krWatchTop)}
@@ -324,6 +336,132 @@ ${cards}
    * F&G 지수 + 매수/매도 카운트 + 강력매수 Top 1 종목을 압축 표시.
    * 매일 첫 화면 진입 시 즉시 시장·신호 상태 인지 가능.
    */
+  /**
+   * v1.7 — 헤더 최상단 코스피 지수 표시.
+   * 사용자 요청: "맨 상단에 오늘 코스피 지수".
+   */
+  private renderKospiIndex(idx: DashboardPage['kospiIndex']): string {
+    if (!idx || idx.value == null) return '';
+    const v = idx.value;
+    const ch = idx.changePct;
+    const sign = ch == null ? '' : ch >= 0 ? '+' : '';
+    const cls = ch == null ? 'flat' : ch >= 0 ? 'up' : 'down';
+    const chStr = ch == null ? '—' : `${sign}${ch.toFixed(2)}%`;
+    return `<div class="kospi-bar ${cls}">
+      <span class="kospi-label">📈 코스피</span>
+      <span class="kospi-value">${v.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}</span>
+      <span class="kospi-change">${chStr}</span>
+    </div>`;
+  }
+
+  /**
+   * v1.7 — 시장 이벤트 경고 (옵션 만기일·쿼드러플 위칭·배당락).
+   * 7일 이내 이벤트만 강조 표시. 14일 범위.
+   */
+  private renderMarketEvents(events: DashboardPage['marketEvents']): string {
+    if (!events || events.length === 0) return '';
+    // 미래 또는 오늘 이벤트만, 가까운 순
+    const upcoming = events.filter((e) => e.daysUntil >= 0).slice(0, 3);
+    if (upcoming.length === 0) return '';
+    const chips = upcoming.map((e) => {
+      const sev = `ev-sev-${e.severity}`;
+      const tag = e.daysUntil === 0 ? '오늘'
+        : e.daysUntil === 1 ? '내일'
+        : `D-${e.daysUntil}`;
+      return `<div class="ev-chip ${sev}">
+        <span class="ev-tag">${esc(tag)}</span>
+        <span class="ev-label">${esc(e.label)}</span>
+        <span class="ev-date">${esc(e.date)}</span>
+        <span class="ev-impact">${esc(e.impact)}</span>
+      </div>`;
+    }).join('');
+    return `<div class="market-events">
+      <div class="ev-title">⚠️ 시장 이벤트 캘린더 — 종가매매·단타 영향</div>
+      <div class="ev-list">${chips}</div>
+    </div>`;
+  }
+
+  /**
+   * v1.7 — 거래량 Top 10 (KOSPI 비ETF). 돌팬티 종가매매 시드.
+   */
+  private renderVolumeTop10(rows: DashboardPage['volumeTop10']): string {
+    if (!rows || rows.length === 0) return '';
+    const trs = rows.map((r) => {
+      const chCls = r.changePct == null ? '' : r.changePct >= 0 ? 'up' : 'down';
+      const chStr = r.changePct == null ? '—'
+        : `${r.changePct >= 0 ? '+' : ''}${r.changePct.toFixed(2)}%`;
+      const tv = formatKrwShort(r.tradingValue);
+      const vol = r.volume.toLocaleString('ko-KR');
+      return `<tr>
+        <td class="rank">${r.rank}</td>
+        <td class="name"><a href="https://finance.naver.com/item/main.naver?code=${esc(r.code)}" target="_blank" rel="noopener">${esc(r.name)}</a></td>
+        <td class="num">${r.price.toLocaleString('ko-KR')}</td>
+        <td class="num ${chCls}">${chStr}</td>
+        <td class="num">${vol}</td>
+        <td class="num">${tv}</td>
+        <td class="num muted">${r.per != null ? r.per.toFixed(1) : '—'}</td>
+      </tr>`;
+    }).join('');
+    return `  <section class="volume-top10">
+    <h2>🔥 오늘 거래량 Top 10 <span class="src-note">— KOSPI 비ETF (네이버 금융)</span></h2>
+    <p class="intro">돈이 몰리는 곳에 상승이 있다 — 종가매매 후보 발굴 시드. ETF/ETN/레버리지/인버스 제외.</p>
+    <table class="vt-tbl">
+      <thead><tr>
+        <th>순위</th><th>종목</th><th>현재가</th><th>등락률</th><th>거래량</th><th>거래대금</th><th>PER</th>
+      </tr></thead>
+      <tbody>${trs}</tbody>
+    </table>
+  </section>`;
+  }
+
+  /**
+   * v1.7 — 돌팬티 종가매매 룰 기반 매수 추천.
+   * 거래량 Top 10 종목을 5팩터(거래대금·수급·거래량·캔들·52주)로 점수화 후 우선순위 정렬.
+   */
+  private renderEodPicks(picks: DashboardPage['eodPicks']): string {
+    if (!picks || picks.length === 0) return '';
+    const cards = picks.map((p, idx) => {
+      const ord = idx + 1;
+      const recCls = p.recommendation === '🔥 강력 추천' ? 'eod-strong'
+        : p.recommendation === '⚡ 추천' ? 'eod-buy'
+        : p.recommendation === '💡 관망' ? 'eod-hold' : 'eod-skip';
+      const chCls = p.changePct == null ? '' : p.changePct >= 0 ? 'up' : 'down';
+      const chStr = p.changePct == null ? '—'
+        : `${p.changePct >= 0 ? '+' : ''}${p.changePct.toFixed(2)}%`;
+      const volR = p.volumeRatio != null ? `${p.volumeRatio.toFixed(1)}×` : '—';
+      const pos = p.fiftyTwoWeekPositionPct != null
+        ? `${p.fiftyTwoWeekPositionPct.toFixed(0)}%` : '—';
+      const flowF = p.todayForeignerNet;
+      const flowI = p.todayInstitutionalNet;
+      const flowStr = (flowF == null && flowI == null) ? '—'
+        : `외인 ${formatFlow(flowF)} / 기관 ${formatFlow(flowI)}`;
+      const factorRows = p.factors.map((f) => {
+        const sign = f.weight >= 0 ? '+' : '';
+        return `<li><span class="f-cat">${esc(f.category)}</span> <b>${sign}${f.weight}</b> <span class="f-det">${esc(f.detail)}</span></li>`;
+      }).join('');
+      return `<div class="eod-card ${recCls}">
+        <div class="eod-head">
+          <span class="eod-ord">#${ord}</span>
+          <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=${esc(p.code)}" target="_blank" rel="noopener">${esc(p.name)}</a> <span class="eod-code">${esc(p.code)}</span></span>
+          <span class="eod-rec">${esc(p.recommendation)} <b>${p.totalScore}</b>점</span>
+        </div>
+        <div class="eod-stats">
+          <span>${p.price.toLocaleString('ko-KR')}원</span>
+          <span class="${chCls}">${chStr}</span>
+          <span>거래량 ${volR}</span>
+          <span>52주 ${pos}</span>
+          <span class="eod-flow">${flowStr}</span>
+        </div>
+        <ul class="eod-factors">${factorRows}</ul>
+      </div>`;
+    }).join('');
+    return `  <section class="eod-picks">
+    <h2>📌 오늘 종가 매수 추천 <span class="src-note">— 돌팬티 종가매매 룰 (거래대금·수급·거래량·양봉·52주)</span></h2>
+    <p class="intro">거래량 Top 10 중 5팩터 점수 정렬. <b>🔥 강력 추천 70+</b> / <b>⚡ 추천 50~69</b> / <b>💡 관망 30~49</b>. ⚠️ 매수가·손절가 단정 추천 없음 — 점수와 근거만 제공.</p>
+    <div class="eod-list">${cards}</div>
+  </section>`;
+  }
+
   private renderHeaderSummary(page: DashboardPage): string {
     const plan = page.krPortfolioPlan;
     const fg = page.krFearGreed;
@@ -537,6 +675,66 @@ ${slotsHtml}
       h1 { margin: 0 0 4px; font-size: 1.6em; }
       .meta { color: #888; font-size: .9em; }
       .disclaimer { background: #fff7e6; border-left: 4px solid #f5a623; padding: 10px 14px; margin: 14px 0 0; font-size: .9em; color: #555; line-height: 1.5; }
+      /* v1.7 — KOSPI 지수 헤더 */
+      .kospi-bar { display: inline-flex; align-items: baseline; gap: 12px; margin: 12px 0 4px; padding: 10px 16px; background: #1a1a1a; color: #fff; border-radius: 8px; font-variant-numeric: tabular-nums; }
+      .kospi-bar .kospi-label { font-size: .9em; color: #ccc; }
+      .kospi-bar .kospi-value { font-size: 1.3em; font-weight: 700; }
+      .kospi-bar .kospi-change { font-size: 1.05em; font-weight: 600; }
+      .kospi-bar.up .kospi-change { color: #ff5a5a; }
+      .kospi-bar.down .kospi-change { color: #5ad17a; }
+      .kospi-bar.flat .kospi-change { color: #aaa; }
+      /* v1.7 — 시장 이벤트 캘린더 */
+      .market-events { margin: 10px 0; padding: 10px 14px; background: #fffaf0; border-left: 4px solid #ff9800; border-radius: 4px; }
+      .ev-title { font-weight: 600; color: #e65100; margin-bottom: 8px; font-size: .95em; }
+      .ev-list { display: flex; flex-direction: column; gap: 6px; }
+      .ev-chip { display: grid; grid-template-columns: 60px auto auto 1fr; gap: 8px; align-items: baseline; padding: 6px 10px; background: #fff; border-radius: 4px; font-size: .85em; line-height: 1.45; }
+      .ev-chip.ev-sev-high { border-left: 3px solid #c62828; }
+      .ev-chip.ev-sev-medium { border-left: 3px solid #f57c00; }
+      .ev-chip.ev-sev-low { border-left: 3px solid #1976d2; }
+      .ev-tag { font-weight: 700; color: #c62828; }
+      .ev-label { font-weight: 600; }
+      .ev-date { color: #888; font-size: .9em; }
+      .ev-impact { color: #555; }
+      @media (max-width: 640px) {
+        .ev-chip { grid-template-columns: 1fr; gap: 2px; }
+      }
+      /* v1.7 — 거래량 Top 10 테이블 */
+      .volume-top10 .src-note { font-size: .8em; color: #888; font-weight: normal; }
+      .volume-top10 .intro { font-size: .88em; color: #555; margin: 0 0 12px; line-height: 1.5; }
+      .vt-tbl { width: 100%; border-collapse: collapse; background: #fff; font-size: .9em; font-variant-numeric: tabular-nums; }
+      .vt-tbl thead th { background: #f4f4f4; padding: 8px 10px; border: 1px solid #e6e6e6; text-align: center; font-weight: 600; font-size: .85em; }
+      .vt-tbl tbody td { padding: 7px 10px; border: 1px solid #f0f0f0; text-align: center; }
+      .vt-tbl td.rank { color: #c62828; font-weight: 700; }
+      .vt-tbl td.name { text-align: left; font-weight: 600; }
+      .vt-tbl td.name a { color: #1976d2; text-decoration: none; }
+      .vt-tbl td.num { text-align: right; }
+      .vt-tbl td.num.up { color: #c62828; font-weight: 600; }
+      .vt-tbl td.num.down { color: #2e7d32; font-weight: 600; }
+      .vt-tbl td.muted { color: #999; font-size: .9em; }
+      /* v1.7 — 종가 매수 추천 카드 */
+      .eod-picks .src-note { font-size: .8em; color: #888; font-weight: normal; }
+      .eod-picks .intro { font-size: .88em; color: #555; margin: 0 0 14px; line-height: 1.55; }
+      .eod-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
+      .eod-card { background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 14px 16px; font-size: .9em; }
+      .eod-card.eod-strong { border: 2px solid #c62828; background: #fff5f5; }
+      .eod-card.eod-buy { border: 2px solid #ef6c00; background: #fff8e1; }
+      .eod-card.eod-hold { border-left: 4px solid #1976d2; }
+      .eod-card.eod-skip { opacity: .65; }
+      .eod-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+      .eod-ord { font-size: 1.15em; font-weight: 700; color: #c62828; }
+      .eod-name { font-size: 1.05em; font-weight: 600; flex: 1 1 auto; }
+      .eod-name a { color: #1976d2; text-decoration: none; }
+      .eod-code { font-size: .82em; color: #888; font-weight: normal; margin-left: 4px; }
+      .eod-rec { font-weight: 600; font-size: .92em; color: #c62828; }
+      .eod-stats { display: flex; flex-wrap: wrap; gap: 10px 14px; padding: 6px 0; font-variant-numeric: tabular-nums; font-size: .9em; color: #444; }
+      .eod-stats .up { color: #c62828; font-weight: 600; }
+      .eod-stats .down { color: #2e7d32; font-weight: 600; }
+      .eod-flow { color: #555; font-size: .88em; }
+      .eod-factors { list-style: none; padding: 6px 0 0; margin: 6px 0 0; border-top: 1px solid #eee; font-size: .85em; line-height: 1.55; }
+      .eod-factors li { padding: 2px 0; }
+      .eod-factors .f-cat { display: inline-block; min-width: 50px; color: #1976d2; font-weight: 600; }
+      .eod-factors b { color: #c62828; margin-left: 4px; }
+      .eod-factors .f-det { color: #555; }
       section { padding: 20px 24px; }
       h2 { margin: 0 0 12px; font-size: 1.2em; }
       .weather-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -1166,6 +1364,26 @@ function esc(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function formatKrwShort(v: number): string {
+  if (!Number.isFinite(v)) return '—';
+  if (v >= 1e12) return `${(v / 1e12).toFixed(2)}조`;
+  if (v >= 1e8) return `${(v / 1e8).toFixed(0)}억`;
+  if (v >= 1e4) return `${(v / 1e4).toFixed(0)}만`;
+  return v.toLocaleString('ko-KR');
+}
+
+function formatFlow(n: number | null): string {
+  if (n == null) return '—';
+  const abs = Math.abs(n);
+  const arrow = n > 0 ? '↑' : n < 0 ? '↓' : '·';
+  const cls = n > 0 ? 'up' : n < 0 ? 'down' : 'flat';
+  let body: string;
+  if (abs >= 1e8) body = `${(abs / 1e8).toFixed(1)}억`;
+  else if (abs >= 1e4) body = `${(abs / 1e4).toFixed(0)}만`;
+  else body = abs.toLocaleString('ko-KR');
+  return `<span class="${cls}">${arrow}${body}</span>`;
 }
 
 export interface InsightPattern {

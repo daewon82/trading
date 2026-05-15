@@ -12,6 +12,8 @@ import { PortfolioPlanner } from '../src/analyzers/PortfolioPlanner.js';
 import type { PortfolioPlan, TradingSignal } from '../src/types/trading-signal.js';
 import { KrFearGreedSource } from '../src/sources/macro/KrFearGreedSource.js';
 import type { FearGreedIndex } from '../src/types/fear-greed.js';
+import { NaverVolumeRankSource, type VolumeRankRow } from '../src/sources/naver-kr/NaverVolumeRankSource.js';
+import { EndOfDayPicker, type EndOfDayPick } from '../src/analyzers/EndOfDayPicker.js';
 import {
   KR_SECTOR_MAP,
   type SectorTag,
@@ -137,6 +139,11 @@ let krValueScreenerTop: UniverseTop[] = [];
 let krPortfolioPlan: PortfolioPlan | null = null;
 let krFearGreed: FearGreedIndex | null = null;
 let kospiReturn20d: number | null = null;
+let kospiIndexValue: number | null = null;
+let kospiIndexChangePct: number | null = null;
+let volumeTop10: VolumeRankRow[] = [];
+let eodPicks: EndOfDayPick[] = [];
+const volumeMap = new Map<string, number[]>(); // code → 최근 30거래일 일별 거래량
 const SPARKLINE_DAYS = 60;
 const BENCHMARK_SYMBOL = '^KS11';
 
@@ -156,6 +163,9 @@ test('시계열 + 기술적 지표 + sparkline (병렬 fetch)', async () => {
         indicatorMap.set(ticker, ind);
         const closes = ts.points.map((p) => p.close).slice(-SPARKLINE_DAYS);
         closesMap.set(ticker, closes);
+        const vols = ts.points.map((p) => p.volume ?? null)
+          .filter((v): v is number => v != null).slice(-30);
+        if (vols.length > 0) volumeMap.set(ticker, vols);
         range52Map.set(ticker, {
           high: ts.fiftyTwoWeekHigh,
           low: ts.fiftyTwoWeekLow,
@@ -222,7 +232,7 @@ test('코스피 공포·탐욕 지수 — fearandgreed.kr (머신러너 방법�
 });
 
 // v1.6 — 상대 강도(RS) 팩터용 코스피 지수 20일 수익률 fetch
-test('코스피 지수 ^KS11 — 20거래일 수익률 (상대 강도 벤치마크)', async () => {
+test('코스피 지수 ^KS11 — 현재값 + 20거래일 수익률', async () => {
   const ts = await fetchDailyChart(BENCHMARK_SYMBOL, [BENCHMARK_SYMBOL]);
   if (!ts || ts.points.length < 21) {
     logger.warn('kospi benchmark fetch failed or too short', { points: ts?.points.length ?? 0 });
@@ -230,11 +240,73 @@ test('코스피 지수 ^KS11 — 20거래일 수익률 (상대 강도 벤치마�
   }
   const closes = ts.points.map((p) => p.close);
   const last = closes[closes.length - 1]!;
+  const prev = closes[closes.length - 2]!;
   const back20 = closes[closes.length - 21]!;
+  kospiIndexValue = last;
+  if (prev > 0) kospiIndexChangePct = ((last - prev) / prev) * 100;
   if (back20 > 0) kospiReturn20d = (last - back20) / back20;
   logger.info('kospi benchmark fetched', {
     symbol: BENCHMARK_SYMBOL, points: ts.points.length,
+    indexValue: kospiIndexValue,
+    todayChangePct: kospiIndexChangePct != null ? `${kospiIndexChangePct.toFixed(2)}%` : null,
     kospiReturn20d: kospiReturn20d != null ? `${(kospiReturn20d * 100).toFixed(2)}%` : null,
+  });
+});
+
+// v1.7 — 돌팬티 종가매매: 거래량 Top 10 + 종가 매수 추천
+test('거래량 Top 10 — 돌팬티 종가매매 추천 (KOSPI 비ETF)', async () => {
+  test.setTimeout(60_000);
+  const src = new NaverVolumeRankSource();
+  const ranks = await src.fetch('kospi');
+  const nonEtf = ranks.filter((r) => !r.isLikelyEtf).slice(0, 10);
+  volumeTop10 = nonEtf;
+  logger.info('volume rank fetched', {
+    totalRows: ranks.length,
+    nonEtfTop10: nonEtf.map((r) => ({ rank: r.rank, code: r.code, name: r.name, ch: r.changePct })),
+  });
+
+  // 결측 종목 보강 fetch (flow + closes/volume + 52주)
+  const tossSrc = new TossKrFlowSource();
+  await Promise.all(nonEtf.map(async (r) => {
+    const needFlow = !flowMap.has(r.code);
+    const needChart = !closesMap.has(r.code);
+    const tasks: Array<Promise<unknown>> = [];
+    if (needFlow) {
+      tasks.push(tossSrc.fetch(r.code, 30).then((f) => { if (f) flowMap.set(r.code, f); }));
+    }
+    if (needChart) {
+      tasks.push(fetchDailyChart(r.code, resolveCandidates(r.code, 'KR')).then((ts) => {
+        if (!ts) return;
+        const closes = ts.points.map((p) => p.close).slice(-30);
+        closesMap.set(r.code, closes);
+        const vols = ts.points.map((p) => p.volume ?? null)
+          .filter((v): v is number => v != null).slice(-30);
+        if (vols.length > 0) volumeMap.set(r.code, vols);
+        range52Map.set(r.code, { high: ts.fiftyTwoWeekHigh, low: ts.fiftyTwoWeekLow });
+        if (ts.longName) nameMap.set(r.code, ts.longName);
+      }));
+    }
+    await Promise.all(tasks);
+  }));
+
+  // 20일 평균 거래량 계산 (당일 거래량 제외 직전 20일)
+  const avgVolume20Map = new Map<string, number>();
+  for (const [code, vols] of volumeMap) {
+    if (vols.length < 5) continue;
+    // 마지막은 당일 거래량일 수 있어 제외, 직전 20일 평균
+    const prevs = vols.slice(-21, -1);
+    if (prevs.length === 0) continue;
+    avgVolume20Map.set(code, prevs.reduce((a, b) => a + b, 0) / prevs.length);
+  }
+
+  const picker = new EndOfDayPicker();
+  eodPicks = picker.pick(nonEtf, { closesMap, avgVolume20Map, range52Map, flowMap }, 10);
+  logger.info('eod picks', {
+    count: eodPicks.length,
+    top3: eodPicks.slice(0, 3).map((p) => ({
+      code: p.code, name: p.name, score: p.totalScore,
+      rec: p.recommendation, volRatio: p.volumeRatio?.toFixed(2),
+    })),
   });
 });
 
@@ -503,6 +575,13 @@ test.afterAll(async () => {
   });
 
   const today = todayInSeoul();
+  const { MarketEventCalendar } = await import('../src/analyzers/MarketEventCalendar.js');
+  const marketEvents = MarketEventCalendar.getEvents();
+  logger.info('market events', {
+    upcoming: marketEvents.slice(0, 5).map((e) => ({
+      kind: e.kind, date: e.date, daysUntil: e.daysUntil, severity: e.severity,
+    })),
+  });
   const dashboard: DashboardPage = {
     generatedAt: new Date().toISOString(),
     today,
@@ -511,6 +590,10 @@ test.afterAll(async () => {
     krValueScreenerTop,
     krPortfolioPlan,
     krFearGreed,
+    kospiIndex: { value: kospiIndexValue, changePct: kospiIndexChangePct },
+    volumeTop10,
+    eodPicks,
+    marketEvents,
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });
