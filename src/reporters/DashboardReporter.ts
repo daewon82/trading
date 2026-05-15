@@ -40,6 +40,8 @@ export interface DashboardPage {
   portfolioPnL?: import('../types/portfolio.js').PortfolioSnapshot | null;
   /** v1.8 — 시장 구조 (ADR + 쏠림/순환매 판별) */
   marketStructure?: import('../types/market-structure.js').MarketStructureResult | null;
+  /** v1.9 — 보유 종목 대응 전략 (액션·근거) */
+  holdingStrategies?: import('../types/holding-strategy.js').HoldingStrategyResult[];
 }
 
 export class DashboardReporter {
@@ -67,12 +69,8 @@ export class DashboardReporter {
     ${this.renderMarketEvents(page.marketEvents)}
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
-${this.renderVolumeTop10(page.volumeTop10)}
+${this.renderHoldingStrategies(page.holdingStrategies, page.portfolioPnL)}
 ${this.renderEodPicks(page.eodPicks)}
-${this.renderPortfolioPlan(page.krPortfolioPlan)}
-${this.renderPortfolioPnL(page.portfolioPnL)}
-${this.renderUniverse('💼 보유 종목 대응 전략 — 외인·기관 수급 동향', '각 컬럼은 정확히 그 기간 데이터 (Toss 원본, 거래대금 단위 원/억/조). 오늘=당일, 5/20/60일=직전 거래일 누적 순매수. ↑ 빨강=순매수, ↓ 초록=순매도, ⏱=장중 미확정. 카드 라벨은 <b>오늘 데이터 우선</b>(외인+기관 동반 일치) → 5일 → 20일 → 60일 순.', page.krWatchTop)}
-${this.renderUniverse('💎 저평가 + 외인·기관 매수 + 품질 B 이상 Top 10', 'KOSPI 가치주 시드(40종) 중 20일 외인·기관 동반 순매수 + 품질 점수 B 등급(50점) 이상. 합산 매수 큰 순.', page.krValueForeignBuyTop)}
   <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
   <script>
     // 홈화면 추가/PWA 대응 — 페이지 복귀 시 자동 새로고침
@@ -443,12 +441,69 @@ ${cards}
   }
 
   /**
+   * v1.9 — 보유 종목 대응 전략 섹션.
+   * 각 종목별 액션(BUY_MORE/HOLD/SELL) + 근거 + 손익률 + 현재가.
+   */
+  private renderHoldingStrategies(
+    strategies: DashboardPage['holdingStrategies'],
+    pnl: DashboardPage['portfolioPnL'],
+  ): string {
+    if (!strategies || strategies.length === 0) return '';
+    const actionMeta: Record<string, { icon: string; label: string; cls: string }> = {
+      BUY_MORE: { icon: '🟢', label: '추가 매수', cls: 'hs-buy' },
+      HOLD: { icon: '🟡', label: '홀딩', cls: 'hs-hold' },
+      SELL: { icon: '🔴', label: '매도 검토', cls: 'hs-sell' },
+    };
+    const summaryStr = pnl
+      ? `총 평가 ${pnl.totalCurrent.toLocaleString('ko-KR')}원 · 손익 <b class="${pnl.totalPnL >= 0 ? 'pnl-up' : 'pnl-down'}">${pnl.totalPnL >= 0 ? '+' : ''}${pnl.totalPnL.toLocaleString('ko-KR')}원 (${pnl.totalPnLPct >= 0 ? '+' : ''}${pnl.totalPnLPct.toFixed(2)}%)</b>`
+      : '';
+    const cards = strategies.map((s) => {
+      const meta = actionMeta[s.action]!;
+      const pnlStr = s.pnlPct != null
+        ? `<span class="${s.pnlPct >= 0 ? 'pnl-up' : 'pnl-down'}">${s.pnlPct >= 0 ? '+' : ''}${s.pnlPct.toFixed(2)}%</span>`
+        : '<span class="muted">손익 정보 없음</span>';
+      const price = s.currentPrice != null
+        ? `${s.currentPrice.toLocaleString('ko-KR')}원` : '—';
+      const pos = s.fiftyTwoWeekPositionPct != null
+        ? `52주 ${s.fiftyTwoWeekPositionPct.toFixed(0)}%` : '';
+      const reasons = s.reasons.map((r) =>
+        `<li><span class="hs-icon">${r.icon ?? '·'}</span> ${esc(r.detail)} <b class="${r.weight >= 0 ? 'pnl-up' : 'pnl-down'}">${r.weight >= 0 ? '+' : ''}${r.weight}</b></li>`,
+      ).join('');
+      return `<div class="hs-card ${meta.cls}">
+        <div class="hs-head">
+          <div class="hs-name">${esc(s.name)} <span class="hs-code">${esc(s.code)}</span></div>
+          <div class="hs-action">${meta.icon} <b>${meta.label}</b> <span class="hs-conf">신뢰도 ${s.confidence.toFixed(0)}%</span></div>
+        </div>
+        <div class="hs-meta">
+          <span class="hs-price">${price}</span>
+          ${pnlStr}
+          ${pos ? `<span class="hs-pos">${esc(pos)}</span>` : ''}
+        </div>
+        <ul class="hs-reasons">${reasons}</ul>
+      </div>`;
+    }).join('');
+    return `  <section class="holding-strategies">
+    <h2>💼 보유 종목 대응 전략</h2>
+    ${summaryStr ? `<p class="hs-summary">${summaryStr}</p>` : ''}
+    <p class="hs-disclaimer">⚠️ 본 액션은 룰 기반 정보 제공이며 매매 권유가 아닙니다. 매수가·손절가·목표가를 단정하지 않습니다.</p>
+    <div class="hs-list">${cards}</div>
+  </section>`;
+  }
+
+  /**
    * v1.7 — 돌팬티 종가매매 룰 기반 매수 추천.
-   * 거래량 Top 10 종목을 5팩터(거래대금·수급·거래량·캔들·52주)로 점수화 후 우선순위 정렬.
+   * v1.9 — 강력 추천(50점 이상)만 표시. 점수 정렬.
    */
   private renderEodPicks(picks: DashboardPage['eodPicks']): string {
     if (!picks || picks.length === 0) return '';
-    const cards = picks.map((p, idx) => {
+    const strong = picks.filter((p) => p.totalScore >= 50);
+    if (strong.length === 0) {
+      return `  <section class="eod-picks">
+    <h2>🔥 종가 매수 강력 추천 (KOSPI)</h2>
+    <p class="intro">오늘 거래량 상위 종목 중 50점 이상 추천 종목이 없습니다 — 관망 권고.</p>
+  </section>`;
+    }
+    const cards = strong.map((p, idx) => {
       const ord = idx + 1;
       const recCls = p.recommendation === '🔥 강력 추천' ? 'eod-strong'
         : p.recommendation === '⚡ 추천' ? 'eod-buy'
@@ -484,8 +539,8 @@ ${cards}
       </div>`;
     }).join('');
     return `  <section class="eod-picks">
-    <h2>📌 오늘 종가 매수 추천 <span class="src-note">— 돌팬티 종가매매 룰 (거래대금·수급·거래량·양봉·52주)</span></h2>
-    <p class="intro">거래량 Top 10 중 5팩터 점수 정렬. <b>🔥 강력 추천 70+</b> / <b>⚡ 추천 50~69</b> / <b>💡 관망 30~49</b>. ⚠️ 매수가·손절가 단정 추천 없음 — 점수와 근거만 제공.</p>
+    <h2>🔥 종가 매수 강력 추천 (KOSPI)</h2>
+    <p class="intro">돌팬티 종가매매 룰 — 거래대금·수급·거래량·양봉·52주 5팩터 점수. <b>🔥 70+ 강력 / ⚡ 50~69 추천</b>. ⚠️ 매수가·손절가 단정 없음.</p>
     <div class="eod-list">${cards}</div>
   </section>`;
   }
@@ -765,6 +820,37 @@ ${slotsHtml}
       .ms-counts .ms-edge { color: #777; }
       .ms-insight { margin: 6px 0 0; font-size: .88em; color: #444; line-height: 1.5; }
       .ms-insight b { color: #c62828; }
+      /* v1.9 — 보유 대응 전략 섹션 */
+      section.holding-strategies { padding: 20px 24px; background: #fafafa; }
+      section.holding-strategies h2 { margin: 0 0 8px; font-size: 1.25em; color: #1b5e20; }
+      .hs-summary { margin: 0 0 8px; font-size: .95em; }
+      .hs-disclaimer { margin: 0 0 14px; font-size: .82em; color: #888; padding: 6px 10px; background: #fff7e6; border-left: 3px solid #f5a623; border-radius: 4px; }
+      .hs-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
+      .hs-card { background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 14px 16px; font-size: .9em; }
+      .hs-card.hs-buy { border: 2px solid #2e7d32; background: #f1f8e9; }
+      .hs-card.hs-hold { border-left: 4px solid #fbc02d; }
+      .hs-card.hs-sell { border: 2px solid #c62828; background: #ffebee; }
+      .hs-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+      .hs-name { font-size: 1.05em; font-weight: 700; }
+      .hs-code { font-size: .8em; color: #888; font-weight: normal; margin-left: 4px; }
+      .hs-action { font-size: .95em; }
+      .hs-action b { margin-left: 2px; }
+      .hs-card.hs-buy .hs-action b { color: #2e7d32; }
+      .hs-card.hs-sell .hs-action b { color: #c62828; }
+      .hs-card.hs-hold .hs-action b { color: #f57f17; }
+      .hs-conf { font-size: .82em; color: #888; margin-left: 6px; }
+      .hs-meta { display: flex; gap: 12px; flex-wrap: wrap; padding: 6px 0; font-size: .9em; font-variant-numeric: tabular-nums; color: #555; }
+      .hs-meta .pnl-up { color: #c62828; font-weight: 600; }
+      .hs-meta .pnl-down { color: #2e7d32; font-weight: 600; }
+      .hs-meta .muted { color: #aaa; }
+      .hs-meta .hs-price { font-weight: 600; color: #222; }
+      .hs-meta .hs-pos { color: #777; }
+      .hs-reasons { list-style: none; padding: 8px 0 0; margin: 6px 0 0; border-top: 1px solid #eee; font-size: .87em; line-height: 1.55; }
+      .hs-reasons li { padding: 2px 0; }
+      .hs-reasons .hs-icon { display: inline-block; min-width: 22px; }
+      .hs-reasons b { margin-left: 4px; font-variant-numeric: tabular-nums; }
+      .hs-summary .pnl-up { color: #c62828; }
+      .hs-summary .pnl-down { color: #2e7d32; }
       /* v1.7 — 시장 이벤트 캘린더 */
       .market-events { margin: 10px 0; padding: 10px 14px; background: #fffaf0; border-left: 4px solid #ff9800; border-radius: 4px; }
       .ev-title { font-weight: 600; color: #e65100; margin-bottom: 8px; font-size: .95em; }

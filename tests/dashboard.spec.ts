@@ -20,6 +20,8 @@ import { JandiSignalNotifier } from '../src/notifications/JandiSignalNotifier.js
 import { NaverMarketSource } from '../src/sources/naver-kr/NaverMarketSource.js';
 import { MarketStructureAnalyzer } from '../src/analyzers/MarketStructureAnalyzer.js';
 import type { MarketStructureResult } from '../src/types/market-structure.js';
+import { HoldingStrategyAnalyzer } from '../src/analyzers/HoldingStrategyAnalyzer.js';
+import type { HoldingStrategyResult } from '../src/types/holding-strategy.js';
 import { loadEnv } from '../src/utils/loadEnv.js';
 
 loadEnv();
@@ -154,6 +156,7 @@ let volumeTop10: VolumeRankRow[] = [];
 let eodPicks: EndOfDayPick[] = [];
 let portfolioPnL: PortfolioSnapshot | null = null;
 let marketStructure: MarketStructureResult | null = null;
+let holdingStrategies: HoldingStrategyResult[] = [];
 const volumeMap = new Map<string, number[]>(); // code → 최근 30거래일 일별 거래량
 const SPARKLINE_DAYS = 60;
 const BENCHMARK_SYMBOL = '^KS11';
@@ -617,9 +620,28 @@ test.afterAll(async () => {
     totalSignals: allSignals.length,
     buyCount: allSignals.filter((s) => s.action === 'STRONG_BUY' || s.action === 'BUY').length,
     sellCount: allSignals.filter((s) => s.action === 'STRONG_SELL' || s.action === 'SELL').length,
-    plan: krPortfolioPlan.slots.map((s) => ({
-      code: s.signal.code, name: s.signal.name, action: s.signal.action,
-      score: s.signal.score, shares: s.shares, cost: s.estimatedCost,
+  });
+
+  // v1.9 — 보유 종목 대응 전략 (BUY_MORE / HOLD / SELL)
+  const strategyAnalyzer = new HoldingStrategyAnalyzer();
+  const signalByCode = new Map(allSignals.map((s) => [s.code, s]));
+  holdingStrategies = krCodes.map((code) => {
+    const signal = signalByCode.get(code);
+    if (!signal) return null;
+    const card = krWatchTop.find((t) => t.ticker === code)?.card ?? null;
+    return strategyAnalyzer.analyze(
+      signal,
+      holdingsPnLMap.get(code) ?? null,
+      card?.fiftyTwoWeekPosition ?? null,
+      card?.structuralRisk ?? null,
+      marketStructure,
+    );
+  }).filter((s): s is HoldingStrategyResult => s !== null);
+  logger.info('holding strategies', {
+    count: holdingStrategies.length,
+    actions: holdingStrategies.map((s) => ({
+      code: s.code, name: s.name, action: s.action,
+      confidence: s.confidence.toFixed(0), pnl: s.pnlPct?.toFixed(1) + '%',
     })),
   });
 
@@ -675,6 +697,7 @@ test.afterAll(async () => {
     marketEvents,
     portfolioPnL,
     marketStructure,
+    holdingStrategies,
   };
   const ts = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   await mkdir('reports', { recursive: true });
