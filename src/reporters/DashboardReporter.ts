@@ -60,11 +60,10 @@ export class DashboardReporter {
     <div class="meta">${esc(page.today)} · 생성 ${esc(page.generatedAt)} · <span class="refresh-note">5분마다 자동 새로고침</span></div>
     ${this.renderKospiIndex(page.kospiIndex)}
     ${this.renderMarketEvents(page.marketEvents)}
-    ${this.renderHeaderSummary(page)}
     <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
   </header>
-${this.renderVolumeTop10(page.volumeTop10)}
 ${this.renderEodPicks(page.eodPicks)}
+${this.renderVolumeTop10(page.volumeTop10)}
 ${this.renderFearGreed(page.krFearGreed)}
 ${this.renderPortfolioPlan(page.krPortfolioPlan)}
 ${this.renderUniverse('💼 내 보유 종목 — 외인·기관 수급 동향', '각 컬럼은 정확히 그 기간 데이터 (Toss 원본, 거래대금 단위 원/억/조). 오늘=당일, 5/20/60일=직전 거래일 누적 순매수. ↑ 빨강=순매수, ↓ 초록=순매도, ⏱=장중 미확정. 카드 라벨은 <b>오늘 데이터 우선</b>(외인+기관 동반 일치) → 5일 → 20일 → 60일 순.', page.krWatchTop)}
