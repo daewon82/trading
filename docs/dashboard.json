@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T01:29:04.037Z",
+  "generatedAt": "2026-05-18T01:44:51.353Z",
   "totalCapital": 50000000,
   "riskPerTrade": 500000,
   "asOfDate": "2026-05-15",
@@ -27,13 +27,13 @@
       },
       "signal": {
         "action": "HOLD",
-        "reason": "손절선 252,300원 / 10일 저점 218,500원 / 다음 피라미딩 286,925원.",
+        "reason": "손절선 268,300원 / 10일 저점 218,500원 / 다음 피라미딩 302,925원.",
         "unitSize": 18,
         "unitCost": 4869000,
-        "stopPrice": 252300,
-        "nextPyramidPrice": 286925,
+        "stopPrice": 268300,
+        "nextPyramidPrice": 302925,
         "distanceToEntryPct": 10.720887245841034,
-        "distanceToStopPct": 6.728280961182994,
+        "distanceToStopPct": 0.8133086876155268,
         "distanceToExitPct": 19.223659889094268
       },
       "protocol": {
@@ -52,17 +52,17 @@
         "position": {
           "code": "005930",
           "name": "삼성전자",
-          "buyPrice": 280000,
+          "buyPrice": 296000,
           "quantity": 2,
           "buyDate": "2026-05-01"
         },
         "currentValue": 541000,
-        "costBasis": 560000,
-        "pnl": -19000,
-        "pnlPct": -3.392857142857143,
-        "stopPrice": 252300,
+        "costBasis": 592000,
+        "pnl": -51000,
+        "pnlPct": -8.614864864864865,
+        "stopPrice": 268300,
         "stoppedOut": false,
-        "nextPyramidPrice": 286925,
+        "nextPyramidPrice": 302925,
         "pyramidReady": false,
         "exitTrigger10dLow": false
       },
@@ -570,14 +570,14 @@
         "avgVolume20": 2606135.4
       },
       "signal": {
-        "action": "PYRAMID",
-        "reason": "진입가 +0.5 ATR 도달 (94,628원). 1유닛 추가 매수 (최대 4유닛).",
+        "action": "HOLD",
+        "reason": "손절선 229,990원 / 10일 저점 134,600원 / 다음 피라미딩 263,128원.",
         "unitSize": 18,
         "unitCost": 4329000,
-        "stopPrice": 61490,
-        "nextPyramidPrice": 94627.5,
+        "stopPrice": 229990,
+        "nextPyramidPrice": 263127.5,
         "distanceToEntryPct": -6.652806652806653,
-        "distanceToStopPct": 74.43243243243242,
+        "distanceToStopPct": 4.37006237006237,
         "distanceToExitPct": 44.03326403326403
       },
       "protocol": {
@@ -596,18 +596,18 @@
         "position": {
           "code": "066570",
           "name": "LG전자",
-          "buyPrice": 88000,
+          "buyPrice": 256500,
           "quantity": 3,
           "buyDate": "2026-05-01"
         },
         "currentValue": 721500,
-        "costBasis": 264000,
-        "pnl": 457500,
-        "pnlPct": 173.29545454545453,
-        "stopPrice": 61490,
+        "costBasis": 769500,
+        "pnl": -48000,
+        "pnlPct": -6.237816764132553,
+        "stopPrice": 229990,
         "stoppedOut": false,
-        "nextPyramidPrice": 94627.5,
-        "pyramidReady": true,
+        "nextPyramidPrice": 263127.5,
+        "pyramidReady": false,
         "exitTrigger10dLow": false
       },
       "history": [
@@ -1118,10 +1118,10 @@
         "reason": "10일 저점 108,000원 이탈. 전량 익절/청산.",
         "unitSize": 44,
         "unitCost": 4589200,
-        "stopPrice": 57370,
-        "nextPyramidPrice": 71282.5,
+        "stopPrice": 96870,
+        "nextPyramidPrice": 110782.5,
         "distanceToEntryPct": 32.02301054650048,
-        "distanceToStopPct": 44.99520613614573,
+        "distanceToStopPct": 7.123681687440077,
         "distanceToExitPct": -3.547459252157239
       },
       "protocol": {
@@ -1143,18 +1143,18 @@
         "position": {
           "code": "272210",
           "name": "한화시스템",
-          "buyPrice": 68500,
+          "buyPrice": 108000,
           "quantity": 3,
           "buyDate": "2026-05-01"
         },
         "currentValue": 312900,
-        "costBasis": 205500,
-        "pnl": 107400,
-        "pnlPct": 52.26277372262774,
-        "stopPrice": 57370,
+        "costBasis": 324000,
+        "pnl": -11100,
+        "pnlPct": -3.425925925925926,
+        "stopPrice": 96870,
         "stoppedOut": false,
-        "nextPyramidPrice": 71282.5,
-        "pyramidReady": true,
+        "nextPyramidPrice": 110782.5,
+        "pyramidReady": false,
         "exitTrigger10dLow": true
       },
       "history": [
@@ -1661,14 +1661,14 @@
         "avgVolume20": 1626049.25
       },
       "signal": {
-        "action": "WAIT",
-        "reason": "20일 고점 183,000원 까지 8.93% 남음. 돌파 대기.",
+        "action": "HOLD",
+        "reason": "손절선 153,560원 / 10일 저점 151,700원 / 다음 피라미딩 173,360원.",
         "unitSize": 31,
         "unitCost": 5208000,
-        "stopPrice": null,
-        "nextPyramidPrice": null,
+        "stopPrice": 153560,
+        "nextPyramidPrice": 173360,
         "distanceToEntryPct": 8.928571428571429,
-        "distanceToStopPct": null,
+        "distanceToStopPct": 8.595238095238095,
         "distanceToExitPct": 9.702380952380953
       },
       "protocol": {
@@ -1683,7 +1683,24 @@
         "failed": [],
         "notes": []
       },
-      "holding": null,
+      "holding": {
+        "position": {
+          "code": "000270",
+          "name": "기아",
+          "buyPrice": 169400,
+          "quantity": 1,
+          "buyDate": "2026-05-18"
+        },
+        "currentValue": 168000,
+        "costBasis": 169400,
+        "pnl": -1400,
+        "pnlPct": -0.8264462809917356,
+        "stopPrice": 153560,
+        "stoppedOut": false,
+        "nextPyramidPrice": 173360,
+        "pyramidReady": false,
+        "exitTrigger10dLow": false
+      },
       "history": [
         {
           "date": "2026-02-13",
@@ -2189,13 +2206,13 @@
       },
       "signal": {
         "action": "HOLD",
-        "reason": "손절선 93,610원 / 10일 저점 91,400원 / 다음 피라미딩 104,098원.",
+        "reason": "손절선 99,310원 / 10일 저점 91,400원 / 다음 피라미딩 109,798원.",
         "unitSize": 59,
         "unitCost": 5976700,
-        "stopPrice": 93610,
-        "nextPyramidPrice": 104097.5,
+        "stopPrice": 99310,
+        "nextPyramidPrice": 109797.5,
         "distanceToEntryPct": 6.614017769002961,
-        "distanceToStopPct": 7.591312931885488,
+        "distanceToStopPct": 1.9644619940769992,
         "distanceToExitPct": 9.772951628825272
       },
       "protocol": {
@@ -2214,17 +2231,17 @@
         "position": {
           "code": "017670",
           "name": "SK텔레콤",
-          "buyPrice": 102000,
+          "buyPrice": 107700,
           "quantity": 3,
           "buyDate": "2026-05-01"
         },
         "currentValue": 303900,
-        "costBasis": 306000,
-        "pnl": -2100,
-        "pnlPct": -0.6862745098039216,
-        "stopPrice": 93610,
+        "costBasis": 323100,
+        "pnl": -19200,
+        "pnlPct": -5.942432683379758,
+        "stopPrice": 99310,
         "stoppedOut": false,
-        "nextPyramidPrice": 104097.5,
+        "nextPyramidPrice": 109797.5,
         "pyramidReady": false,
         "exitTrigger10dLow": false
       },
@@ -2733,13 +2750,13 @@
       },
       "signal": {
         "action": "HOLD",
-        "reason": "손절선 25,595원 / 10일 저점 24,350원 / 다음 피라미딩 27,976원.",
+        "reason": "손절선 25,245원 / 10일 저점 24,350원 / 다음 피라미딩 27,626원.",
         "unitSize": 262,
         "unitCost": 6825100,
-        "stopPrice": 25595,
-        "nextPyramidPrice": 27976.25,
+        "stopPrice": 25245,
+        "nextPyramidPrice": 27626.25,
         "distanceToEntryPct": 4.990403071017274,
-        "distanceToStopPct": 1.7466410748560461,
+        "distanceToStopPct": 3.09021113243762,
         "distanceToExitPct": 6.525911708253358
       },
       "protocol": {
@@ -2758,17 +2775,17 @@
         "position": {
           "code": "003490",
           "name": "대한항공",
-          "buyPrice": 27500,
+          "buyPrice": 27150,
           "quantity": 12,
           "buyDate": "2026-05-01"
         },
         "currentValue": 312600,
-        "costBasis": 330000,
-        "pnl": -17400,
-        "pnlPct": -5.2727272727272725,
-        "stopPrice": 25595,
+        "costBasis": 325800,
+        "pnl": -13200,
+        "pnlPct": -4.051565377532229,
+        "stopPrice": 25245,
         "stoppedOut": false,
-        "nextPyramidPrice": 27976.25,
+        "nextPyramidPrice": 27626.25,
         "pyramidReady": false,
         "exitTrigger10dLow": false
       },
@@ -3277,13 +3294,13 @@
       },
       "signal": {
         "action": "HOLD",
-        "reason": "손절선 60,635원 / 10일 저점 60,400원 / 다음 피라미딩 69,841원.",
+        "reason": "손절선 59,235원 / 10일 저점 60,400원 / 다음 피라미딩 68,441원.",
         "unitSize": 67,
         "unitCost": 4187500,
-        "stopPrice": 60635,
-        "nextPyramidPrice": 69841.25,
+        "stopPrice": 59235,
+        "nextPyramidPrice": 68441.25,
         "distanceToEntryPct": 12.479999999999999,
-        "distanceToStopPct": 2.984,
+        "distanceToStopPct": 5.224,
         "distanceToExitPct": 3.36
       },
       "protocol": {
@@ -3302,17 +3319,17 @@
         "position": {
           "code": "008770",
           "name": "호텔신라",
-          "buyPrice": 68000,
+          "buyPrice": 66600,
           "quantity": 5,
           "buyDate": "2026-05-01"
         },
         "currentValue": 312500,
-        "costBasis": 340000,
-        "pnl": -27500,
-        "pnlPct": -8.088235294117647,
-        "stopPrice": 60635,
+        "costBasis": 333000,
+        "pnl": -20500,
+        "pnlPct": -6.156156156156156,
+        "stopPrice": 59235,
         "stoppedOut": false,
-        "nextPyramidPrice": 69841.25,
+        "nextPyramidPrice": 68441.25,
         "pyramidReady": false,
         "exitTrigger10dLow": false
       },
@@ -3821,13 +3838,13 @@
       },
       "signal": {
         "action": "HOLD",
-        "reason": "손절선 93,870원 / 10일 저점 102,000원 / 다음 피라미딩 107,783원.",
+        "reason": "손절선 95,970원 / 10일 저점 102,000원 / 다음 피라미딩 109,883원.",
         "unitSize": 44,
         "unitCost": 4510000,
-        "stopPrice": 93870,
-        "nextPyramidPrice": 107782.5,
+        "stopPrice": 95970,
+        "nextPyramidPrice": 109882.5,
         "distanceToEntryPct": 15.804878048780488,
-        "distanceToStopPct": 8.419512195121952,
+        "distanceToStopPct": 6.3707317073170735,
         "distanceToExitPct": 0.4878048780487805
       },
       "protocol": {
@@ -3846,17 +3863,17 @@
         "position": {
           "code": "139480",
           "name": "이마트",
-          "buyPrice": 105000,
+          "buyPrice": 107100,
           "quantity": 2,
           "buyDate": "2026-05-01"
         },
         "currentValue": 205000,
-        "costBasis": 210000,
-        "pnl": -5000,
-        "pnlPct": -2.380952380952381,
-        "stopPrice": 93870,
+        "costBasis": 214200,
+        "pnl": -9200,
+        "pnlPct": -4.295051353874883,
+        "stopPrice": 95970,
         "stoppedOut": false,
-        "nextPyramidPrice": 107782.5,
+        "nextPyramidPrice": 109882.5,
         "pyramidReady": false,
         "exitTrigger10dLow": false
       },

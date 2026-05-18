@@ -80,23 +80,71 @@ function renderSparkline(closes: number[]): string {
   </svg>`;
 }
 
+interface MismatchHint {
+  tone: 'warn' | 'caution' | 'ok' | 'info';
+  text: string;
+}
+
+function buildMismatchHint(signal: StockReport['signal'], holding: StockReport['holding']): MismatchHint | null {
+  if (!holding) return null;
+  const pnlPct = holding.pnlPct;
+  const action = signal.action;
+
+  if (action === 'EXIT_10D_LOW') {
+    if (pnlPct < 0) {
+      return { tone: 'warn', text: `시스템 익절 신호 / 내 포지션 ${pnlPct.toFixed(2)}% 손실 — 매도 시 손실 확정` };
+    }
+    if (pnlPct < 3) {
+      return { tone: 'caution', text: `시스템 익절 신호 / 평가익 ${pnlPct.toFixed(2)}% 미미` };
+    }
+    return { tone: 'ok', text: `시스템 익절 신호 — 평가익 +${pnlPct.toFixed(2)}% 확정 가능` };
+  }
+  if (action === 'STOP_LOSS') {
+    return { tone: 'warn', text: `시스템 손절 신호 (-2 ATR) / 손익 ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}% — 기계적 청산 권장` };
+  }
+  if (action === 'PYRAMID') {
+    return { tone: 'ok', text: `피라미딩 신호 / 평가익 +${pnlPct.toFixed(2)}% — 추가 매수 검토` };
+  }
+  if (action === 'HOLD') {
+    const stopPct = ((holding.position.buyPrice * 1 - holding.stopPrice) / holding.position.buyPrice) * 100;
+    if (pnlPct >= 0) {
+      return { tone: 'info', text: `평가익 +${pnlPct.toFixed(2)}% · 손절선까지 여유 ${stopPct.toFixed(1)}%` };
+    }
+    return { tone: 'caution', text: `평가손 ${pnlPct.toFixed(2)}% · 손절선까지 ${stopPct.toFixed(1)}% 여유` };
+  }
+  return null;
+}
+
+const HINT_COLOR: Record<MismatchHint['tone'], string> = {
+  warn: '#dc2626',
+  caution: '#f59e0b',
+  ok: '#16a34a',
+  info: '#0ea5e9',
+};
+
 function renderStockCard(r: StockReport): string {
   const { config, indicators, signal, protocol, holding } = r;
   const closes = r.history.map((c) => c.close);
   const changeColor = indicators.change >= 0 ? '#16a34a' : '#dc2626';
 
-  const holdingSection = holding ? `
-    <div class="section">
-      <div class="section-title">보유 포지션</div>
-      <div class="kv">
-        <div><span class="k">진입가</span><span class="v">${fmtWon(holding.position.buyPrice)}</span></div>
-        <div><span class="k">수량</span><span class="v">${holding.position.quantity}주 (${escape(holding.position.buyDate)})</span></div>
-        <div><span class="k">평가액</span><span class="v">${fmtWon(holding.currentValue)}</span></div>
-        <div><span class="k">손익</span><span class="v" style="color:${holding.pnl >= 0 ? '#16a34a' : '#dc2626'}">${fmtPnl(holding.pnl)} (${fmtPct(holding.pnlPct)})</span></div>
-        <div><span class="k">손절선</span><span class="v">${fmtWon(holding.stopPrice)} ${holding.stoppedOut ? '<span class="alert">⚠ 이탈</span>' : ''}</span></div>
-        <div><span class="k">다음 피라미딩</span><span class="v">${fmtWon(holding.nextPyramidPrice)} ${holding.pyramidReady ? '<span class="alert ok">✓ 도달</span>' : ''}</span></div>
+  const myPosition = holding ? `
+    <div class="my-pos">
+      <div class="my-pos-title">내 포지션</div>
+      <div class="my-pos-row">
+        <div class="cell"><div class="cell-k">매수가</div><div class="cell-v">${fmtWon(holding.position.buyPrice)}</div></div>
+        <div class="cell"><div class="cell-k">수량</div><div class="cell-v">${holding.position.quantity}주</div></div>
+        <div class="cell"><div class="cell-k">평가액</div><div class="cell-v">${fmtWon(holding.currentValue)}</div></div>
+        <div class="cell pnl"><div class="cell-k">내 손익</div><div class="cell-v big" style="color:${holding.pnl >= 0 ? '#22c55e' : '#f87171'}">${fmtPnl(holding.pnl)}<br><span class="pct">${fmtPct(holding.pnlPct)}</span></div></div>
       </div>
-    </div>` : '';
+      <div class="my-pos-row sub">
+        <div class="cell"><div class="cell-k">손절선</div><div class="cell-v">${fmtWon(holding.stopPrice)} ${holding.stoppedOut ? '<span class="alert">⚠ 이탈</span>' : ''}</div></div>
+        <div class="cell"><div class="cell-k">다음 피라미딩</div><div class="cell-v">${fmtWon(holding.nextPyramidPrice)} ${holding.pyramidReady ? '<span class="alert ok">✓ 도달</span>' : ''}</div></div>
+      </div>
+      ${(() => {
+        const hint = buildMismatchHint(signal, holding);
+        return hint ? `<div class="hint" style="border-left:3px solid ${HINT_COLOR[hint.tone]};color:${HINT_COLOR[hint.tone]}">${escape(hint.text)}</div>` : '';
+      })()}
+    </div>` : '<div class="my-pos muted">미보유 — 시스템 신호 참고용</div>';
 
   const protocolItems = [
     ...protocol.passed.map((p) => `<li class="pass">✓ ${escape(p)}</li>`),
@@ -124,6 +172,8 @@ function renderStockCard(r: StockReport): string {
       <div class="signal-reason">${escape(signal.reason)}</div>
     </div>
 
+    ${myPosition}
+
     <div class="spark">${renderSparkline(closes)}</div>
 
     <div class="section">
@@ -147,8 +197,6 @@ function renderStockCard(r: StockReport): string {
         <div><span class="k">10일 저점까지</span><span class="v">${fmtPct(signal.distanceToExitPct)}</span></div>
       </div>
     </div>
-
-    ${holdingSection}
 
     <div class="section">
       <div class="section-title">프로토콜 검증</div>
@@ -231,6 +279,36 @@ export function renderHtml(data: DashboardData): string {
     padding: 3px 8px; border-radius: 4px;
   }
   .signal-reason { font-size: 13px; color: #cbd5e1; }
+  .my-pos {
+    margin: 12px 0;
+    padding: 12px;
+    background: #0f172a;
+    border-radius: 6px;
+    border: 1px solid #334155;
+  }
+  .my-pos.muted {
+    color: #64748b; font-size: 12px; text-align: center;
+    padding: 8px; font-style: italic;
+  }
+  .my-pos-title {
+    font-size: 11px; color: #94a3b8; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 8px;
+  }
+  .my-pos-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    margin-bottom: 6px;
+  }
+  .my-pos-row.sub { grid-template-columns: repeat(2, 1fr); }
+  .my-pos .cell { font-size: 12px; }
+  .my-pos .cell-k { color: #94a3b8; font-size: 11px; }
+  .my-pos .cell-v { color: #e2e8f0; margin-top: 2px; font-weight: 500; }
+  .my-pos .cell-v.big { font-size: 16px; font-weight: 700; line-height: 1.15; }
+  .my-pos .cell-v .pct { font-size: 12px; font-weight: 500; opacity: 0.85; }
+  .my-pos .hint {
+    margin-top: 8px; padding: 6px 10px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px; font-size: 12px; font-weight: 500;
+  }
   .spark { margin: 8px 0 12px; opacity: 0.7; }
   .section { margin-top: 12px; }
   .section-title {

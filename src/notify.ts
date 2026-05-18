@@ -83,13 +83,15 @@ function buildPayload(data: DashboardData): JandiPayload | null {
 function buildSection(r: StockReport) {
   const { config, indicators, signal, holding } = r;
   const lines: string[] = [];
-  lines.push(`현재가 ${fmtWon(indicators.lastClose)} · 20일 ATR ${fmtWon(indicators.atr20)}`);
+  lines.push(`기준가 ${fmtWon(indicators.lastClose)} · 20일 ATR ${fmtWon(indicators.atr20)}`);
   lines.push(signal.reason);
   if (holding) {
     const pnlSign = holding.pnl >= 0 ? '+' : '';
     lines.push(
       `보유 ${holding.position.quantity}주 @ ${fmtWon(holding.position.buyPrice)} · 손익 ${pnlSign}${fmtWon(holding.pnl)} (${holding.pnlPct.toFixed(2)}%)`,
     );
+    const mismatch = buildMismatchLine(signal.action, holding.pnlPct);
+    if (mismatch) lines.push(mismatch);
   } else if (signal.action === 'ENTRY_BREAKOUT') {
     lines.push(`1유닛 ${signal.unitSize}주 (약 ${fmtWon(signal.unitCost)})`);
   }
@@ -97,6 +99,21 @@ function buildSection(r: StockReport) {
     title: `${ACTION_EMOJI[signal.action]} ${config.name} (${config.code}) — ${ACTION_LABEL[signal.action]}`,
     description: lines.join('\n'),
   };
+}
+
+function buildMismatchLine(action: TurtleAction, pnlPct: number): string | null {
+  if (action === 'EXIT_10D_LOW') {
+    if (pnlPct < 0) return `⚠ 시스템 익절 신호 / 내 포지션 ${pnlPct.toFixed(2)}% 손실 — 매도 시 손실 확정`;
+    if (pnlPct < 3) return `시스템 익절 신호 / 평가익 +${pnlPct.toFixed(2)}% 미미`;
+    return `시스템 익절 신호 — 평가익 +${pnlPct.toFixed(2)}% 확정 가능`;
+  }
+  if (action === 'STOP_LOSS') {
+    return `🔴 시스템 손절 신호 / 손익 ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%`;
+  }
+  if (action === 'PYRAMID') {
+    return `🔼 평가익 +${pnlPct.toFixed(2)}% — 추가 매수 검토`;
+  }
+  return null;
 }
 
 export async function sendJandiNotification(data: DashboardData): Promise<boolean> {
