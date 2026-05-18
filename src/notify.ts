@@ -1,4 +1,5 @@
 import type { DashboardData, StockReport, TurtleAction } from './types.js';
+import type { IntradayAlert } from './intraday.js';
 import { DASHBOARD_PUBLIC_URL } from './config.js';
 
 const ACTIONABLE: TurtleAction[] = ['ENTRY_BREAKOUT', 'PYRAMID', 'STOP_LOSS', 'EXIT_10D_LOW'];
@@ -114,6 +115,69 @@ function buildMismatchLine(action: TurtleAction, pnlPct: number): string | null 
     return `🔼 평가익 +${pnlPct.toFixed(2)}% — 추가 매수 검토`;
   }
   return null;
+}
+
+const INTRADAY_COLOR: Record<IntradayAlert['kind'], string> = {
+  STOP_BREACH: '#dc2626',
+  EXIT_10D_BREACH: '#f59e0b',
+  BUY_TRIGGER_HIT: '#16a34a',
+  BREAKOUT_LOST: '#f59e0b',
+};
+
+const INTRADAY_PRIORITY: Record<IntradayAlert['kind'], number> = {
+  STOP_BREACH: 0,
+  EXIT_10D_BREACH: 1,
+  BUY_TRIGGER_HIT: 2,
+  BREAKOUT_LOST: 3,
+};
+
+export async function sendIntradayAlerts(alerts: IntradayAlert[]): Promise<boolean> {
+  const url = process.env.JANDI_WEBHOOK_URL;
+  if (!url) {
+    console.log('[intraday-notify] JANDI_WEBHOOK_URL 미설정 — 알림 스킵');
+    return false;
+  }
+  if (alerts.length === 0) {
+    console.log('[intraday-notify] 새 트리거 없음');
+    return false;
+  }
+  alerts.sort((a, b) => INTRADAY_PRIORITY[a.kind] - INTRADAY_PRIORITY[b.kind]);
+
+  const ts = new Date().toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  });
+
+  const payload = {
+    body: `⏱️ 장중 트리거 알림 (${ts}) — ${alerts.length}건\n${DASHBOARD_PUBLIC_URL}`,
+    connectColor: INTRADAY_COLOR[alerts[0].kind],
+    connectInfo: alerts.map((a) => ({
+      title: a.message,
+      description: a.detail,
+    })),
+  };
+
+  if (process.env.JANDI_DRY_RUN === '1') {
+    console.log('[intraday-notify] DRY_RUN — payload:');
+    console.log(JSON.stringify(payload, null, 2));
+    return false;
+  }
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.tosslab.jandi-v2+json',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`[intraday-notify] 발송 실패 HTTP ${res.status}: ${text}`);
+    return false;
+  }
+  console.log(`[intraday-notify] 발송 완료 (${alerts.length}건)`);
+  return true;
 }
 
 export async function sendJandiNotification(data: DashboardData): Promise<boolean> {

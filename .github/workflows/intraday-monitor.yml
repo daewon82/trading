@@ -1,0 +1,48 @@
+name: intraday-monitor
+
+on:
+  schedule:
+    # 평일 09:00~15:30 KST = 00:00~06:30 UTC, 5분 간격
+    # 0~5, 6시까지 커버. 15:35 KST 까지 약간 여유.
+    - cron: '*/5 0-6 * * 1-5'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: intraday-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run intraday monitor
+        env:
+          JANDI_WEBHOOK_URL: ${{ secrets.JANDI_WEBHOOK_URL }}
+          DASHBOARD_PUBLIC_URL: ${{ vars.DASHBOARD_PUBLIC_URL || 'https://daewon82.github.io/trading/' }}
+        run: npx tsx scripts/intraday-monitor.ts
+
+      - name: Commit alert cache (if changed)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/intraday-alerts.json
+          if git diff --cached --quiet; then
+            echo "No cache change"
+            exit 0
+          fi
+          git commit -m "chore(intraday): update alert cache $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push
