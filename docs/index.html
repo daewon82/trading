@@ -57,6 +57,43 @@
   .qo-pnl-amt { font-size: 14px; }
   .qo-pnl-pct { font-size: 11px; opacity: 0.85; margin-top: 1px; }
   .qo-pnl.muted { color: #64748b; font-weight: 400; font-style: italic; font-size: 13px; }
+  .scan-section {
+    background: #1e293b; border-radius: 8px; padding: 16px;
+    margin-bottom: 24px;
+  }
+  .scan-title {
+    margin: 0 0 6px; font-size: 16px;
+  }
+  .scan-meta {
+    color: #94a3b8; font-size: 12px; margin-bottom: 14px;
+  }
+  .scan-tier-title {
+    font-size: 12px; color: #94a3b8; text-transform: uppercase;
+    letter-spacing: 0.5px; margin: 12px 0 8px;
+    padding-bottom: 4px; border-bottom: 1px solid #334155;
+  }
+  .scan-list {
+    display: grid; gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .scan-card {
+    padding: 10px 12px; border-radius: 6px;
+    background: #0f172a; border-left: 3px solid #64748b;
+  }
+  .scan-card.scan-tier-a { border-left-color: #16a34a; background: rgba(22,163,74,0.08); }
+  .scan-card.scan-tier-b { border-left-color: #f59e0b; background: rgba(245,158,11,0.06); }
+  .scan-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 4px;
+  }
+  .scan-name { font-weight: 600; font-size: 14px; }
+  .scan-code { color: #64748b; font-size: 11px; font-weight: 400; margin-left: 4px; }
+  .scan-price { font-size: 13px; font-weight: 600; }
+  .scan-body { font-size: 12px; color: #cbd5e1; line-height: 1.5; }
+  .scan-size { margin-top: 4px; }
+  .scan-ok { color: #22c55e; font-weight: 500; }
+  .scan-warn { color: #f59e0b; font-weight: 500; }
+  .scan-empty { color: #64748b; font-style: italic; font-size: 13px; }
   .grid {
     display: grid; gap: 16px;
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -147,7 +184,7 @@
       <div class="sub">리처드 대니스 원칙 · 1유닛 = (총자산 × 1%) ÷ ATR</div>
       <div class="sub" style="margin-top:4px;color:#fbbf24">기준 종가: 2026-05-15 · 장중/시초가 직전 실행 — 어제 확정 종가 기준</div>
     </div>
-    <div class="sub">생성: 2026. 05. 18. 오후 12:20:36 KST</div>
+    <div class="sub">생성: 2026. 05. 18. 오후 01:18:15 KST</div>
   </header>
 
   <div class="summary">
@@ -229,6 +266,31 @@
           <div class="qo-pnl-pct" data-live="qoPnlPct">-4.30%</div>
         </div>
       </a></div>
+  </section>
+
+  
+  <section class="scan-section">
+    <h2 class="scan-title">🔍 매수 후보 (KOSPI 대형주 31종목 스캔)</h2>
+    <div class="scan-meta">claude.md "매수 후보 스캔 프로토콜" — 20일 신고가 돌파 + 정배열 (MA60>MA120) + 종가 > MA60·MA120</div>
+
+    <div class="scan-tier-title">A 등급 — 즉시 진입 신호 (4개 조건 전부 충족)</div>
+    <div class="scan-list">
+        <div class="scan-card scan-tier-a">
+          <div class="scan-head">
+            <span class="scan-name">LG <span class="scan-code">003550</span></span>
+            <span class="scan-price">126,000원</span>
+          </div>
+          <div class="scan-body">
+            <div>20일 고점 118,400원 (+6.03% 돌파)</div>
+            <div>ATR 6,238원 · MA60 95,658원 · MA120 90,240원</div>
+            <div class="scan-size"><span class="scan-warn">⚠ 자본 부족 (1유닛 0주, 실제 매수 불가)</span></div>
+          </div>
+        </div></div>
+
+    <div class="scan-tier-title">B 등급 — 돌파 임박 (추세 충족 + 3% 이내)</div>
+    <div class="scan-list"><div class="scan-empty">돌파 임박 종목 없음</div></div>
+
+    
   </section>
 
   <div class="grid">

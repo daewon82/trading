@@ -10,7 +10,8 @@ import { computeSignal } from './turtle.js';
 import { checkProtocol } from './protocol.js';
 import { computeHoldingState, loadHoldings } from './holdings.js';
 import { nowInKst, isDailyCloseConfirmed } from './time.js';
-import type { Candle, DashboardData, HoldingPosition, StockReport } from './types.js';
+import { scanCandidates } from './scan.js';
+import type { Candle, DashboardData, HoldingPosition, ScanCandidateResult, StockReport } from './types.js';
 
 function trimPartialToday(candles: Candle[], kstToday: string, closeConfirmed: boolean): Candle[] {
   if (closeConfirmed || candles.length === 0) return candles;
@@ -67,6 +68,21 @@ export async function buildDashboard(): Promise<DashboardData> {
     await new Promise((r) => setTimeout(r, REQUEST_DELAY_MS));
   }
 
+  const scanResults: ScanCandidateResult[] = process.env.SKIP_SCAN
+    ? []
+    : await scanCandidates({
+        kstToday: kst.date,
+        closeConfirmed,
+        riskPerTrade,
+        onProgress: (c, r) => {
+          if (r.error) {
+            console.log(`  [scan] ${c.name} 실패: ${r.error}`);
+          } else if (r.tier !== 'none') {
+            console.log(`  [scan] ${c.name} → 등급 ${r.tier}`);
+          }
+        },
+      });
+
   return {
     generatedAt: new Date().toISOString(),
     totalCapital,
@@ -74,6 +90,7 @@ export async function buildDashboard(): Promise<DashboardData> {
     asOfDate: reports[0]?.indicators.lastDate ?? null,
     isLive: closeConfirmed,
     reports,
+    scanCandidates: scanResults,
     errors,
   };
 }

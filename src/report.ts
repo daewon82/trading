@@ -122,6 +122,64 @@ const HINT_COLOR: Record<MismatchHint['tone'], string> = {
   info: '#0ea5e9',
 };
 
+function renderScanSection(candidates: import('./types.js').ScanCandidateResult[]): string {
+  if (!candidates || candidates.length === 0) return '';
+  const tierA = candidates.filter((c) => c.tier === 'A').sort((a, b) => b.distancePct - a.distancePct);
+  const tierB = candidates.filter((c) => c.tier === 'B').sort((a, b) => a.distancePct - b.distancePct);
+  const errored = candidates.filter((c) => c.error);
+
+  function renderTierA(): string {
+    if (tierA.length === 0) return '<div class="scan-empty">즉시 진입 신호 없음 — 시장 정중 중</div>';
+    return tierA.map((c) => {
+      const distAbs = Math.abs(c.distancePct).toFixed(2);
+      const distLabel = c.distancePct < 0 ? `+${distAbs}% 돌파` : `${distAbs}% 부족`;
+      const sizeWarning = c.unitSize === 0
+        ? '<span class="scan-warn">⚠ 자본 부족 (1유닛 0주, 실제 매수 불가)</span>'
+        : `<span class="scan-ok">1유닛 ${c.unitSize}주</span>`;
+      return `
+        <div class="scan-card scan-tier-a">
+          <div class="scan-head">
+            <span class="scan-name">${escape(c.name)} <span class="scan-code">${escape(c.code)}</span></span>
+            <span class="scan-price">${fmtWon(c.lastClose)}</span>
+          </div>
+          <div class="scan-body">
+            <div>20일 고점 ${fmtWon(c.donchianHigh20)} (${distLabel})</div>
+            <div>ATR ${fmtWon(c.atr20)} · MA60 ${fmtWon(c.ma60)} · MA120 ${fmtWon(c.ma120)}</div>
+            <div class="scan-size">${sizeWarning}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderTierB(): string {
+    if (tierB.length === 0) return '<div class="scan-empty">돌파 임박 종목 없음</div>';
+    return tierB.map((c) => `
+      <div class="scan-card scan-tier-b">
+        <div class="scan-head">
+          <span class="scan-name">${escape(c.name)} <span class="scan-code">${escape(c.code)}</span></span>
+          <span class="scan-price">${fmtWon(c.lastClose)}</span>
+        </div>
+        <div class="scan-body">
+          돌파선 ${fmtWon(c.donchianHigh20)} 까지 ${c.distancePct.toFixed(2)}%
+        </div>
+      </div>`).join('');
+  }
+
+  return `
+  <section class="scan-section">
+    <h2 class="scan-title">🔍 매수 후보 (KOSPI 대형주 ${candidates.length}종목 스캔)</h2>
+    <div class="scan-meta">claude.md "매수 후보 스캔 프로토콜" — 20일 신고가 돌파 + 정배열 (MA60>MA120) + 종가 > MA60·MA120</div>
+
+    <div class="scan-tier-title">A 등급 — 즉시 진입 신호 (4개 조건 전부 충족)</div>
+    <div class="scan-list">${renderTierA()}</div>
+
+    <div class="scan-tier-title">B 등급 — 돌파 임박 (추세 충족 + 3% 이내)</div>
+    <div class="scan-list">${renderTierB()}</div>
+
+    ${errored.length > 0 ? `<div class="scan-meta">수집 실패: ${errored.length}종목</div>` : ''}
+  </section>`;
+}
+
 function renderQuickOverview(reports: StockReport[]): string {
   if (reports.length === 0) return '';
   const items = reports.map((r) => {
@@ -311,6 +369,43 @@ export function renderHtml(data: DashboardData): string {
   .qo-pnl-amt { font-size: 14px; }
   .qo-pnl-pct { font-size: 11px; opacity: 0.85; margin-top: 1px; }
   .qo-pnl.muted { color: #64748b; font-weight: 400; font-style: italic; font-size: 13px; }
+  .scan-section {
+    background: #1e293b; border-radius: 8px; padding: 16px;
+    margin-bottom: 24px;
+  }
+  .scan-title {
+    margin: 0 0 6px; font-size: 16px;
+  }
+  .scan-meta {
+    color: #94a3b8; font-size: 12px; margin-bottom: 14px;
+  }
+  .scan-tier-title {
+    font-size: 12px; color: #94a3b8; text-transform: uppercase;
+    letter-spacing: 0.5px; margin: 12px 0 8px;
+    padding-bottom: 4px; border-bottom: 1px solid #334155;
+  }
+  .scan-list {
+    display: grid; gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .scan-card {
+    padding: 10px 12px; border-radius: 6px;
+    background: #0f172a; border-left: 3px solid #64748b;
+  }
+  .scan-card.scan-tier-a { border-left-color: #16a34a; background: rgba(22,163,74,0.08); }
+  .scan-card.scan-tier-b { border-left-color: #f59e0b; background: rgba(245,158,11,0.06); }
+  .scan-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 4px;
+  }
+  .scan-name { font-weight: 600; font-size: 14px; }
+  .scan-code { color: #64748b; font-size: 11px; font-weight: 400; margin-left: 4px; }
+  .scan-price { font-size: 13px; font-weight: 600; }
+  .scan-body { font-size: 12px; color: #cbd5e1; line-height: 1.5; }
+  .scan-size { margin-top: 4px; }
+  .scan-ok { color: #22c55e; font-weight: 500; }
+  .scan-warn { color: #f59e0b; font-weight: 500; }
+  .scan-empty { color: #64748b; font-style: italic; font-size: 13px; }
   .grid {
     display: grid; gap: 16px;
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -416,6 +511,8 @@ export function renderHtml(data: DashboardData): string {
   ${errorBlock}
 
   ${renderQuickOverview(data.reports)}
+
+  ${renderScanSection(data.scanCandidates)}
 
   <div class="grid">
     ${cards}

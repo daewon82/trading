@@ -87,6 +87,29 @@ export interface StockReport {
   history: Candle[];
 }
 
+export interface ScanCandidate {
+  code: string;
+  name: string;
+}
+
+export interface ScanCandidateResult {
+  code: string;
+  name: string;
+  lastClose: number;
+  donchianHigh20: number;
+  atr20: number;
+  ma60: number;
+  ma120: number;
+  distancePct: number;
+  breakoutPassed: boolean;
+  ma60Passed: boolean;
+  ma120Passed: boolean;
+  alignmentPassed: boolean;
+  tier: 'A' | 'B' | 'none';
+  unitSize: number;
+  error?: string;
+}
+
 export interface DashboardData {
   generatedAt: string;
   totalCapital: number;
@@ -94,5 +117,6 @@ export interface DashboardData {
   asOfDate: string | null;
   isLive: boolean;
   reports: StockReport[];
+  scanCandidates: ScanCandidateResult[];
   errors: { code: string; name: string; message: string }[];
 }
