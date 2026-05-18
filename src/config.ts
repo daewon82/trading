@@ -1,9 +1,15 @@
 import type { StockConfig } from './types.js';
 
-export const TOTAL_CAPITAL = Number(process.env.TOTAL_CAPITAL ?? 50_000_000);
 export const RISK_PCT = 0.01;
-export const RISK_PER_TRADE = TOTAL_CAPITAL * RISK_PCT;
 export const MAX_PYRAMID_UNITS = 4;
+
+/**
+ * 보유 종목이 하나도 없을 때의 폴백 총자산. env TOTAL_CAPITAL 로 명시
+ * 오버라이드 가능. 보유 종목이 있으면 보유 평단가 합계가 우선됩니다.
+ */
+export const FALLBACK_TOTAL_CAPITAL = Number(process.env.TOTAL_CAPITAL ?? 50_000_000);
+export const HAS_TOTAL_CAPITAL_OVERRIDE = process.env.TOTAL_CAPITAL != null;
+
 export const DASHBOARD_PUBLIC_URL =
   process.env.DASHBOARD_PUBLIC_URL ?? 'https://daewon82.github.io/trading/';
 

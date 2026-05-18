@@ -1,5 +1,5 @@
 import type { DashboardData, StockReport, TurtleAction, ProtocolStatus } from './types.js';
-import { DASHBOARD_PUBLIC_URL, RISK_PER_TRADE } from './config.js';
+import { DASHBOARD_PUBLIC_URL } from './config.js';
 
 const ACTION_LABEL: Record<TurtleAction, string> = {
   ENTRY_BREAKOUT: '신규 매수',
@@ -122,7 +122,29 @@ const HINT_COLOR: Record<MismatchHint['tone'], string> = {
   info: '#0ea5e9',
 };
 
-function renderStockCard(r: StockReport): string {
+function renderQuickOverview(reports: StockReport[]): string {
+  if (reports.length === 0) return '';
+  const items = reports.map((r) => {
+    const { config, signal, holding } = r;
+    const color = ACTION_COLOR[signal.action];
+    const pnlBlock = holding
+      ? `<div class="qo-pnl" style="color:${holding.pnl >= 0 ? '#22c55e' : '#f87171'}">${fmtPct(holding.pnlPct)}</div>`
+      : '<div class="qo-pnl muted">미보유</div>';
+    return `
+      <a class="qo-item" href="#stock-${escape(config.code)}" style="border-left:3px solid ${color}">
+        <div class="qo-name">${escape(config.name)}</div>
+        <div class="qo-action" style="background:${color}">${ACTION_LABEL[signal.action]}</div>
+        ${pnlBlock}
+      </a>`;
+  }).join('');
+  return `
+  <section class="quick-overview">
+    <div class="qo-title">한눈에 보기 (클릭 시 상세 카드로 이동)</div>
+    <div class="qo-grid">${items}</div>
+  </section>`;
+}
+
+function renderStockCard(r: StockReport, riskPerTrade: number): string {
   const { config, indicators, signal, protocol, holding } = r;
   const closes = r.history.map((c) => c.close);
   const changeColor = indicators.change >= 0 ? '#16a34a' : '#dc2626';
@@ -152,7 +174,7 @@ function renderStockCard(r: StockReport): string {
   ].join('');
 
   return `
-  <article class="card">
+  <article class="card" id="stock-${escape(config.code)}">
     <header class="card-head">
       <div>
         <h2>${escape(config.name)} <span class="code">${escape(config.code)}</span></h2>
@@ -189,7 +211,7 @@ function renderStockCard(r: StockReport): string {
     </div>
 
     <div class="section">
-      <div class="section-title">1유닛 (리스크 ${fmtWon(RISK_PER_TRADE)} 기준)</div>
+      <div class="section-title">1유닛 (리스크 ${fmtWon(riskPerTrade)} 기준)</div>
       <div class="kv">
         <div><span class="k">수량</span><span class="v">${signal.unitSize}주</span></div>
         <div><span class="k">금액</span><span class="v">${fmtWon(signal.unitCost)}</span></div>
@@ -213,7 +235,7 @@ export function renderHtml(data: DashboardData): string {
     hour: '2-digit', minute: '2-digit', second: '2-digit',
   });
 
-  const cards = data.reports.map(renderStockCard).join('\n');
+  const cards = data.reports.map((r) => renderStockCard(r, data.riskPerTrade)).join('\n');
 
   const errorBlock = data.errors.length ? `
     <section class="errors">
@@ -257,6 +279,33 @@ export function renderHtml(data: DashboardData): string {
   .summary .item { text-align: center; }
   .summary .item .label { color: #94a3b8; font-size: 12px; }
   .summary .item .value { font-size: 20px; font-weight: 600; margin-top: 4px; }
+  .quick-overview {
+    background: #1e293b; border-radius: 8px; padding: 16px;
+    margin-bottom: 24px;
+  }
+  .qo-title {
+    font-size: 12px; color: #94a3b8; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 10px;
+  }
+  .qo-grid {
+    display: grid; gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  .qo-item {
+    display: block; padding: 10px 12px;
+    background: #0f172a; border-radius: 6px;
+    text-decoration: none; color: inherit;
+    transition: transform 0.1s ease, background 0.1s ease;
+  }
+  .qo-item:hover { background: #243149; transform: translateY(-1px); }
+  .qo-name { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+  .qo-action {
+    display: inline-block; margin-top: 6px;
+    color: white; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .qo-pnl { margin-top: 6px; font-size: 13px; font-weight: 600; }
+  .qo-pnl.muted { color: #64748b; font-weight: 400; font-style: italic; }
   .grid {
     display: grid; gap: 16px;
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -351,8 +400,8 @@ export function renderHtml(data: DashboardData): string {
   </header>
 
   <div class="summary">
-    <div class="item"><div class="label">총 자산</div><div class="value">${fmtWon(data.totalCapital)}</div></div>
-    <div class="item"><div class="label">1매매 최대 리스크</div><div class="value">${fmtWon(data.riskPerTrade)}</div></div>
+    <div class="item"><div class="label">총 자산 (매수 평단가 합계)</div><div class="value">${fmtWon(data.totalCapital)}</div></div>
+    <div class="item"><div class="label">1매매 최대 리스크 (1%)</div><div class="value">${fmtWon(data.riskPerTrade)}</div></div>
     <div class="item"><div class="label">감시 종목</div><div class="value">${data.reports.length}종</div></div>
     <div class="item"><div class="label">매수 신호</div><div class="value" style="color:#16a34a">${summary.entry}</div></div>
     <div class="item"><div class="label">매도/손절</div><div class="value" style="color:#dc2626">${summary.exit}</div></div>
@@ -360,6 +409,8 @@ export function renderHtml(data: DashboardData): string {
   </div>
 
   ${errorBlock}
+
+  ${renderQuickOverview(data.reports)}
 
   <div class="grid">
     ${cards}

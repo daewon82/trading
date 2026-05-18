@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-05-18T01:44:51.353Z",
-  "totalCapital": 50000000,
-  "riskPerTrade": 500000,
+  "generatedAt": "2026-05-18T01:58:11.897Z",
+  "totalCapital": 3051000,
+  "riskPerTrade": 30510,
   "asOfDate": "2026-05-15",
   "isLive": false,
   "reports": [
@@ -28,8 +28,8 @@
       "signal": {
         "action": "HOLD",
         "reason": "손절선 268,300원 / 10일 저점 218,500원 / 다음 피라미딩 302,925원.",
-        "unitSize": 18,
-        "unitCost": 4869000,
+        "unitSize": 1,
+        "unitCost": 270500,
         "stopPrice": 268300,
         "nextPyramidPrice": 302925,
         "distanceToEntryPct": 10.720887245841034,
@@ -572,8 +572,8 @@
       "signal": {
         "action": "HOLD",
         "reason": "손절선 229,990원 / 10일 저점 134,600원 / 다음 피라미딩 263,128원.",
-        "unitSize": 18,
-        "unitCost": 4329000,
+        "unitSize": 1,
+        "unitCost": 240500,
         "stopPrice": 229990,
         "nextPyramidPrice": 263127.5,
         "distanceToEntryPct": -6.652806652806653,
@@ -1116,8 +1116,8 @@
       "signal": {
         "action": "EXIT_10D_LOW",
         "reason": "10일 저점 108,000원 이탈. 전량 익절/청산.",
-        "unitSize": 44,
-        "unitCost": 4589200,
+        "unitSize": 2,
+        "unitCost": 208600,
         "stopPrice": 96870,
         "nextPyramidPrice": 110782.5,
         "distanceToEntryPct": 32.02301054650048,
@@ -1663,8 +1663,8 @@
       "signal": {
         "action": "HOLD",
         "reason": "손절선 153,560원 / 10일 저점 151,700원 / 다음 피라미딩 173,360원.",
-        "unitSize": 31,
-        "unitCost": 5208000,
+        "unitSize": 1,
+        "unitCost": 168000,
         "stopPrice": 153560,
         "nextPyramidPrice": 173360,
         "distanceToEntryPct": 8.928571428571429,
@@ -2207,8 +2207,8 @@
       "signal": {
         "action": "HOLD",
         "reason": "손절선 99,310원 / 10일 저점 91,400원 / 다음 피라미딩 109,798원.",
-        "unitSize": 59,
-        "unitCost": 5976700,
+        "unitSize": 3,
+        "unitCost": 303900,
         "stopPrice": 99310,
         "nextPyramidPrice": 109797.5,
         "distanceToEntryPct": 6.614017769002961,
@@ -2751,8 +2751,8 @@
       "signal": {
         "action": "HOLD",
         "reason": "손절선 25,245원 / 10일 저점 24,350원 / 다음 피라미딩 27,626원.",
-        "unitSize": 262,
-        "unitCost": 6825100,
+        "unitSize": 16,
+        "unitCost": 416800,
         "stopPrice": 25245,
         "nextPyramidPrice": 27626.25,
         "distanceToEntryPct": 4.990403071017274,
@@ -3295,8 +3295,8 @@
       "signal": {
         "action": "HOLD",
         "reason": "손절선 59,235원 / 10일 저점 60,400원 / 다음 피라미딩 68,441원.",
-        "unitSize": 67,
-        "unitCost": 4187500,
+        "unitSize": 4,
+        "unitCost": 250000,
         "stopPrice": 59235,
         "nextPyramidPrice": 68441.25,
         "distanceToEntryPct": 12.479999999999999,
@@ -3839,8 +3839,8 @@
       "signal": {
         "action": "HOLD",
         "reason": "손절선 95,970원 / 10일 저점 102,000원 / 다음 피라미딩 109,883원.",
-        "unitSize": 44,
-        "unitCost": 4510000,
+        "unitSize": 2,
+        "unitCost": 205000,
         "stopPrice": 95970,
         "nextPyramidPrice": 109882.5,
         "distanceToEntryPct": 15.804878048780488,

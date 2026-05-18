@@ -1,4 +1,9 @@
-import { STOCKS, TOTAL_CAPITAL, RISK_PER_TRADE } from './config.js';
+import {
+  STOCKS,
+  RISK_PCT,
+  FALLBACK_TOTAL_CAPITAL,
+  HAS_TOTAL_CAPITAL_OVERRIDE,
+} from './config.js';
 import { fetchOhlcv } from './fetch.js';
 import { computeIndicators } from './indicators.js';
 import { computeSignal } from './turtle.js';
@@ -16,9 +21,18 @@ function trimPartialToday(candles: Candle[], kstToday: string, closeConfirmed: b
   return candles;
 }
 
+function computeTotalCapital(holdings: HoldingPosition[]): number {
+  if (HAS_TOTAL_CAPITAL_OVERRIDE) return FALLBACK_TOTAL_CAPITAL;
+  const costBasis = holdings.reduce((s, h) => s + h.buyPrice * h.quantity, 0);
+  return costBasis > 0 ? costBasis : FALLBACK_TOTAL_CAPITAL;
+}
+
 export async function buildDashboard(): Promise<DashboardData> {
   const holdings = await loadHoldings();
   const holdingByCode = new Map<string, HoldingPosition>(holdings.map((h) => [h.code, h]));
+
+  const totalCapital = computeTotalCapital(holdings);
+  const riskPerTrade = totalCapital * RISK_PCT;
 
   const kst = nowInKst();
   const closeConfirmed = isDailyCloseConfirmed();
@@ -33,7 +47,7 @@ export async function buildDashboard(): Promise<DashboardData> {
       const candles = trimPartialToday(raw, kst.date, closeConfirmed);
       const indicators = computeIndicators(candles);
       const holding = holdingByCode.get(config.code) ?? null;
-      const signal = computeSignal(indicators, holding);
+      const signal = computeSignal(indicators, holding, riskPerTrade);
       const protocol = checkProtocol(candles, indicators);
       const holdingState = holding ? computeHoldingState(holding, indicators) : null;
       reports.push({
@@ -55,8 +69,8 @@ export async function buildDashboard(): Promise<DashboardData> {
 
   return {
     generatedAt: new Date().toISOString(),
-    totalCapital: TOTAL_CAPITAL,
-    riskPerTrade: RISK_PER_TRADE,
+    totalCapital,
+    riskPerTrade,
     asOfDate: reports[0]?.indicators.lastDate ?? null,
     isLive: closeConfirmed,
     reports,

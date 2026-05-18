@@ -1,21 +1,21 @@
 import type { HoldingPosition, Indicators, TurtleSignal } from './types.js';
-import { RISK_PER_TRADE } from './config.js';
 
 const STOP_ATR_MULT = 2;
 const PYRAMID_ATR_FRACTION = 0.5;
 
-export function computeUnitSize(atr20: number): number {
+export function computeUnitSize(atr20: number, riskPerTrade: number): number {
   if (atr20 <= 0) return 0;
   const stopDistance = STOP_ATR_MULT * atr20;
-  return Math.max(0, Math.floor(RISK_PER_TRADE / stopDistance));
+  return Math.max(0, Math.floor(riskPerTrade / stopDistance));
 }
 
 export function computeSignal(
   indicators: Indicators,
   holding: HoldingPosition | null,
+  riskPerTrade: number,
 ): TurtleSignal {
   const { atr20, donchianHigh20, donchianLow10, lastClose } = indicators;
-  const unitSize = computeUnitSize(atr20);
+  const unitSize = computeUnitSize(atr20, riskPerTrade);
   const unitCost = unitSize * lastClose;
 
   const distanceToEntryPct = ((donchianHigh20 - lastClose) / lastClose) * 100;
