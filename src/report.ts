@@ -128,10 +128,10 @@ function renderQuickOverview(reports: StockReport[]): string {
     const { config, signal, holding } = r;
     const color = ACTION_COLOR[signal.action];
     const pnlBlock = holding
-      ? `<div class="qo-pnl" style="color:${holding.pnl >= 0 ? '#22c55e' : '#f87171'}">${fmtPct(holding.pnlPct)}</div>`
+      ? `<div class="qo-pnl" data-live="qoPnl" style="color:${holding.pnl >= 0 ? '#22c55e' : '#f87171'}">${fmtPct(holding.pnlPct)}</div>`
       : '<div class="qo-pnl muted">미보유</div>';
     return `
-      <a class="qo-item" href="#stock-${escape(config.code)}" style="border-left:3px solid ${color}">
+      <a class="qo-item" data-stock-code="${escape(config.code)}" href="#stock-${escape(config.code)}" style="border-left:3px solid ${color}">
         <div class="qo-name">${escape(config.name)}</div>
         <div class="qo-action" style="background:${color}">${ACTION_LABEL[signal.action]}</div>
         ${pnlBlock}
@@ -139,7 +139,7 @@ function renderQuickOverview(reports: StockReport[]): string {
   }).join('');
   return `
   <section class="quick-overview">
-    <div class="qo-title">한눈에 보기 (클릭 시 상세 카드로 이동)</div>
+    <div class="qo-title">한눈에 보기 (클릭 시 상세 카드로 이동) · <span id="live-status">초기화 중…</span> · <span id="live-updated"></span></div>
     <div class="qo-grid">${items}</div>
   </section>`;
 }
@@ -155,8 +155,8 @@ function renderStockCard(r: StockReport, riskPerTrade: number): string {
       <div class="my-pos-row">
         <div class="cell"><div class="cell-k">매수가</div><div class="cell-v">${fmtWon(holding.position.buyPrice)}</div></div>
         <div class="cell"><div class="cell-k">수량</div><div class="cell-v">${holding.position.quantity}주</div></div>
-        <div class="cell"><div class="cell-k">평가액</div><div class="cell-v">${fmtWon(holding.currentValue)}</div></div>
-        <div class="cell pnl"><div class="cell-k">내 손익</div><div class="cell-v big" style="color:${holding.pnl >= 0 ? '#22c55e' : '#f87171'}">${fmtPnl(holding.pnl)}<br><span class="pct">${fmtPct(holding.pnlPct)}</span></div></div>
+        <div class="cell"><div class="cell-k">평가액</div><div class="cell-v" data-live="currentValue">${fmtWon(holding.currentValue)}</div></div>
+        <div class="cell pnl"><div class="cell-k">내 손익</div><div class="cell-v big" data-live="pnl" style="color:${holding.pnl >= 0 ? '#22c55e' : '#f87171'}">${fmtPnl(holding.pnl)}<br><span class="pct">${fmtPct(holding.pnlPct)}</span></div></div>
       </div>
       <div class="my-pos-row sub">
         <div class="cell"><div class="cell-k">손절선</div><div class="cell-v">${fmtWon(holding.stopPrice)} ${holding.stoppedOut ? '<span class="alert">⚠ 이탈</span>' : ''}</div></div>
@@ -164,7 +164,7 @@ function renderStockCard(r: StockReport, riskPerTrade: number): string {
       </div>
       ${(() => {
         const hint = buildMismatchHint(signal, holding);
-        return hint ? `<div class="hint" style="border-left:3px solid ${HINT_COLOR[hint.tone]};color:${HINT_COLOR[hint.tone]}">${escape(hint.text)}</div>` : '';
+        return hint ? `<div class="hint" data-live="hint" data-action="${signal.action}" style="border-left:3px solid ${HINT_COLOR[hint.tone]};color:${HINT_COLOR[hint.tone]}">${escape(hint.text)}</div>` : '<div class="hint" data-live="hint" data-action="' + signal.action + '" style="display:none"></div>';
       })()}
     </div>` : '<div class="my-pos muted">미보유 — 시스템 신호 참고용</div>';
 
@@ -181,8 +181,8 @@ function renderStockCard(r: StockReport, riskPerTrade: number): string {
         <div class="note">${escape(config.positionNote)}</div>
       </div>
       <div class="price">
-        <div class="last">${fmtWon(indicators.lastClose)}</div>
-        <div class="change" style="color:${changeColor}">${fmtPnl(indicators.change)} (${fmtPct(indicators.changePct)})</div>
+        <div class="last" data-live="price">${fmtWon(indicators.lastClose)}</div>
+        <div class="change" data-live="change" style="color:${changeColor}">${fmtPnl(indicators.change)} (${fmtPct(indicators.changePct)})</div>
       </div>
     </header>
 
@@ -417,11 +417,163 @@ export function renderHtml(data: DashboardData): string {
   </div>
 
   <footer>
-    데이터: Yahoo Finance · 시스템: 터틀 트레이딩 (CLAUDE.md) · <a href="${escape(DASHBOARD_PUBLIC_URL)}">${escape(DASHBOARD_PUBLIC_URL)}</a>
+    데이터: Naver Finance (일봉) · 실시간: Naver polling (10초, via allorigins.win) · 시스템: 터틀 트레이딩 (CLAUDE.md)<br>
+    <a href="${escape(DASHBOARD_PUBLIC_URL)}">${escape(DASHBOARD_PUBLIC_URL)}</a>
   </footer>
 </div>
+
+<script id="turtle-data" type="application/json">${JSON.stringify(buildLiveDataPayload(data)).replace(/<\/script>/gi, '<\\/script>')}</script>
+<script>${liveUpdateScript()}</script>
 </body>
 </html>`;
+}
+
+function buildLiveDataPayload(data: DashboardData) {
+  return {
+    stocks: data.reports.map((r) => ({
+      code: r.config.code,
+      buyPrice: r.holding?.position.buyPrice ?? null,
+      quantity: r.holding?.position.quantity ?? 0,
+      action: r.signal.action,
+    })),
+  };
+}
+
+function liveUpdateScript(): string {
+  return `(function(){
+  const data = JSON.parse(document.getElementById('turtle-data').textContent);
+  const POLL_MS = 10000;
+  const PROXY = 'https://api.allorigins.win/raw?url=';
+  let failStreak = 0;
+
+  function kstHour(){
+    const p = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',hour:'2-digit',hour12:false}).formatToParts(new Date());
+    return Number(p.find(x=>x.type==='hour')?.value ?? -1);
+  }
+  function kstMinute(){
+    const p = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',minute:'2-digit'}).formatToParts(new Date());
+    return Number(p.find(x=>x.type==='minute')?.value ?? -1);
+  }
+  function isMarketOpen(){
+    const h = kstHour(), m = kstMinute();
+    if (h < 9) return false;
+    if (h > 15) return false;
+    if (h === 15 && m >= 30) return false;
+    const day = new Date().toLocaleDateString('en-US',{timeZone:'Asia/Seoul',weekday:'short'});
+    return day !== 'Sat' && day !== 'Sun';
+  }
+  function fmtWon(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
+  function fmtPnl(n){ return (n>=0?'+':'') + Math.round(n).toLocaleString('ko-KR') + '원'; }
+  function fmtPct(n){ return (n>0?'+':'') + n.toFixed(2) + '%'; }
+
+  async function fetchOne(code){
+    const naverUrl = 'https://polling.finance.naver.com/api/realtime/domestic/stock/' + code;
+    const res = await fetch(PROXY + encodeURIComponent(naverUrl));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json();
+    const item = j.datas && j.datas[0];
+    if (!item) throw new Error('no data');
+    const price = parseInt(String(item.closePrice).replace(/,/g,''),10);
+    const dir = item.compareToPreviousPrice && item.compareToPreviousPrice.code; // 2=상승,5=하락
+    const sign = dir === '5' ? -1 : 1;
+    const change = parseInt(String(item.compareToPreviousClosePrice||'0').replace(/,/g,''),10) * sign;
+    const changePct = parseFloat(item.fluctuationsRatio||'0') * sign;
+    return { price, change, changePct };
+  }
+
+  function updateHint(card, action, pnlPct){
+    const el = card.querySelector('[data-live="hint"]');
+    if (!el) return;
+    let text='', color='';
+    if (action === 'EXIT_10D_LOW') {
+      if (pnlPct < 0) { text = '시스템 익절 신호 / 내 포지션 ' + pnlPct.toFixed(2) + '% 손실 — 매도 시 손실 확정'; color = '#dc2626'; }
+      else if (pnlPct < 3) { text = '시스템 익절 신호 / 평가익 +' + pnlPct.toFixed(2) + '% 미미'; color = '#f59e0b'; }
+      else { text = '시스템 익절 신호 — 평가익 +' + pnlPct.toFixed(2) + '% 확정 가능'; color = '#16a34a'; }
+    } else if (action === 'STOP_LOSS') {
+      text = '시스템 손절 신호 (-2 ATR) / 손익 ' + (pnlPct>=0?'+':'') + pnlPct.toFixed(2) + '% — 기계적 청산 권장';
+      color = '#dc2626';
+    } else if (action === 'PYRAMID') {
+      text = '피라미딩 신호 / 평가익 +' + pnlPct.toFixed(2) + '% — 추가 매수 검토';
+      color = '#16a34a';
+    } else { return; }
+    el.textContent = text;
+    el.style.borderLeft = '3px solid ' + color;
+    el.style.color = color;
+    el.style.display = '';
+  }
+
+  function updateCard(s, live){
+    const card = document.getElementById('stock-' + s.code);
+    if (!card) return;
+    const lastEl = card.querySelector('[data-live="price"]');
+    if (lastEl) lastEl.textContent = fmtWon(live.price);
+    const chEl = card.querySelector('[data-live="change"]');
+    if (chEl){
+      chEl.textContent = fmtPnl(live.change) + ' (' + fmtPct(live.changePct) + ')';
+      chEl.style.color = live.change >= 0 ? '#16a34a' : '#dc2626';
+    }
+    if (s.quantity > 0 && s.buyPrice){
+      const cv = live.price * s.quantity;
+      const cb = s.buyPrice * s.quantity;
+      const pnl = cv - cb;
+      const pnlPct = (pnl / cb) * 100;
+      const cvEl = card.querySelector('[data-live="currentValue"]');
+      if (cvEl) cvEl.textContent = fmtWon(cv);
+      const pnlEl = card.querySelector('[data-live="pnl"]');
+      if (pnlEl){
+        pnlEl.innerHTML = fmtPnl(pnl) + '<br><span class="pct">' + fmtPct(pnlPct) + '</span>';
+        pnlEl.style.color = pnl >= 0 ? '#22c55e' : '#f87171';
+      }
+      const qo = document.querySelector('.qo-item[data-stock-code="' + s.code + '"] [data-live="qoPnl"]');
+      if (qo){
+        qo.textContent = fmtPct(pnlPct);
+        qo.style.color = pnl >= 0 ? '#22c55e' : '#f87171';
+      }
+      updateHint(card, s.action, pnlPct);
+    }
+  }
+
+  function setStatus(text, color){
+    const el = document.getElementById('live-status');
+    if (el){ el.textContent = text; if (color) el.style.color = color; }
+  }
+  function setUpdated(){
+    const el = document.getElementById('live-updated');
+    if (el){
+      const t = new Date().toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul'});
+      el.textContent = '마지막 ' + t;
+    }
+  }
+
+  async function tick(){
+    if (!isMarketOpen()){
+      setStatus('장 마감 — 실시간 갱신 정지','#94a3b8');
+      return;
+    }
+    setStatus('🟢 실시간 갱신 중 (10초)','#22c55e');
+    try {
+      const results = await Promise.all(data.stocks.map(async s => {
+        try { const live = await fetchOne(s.code); return { s, live }; }
+        catch(e){ console.warn('[live]', s.code, e.message); return null; }
+      }));
+      let ok = 0;
+      for (const r of results){ if (r){ updateCard(r.s, r.live); ok++; } }
+      if (ok === 0){
+        failStreak++;
+        setStatus('⚠ 갱신 실패 (' + failStreak + '회)','#f59e0b');
+      } else {
+        failStreak = 0;
+        setUpdated();
+      }
+    } catch(e){
+      console.error('[live] tick error', e);
+      setStatus('⚠ 오류: ' + e.message,'#dc2626');
+    }
+  }
+
+  tick();
+  setInterval(tick, POLL_MS);
+})();`;
 }
 
 function summarize(data: DashboardData) {
