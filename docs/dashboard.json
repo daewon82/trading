@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T04:26:59.323Z",
+  "generatedAt": "2026-05-18T04:32:45.045Z",
   "totalCapital": 1138450,
   "riskPerTrade": 11384.5,
   "asOfDate": "2026-05-15",
@@ -4407,7 +4407,7 @@
       "ma60Passed": true,
       "ma120Passed": true,
       "alignmentPassed": true,
-      "tier": "none",
+      "tier": "B",
       "unitSize": 0
     },
     {
@@ -4647,7 +4647,7 @@
       "ma60Passed": true,
       "ma120Passed": true,
       "alignmentPassed": true,
-      "tier": "none",
+      "tier": "B",
       "unitSize": 1
     },
     {
@@ -4727,7 +4727,7 @@
       "ma60Passed": true,
       "ma120Passed": true,
       "alignmentPassed": true,
-      "tier": "none",
+      "tier": "B",
       "unitSize": 0
     },
     {

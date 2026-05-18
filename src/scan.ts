@@ -37,7 +37,8 @@ export const SCAN_CANDIDATES: ScanCandidate[] = [
   { code: '042660', name: '한화오션' },
 ];
 
-const TIER_B_BREAKOUT_DISTANCE_PCT = 3;
+const TIER_B_BREAKOUT_DISTANCE_PCT = Number(process.env.SCAN_B_THRESHOLD_PCT ?? 7);
+export const MAX_SCAN_DISPLAY = Number(process.env.SCAN_MAX_DISPLAY ?? 5);
 
 function trimPartialToday(candles: Candle[], kstToday: string, closeConfirmed: boolean): Candle[] {
   if (closeConfirmed || candles.length === 0) return candles;

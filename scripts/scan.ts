@@ -69,7 +69,7 @@ async function main() {
     );
   }
 
-  console.log('\n=== [B] 돌파 임박 (3% 이내, 추세 충족) ===');
+  console.log(`\n=== [B] 돌파 임박 (${process.env.SCAN_B_THRESHOLD_PCT ?? 7}% 이내, 추세 충족) ===`);
   if (tierB.length === 0) console.log('  (없음)');
   else for (const r of tierB) {
     console.log(

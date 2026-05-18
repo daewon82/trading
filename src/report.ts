@@ -124,8 +124,13 @@ const HINT_COLOR: Record<MismatchHint['tone'], string> = {
 
 function renderScanSection(candidates: import('./types.js').ScanCandidateResult[]): string {
   if (!candidates || candidates.length === 0) return '';
-  const tierA = candidates.filter((c) => c.tier === 'A').sort((a, b) => b.distancePct - a.distancePct);
-  const tierB = candidates.filter((c) => c.tier === 'B').sort((a, b) => a.distancePct - b.distancePct);
+  const MAX_DISPLAY = 5;
+  const tierAFull = candidates.filter((c) => c.tier === 'A').sort((a, b) => b.distancePct - a.distancePct);
+  const tierBFull = candidates.filter((c) => c.tier === 'B').sort((a, b) => a.distancePct - b.distancePct);
+  const tierA = tierAFull.slice(0, MAX_DISPLAY);
+  const tierBSlots = Math.max(0, MAX_DISPLAY - tierA.length);
+  const tierB = tierBFull.slice(0, tierBSlots);
+  const hiddenCount = (tierAFull.length - tierA.length) + (tierBFull.length - tierB.length);
   const errored = candidates.filter((c) => c.error);
 
   function renderTierA(): string {
@@ -133,6 +138,7 @@ function renderScanSection(candidates: import('./types.js').ScanCandidateResult[
     return tierA.map((c) => {
       const distAbs = Math.abs(c.distancePct).toFixed(2);
       const distLabel = c.distancePct < 0 ? `+${distAbs}% 돌파` : `${distAbs}% 부족`;
+      const stopPrice = c.lastClose - 2 * c.atr20;
       const sizeWarning = c.unitSize === 0
         ? '<span class="scan-warn">⚠ 자본 부족 (1유닛 0주, 실제 매수 불가)</span>'
         : `<span class="scan-ok">1유닛 ${c.unitSize}주</span>`;
@@ -143,8 +149,17 @@ function renderScanSection(candidates: import('./types.js').ScanCandidateResult[
             <span class="scan-price">${fmtWon(c.lastClose)}</span>
           </div>
           <div class="scan-body">
-            <div>20일 고점 ${fmtWon(c.donchianHigh20)} (${distLabel})</div>
-            <div>ATR ${fmtWon(c.atr20)} · MA60 ${fmtWon(c.ma60)} · MA120 ${fmtWon(c.ma120)}</div>
+            <div class="scan-buy-row">
+              <span class="scan-buy-label">매수 적정가</span>
+              <span class="scan-buy-price">${fmtWon(c.lastClose)}</span>
+              <span class="scan-buy-note">시장가 / 다음 거래일 시초가</span>
+            </div>
+            <div class="scan-stop-row">
+              <span class="scan-stop-label">손절선 (-2 ATR)</span>
+              <span class="scan-stop-price">${fmtWon(stopPrice)}</span>
+            </div>
+            <div class="scan-meta-line">20일 고점 ${fmtWon(c.donchianHigh20)} (${distLabel}) · ATR ${fmtWon(c.atr20)}</div>
+            <div class="scan-meta-line">MA60 ${fmtWon(c.ma60)} · MA120 ${fmtWon(c.ma120)}</div>
             <div class="scan-size">${sizeWarning}</div>
           </div>
         </div>`;
@@ -153,29 +168,44 @@ function renderScanSection(candidates: import('./types.js').ScanCandidateResult[
 
   function renderTierB(): string {
     if (tierB.length === 0) return '<div class="scan-empty">돌파 임박 종목 없음</div>';
-    return tierB.map((c) => `
-      <div class="scan-card scan-tier-b">
-        <div class="scan-head">
-          <span class="scan-name">${escape(c.name)} <span class="scan-code">${escape(c.code)}</span></span>
-          <span class="scan-price">${fmtWon(c.lastClose)}</span>
-        </div>
-        <div class="scan-body">
-          돌파선 ${fmtWon(c.donchianHigh20)} 까지 ${c.distancePct.toFixed(2)}%
-        </div>
-      </div>`).join('');
+    return tierB.map((c) => {
+      const triggerPrice = c.donchianHigh20;
+      const stopPrice = triggerPrice - 2 * c.atr20;
+      const unitSize = c.unitSize;
+      return `
+        <div class="scan-card scan-tier-b">
+          <div class="scan-head">
+            <span class="scan-name">${escape(c.name)} <span class="scan-code">${escape(c.code)}</span></span>
+            <span class="scan-price">${fmtWon(c.lastClose)}</span>
+          </div>
+          <div class="scan-body">
+            <div class="scan-buy-row">
+              <span class="scan-buy-label">매수 트리거</span>
+              <span class="scan-buy-price">${fmtWon(triggerPrice)}</span>
+              <span class="scan-buy-note">돌파 시 진입 (현재가 대비 ${c.distancePct.toFixed(2)}%)</span>
+            </div>
+            <div class="scan-stop-row">
+              <span class="scan-stop-label">손절선 (-2 ATR)</span>
+              <span class="scan-stop-price">${fmtWon(stopPrice)}</span>
+            </div>
+            <div class="scan-meta-line">ATR ${fmtWon(c.atr20)} · 1유닛 ${unitSize === 0 ? '<span class="scan-warn">0주 (자본 부족)</span>' : unitSize + '주'}</div>
+          </div>
+        </div>`;
+    }).join('');
   }
 
   return `
   <section class="scan-section">
-    <h2 class="scan-title">🔍 매수 후보 (KOSPI 대형주 ${candidates.length}종목 스캔)</h2>
+    <h2 class="scan-title">🔍 매수 후보 (KOSPI 대형주 ${candidates.length}종목 스캔, 최대 ${MAX_DISPLAY}개 표시)</h2>
     <div class="scan-meta">claude.md "매수 후보 스캔 프로토콜" — 20일 신고가 돌파 + 정배열 (MA60>MA120) + 종가 > MA60·MA120</div>
 
-    <div class="scan-tier-title">A 등급 — 즉시 진입 신호 (4개 조건 전부 충족)</div>
+    <div class="scan-tier-title">A 등급 — 즉시 진입 신호 (4개 조건 전부 충족)${tierAFull.length > tierA.length ? ` <span style="opacity:0.6">(전체 ${tierAFull.length}개 중 ${tierA.length}개 표시)</span>` : ''}</div>
     <div class="scan-list">${renderTierA()}</div>
 
-    <div class="scan-tier-title">B 등급 — 돌파 임박 (추세 충족 + 3% 이내)</div>
+    <div class="scan-tier-title">B 등급 — 돌파 임박 (추세 충족 + 돌파까지 7% 이내)${tierBFull.length > tierB.length ? ` <span style="opacity:0.6">(전체 ${tierBFull.length}개 중 ${tierB.length}개 표시)</span>` : ''}</div>
     <div class="scan-list">${renderTierB()}</div>
 
+    ${hiddenCount > 0 ? `<div class="scan-meta">+ ${hiddenCount}개 후보 추가 — 위 ${MAX_DISPLAY}개만 표시 (CLI 에서 npx tsx scripts/scan.ts 로 전체 확인)</div>` : ''}
     ${errored.length > 0 ? `<div class="scan-meta">수집 실패: ${errored.length}종목</div>` : ''}
   </section>`;
 }
@@ -402,7 +432,20 @@ export function renderHtml(data: DashboardData): string {
   .scan-code { color: #64748b; font-size: 11px; font-weight: 400; margin-left: 4px; }
   .scan-price { font-size: 13px; font-weight: 600; }
   .scan-body { font-size: 12px; color: #cbd5e1; line-height: 1.5; }
-  .scan-size { margin-top: 4px; }
+  .scan-buy-row, .scan-stop-row {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 4px 0; margin-top: 4px;
+    border-top: 1px dashed rgba(255,255,255,0.05);
+  }
+  .scan-buy-row { border-top: none; padding-top: 6px; }
+  .scan-buy-label, .scan-stop-label {
+    font-size: 11px; color: #94a3b8; min-width: 90px;
+  }
+  .scan-buy-price { font-size: 14px; font-weight: 700; color: #22c55e; }
+  .scan-stop-price { font-size: 13px; font-weight: 600; color: #f87171; }
+  .scan-buy-note { font-size: 11px; color: #64748b; flex: 1; }
+  .scan-meta-line { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+  .scan-size { margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.05); }
   .scan-ok { color: #22c55e; font-weight: 500; }
   .scan-warn { color: #f59e0b; font-weight: 500; }
   .scan-empty { color: #64748b; font-style: italic; font-size: 13px; }
