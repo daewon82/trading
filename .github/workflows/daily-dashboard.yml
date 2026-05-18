@@ -2,8 +2,11 @@ name: daily-dashboard
 
 on:
   schedule:
-    # 평일 장마감 후 16:00 KST = 07:00 UTC (일봉 데이터 갱신 직후)
+    # 평일 장마감 후 16:00 KST = 07:00 UTC (당일 일봉 종가 기준 신호 확정)
     - cron: '0 7 * * 1-5'
+    # 평일 시초가 직전 08:30 KST = 23:30 UTC 전일 (다음날 매매 직전 재확인)
+    # cron 요일: 일~목 23:30 UTC = 월~금 08:30 KST
+    - cron: '30 23 * * 0-4'
     # 주말 1회 (모니터링용)
     - cron: '0 0 * * 6'
   workflow_dispatch: {}
