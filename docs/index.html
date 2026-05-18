@@ -1,940 +1,629 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="300">
-  <title>대시보드 2026-05-15 (금요일)</title>
-  <style>
-      *, *::before, *::after { box-sizing: border-box; }
-      html { -webkit-text-size-adjust: 100%; }
-      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", sans-serif; margin: 0; color: #222; background: #fafafa; }
-      header { padding: 24px; background: #fff; border-bottom: 1px solid #eee; }
-      h1 { margin: 0 0 4px; font-size: 1.6em; }
-      .meta { color: #888; font-size: .9em; }
-      .disclaimer { background: #fff7e6; border-left: 4px solid #f5a623; padding: 10px 14px; margin: 14px 0 0; font-size: .9em; color: #555; line-height: 1.5; }
-      /* v1.7 — KOSPI 지수 헤더 */
-      .kospi-bar { display: inline-flex; align-items: baseline; gap: 12px; margin: 12px 0 4px; padding: 10px 16px; background: #1a1a1a; color: #fff; border-radius: 8px; font-variant-numeric: tabular-nums; }
-      .kospi-bar .kospi-label { font-size: .9em; color: #ccc; }
-      .kospi-bar .kospi-value { font-size: 1.3em; font-weight: 700; }
-      .kospi-bar .kospi-change { font-size: 1.05em; font-weight: 600; }
-      .kospi-bar.up .kospi-change { color: #ff5a5a; }
-      .kospi-bar.down .kospi-change { color: #5ad17a; }
-      .kospi-bar.flat .kospi-change { color: #aaa; }
-      /* v1.8 — 시장 구조(ADR) 위젯 */
-      .market-structure { margin: 10px 0 4px; padding: 12px 14px; border-radius: 8px; border-left: 4px solid #ccc; }
-      .market-structure.ms-strong { background: #e8f5e9; border-left-color: #2e7d32; }
-      .market-structure.ms-healthy { background: #f1f8e9; border-left-color: #689f38; }
-      .market-structure.ms-narrow { background: #fff8e1; border-left-color: #ef6c00; }
-      .market-structure.ms-concentrated { background: #ffebee; border-left-color: #c62828; }
-      .ms-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
-      .ms-label { font-weight: 600; color: #333; }
-      .ms-adr { font-size: 1.3em; font-weight: 700; font-variant-numeric: tabular-nums; color: #1565c0; }
-      .market-structure.ms-concentrated .ms-adr { color: #c62828; }
-      .market-structure.ms-narrow .ms-adr { color: #ef6c00; }
-      .ms-breadth { font-size: .92em; color: #555; }
-      .ms-counts { display: flex; gap: 14px; flex-wrap: wrap; padding: 6px 0; font-size: .9em; font-variant-numeric: tabular-nums; }
-      .ms-counts .ms-up { color: #c62828; font-weight: 600; }
-      .ms-counts .ms-down { color: #2e7d32; font-weight: 600; }
-      .ms-counts .ms-flat { color: #888; }
-      .ms-counts .ms-edge { color: #777; }
-      .ms-insight { margin: 6px 0 0; font-size: .88em; color: #444; line-height: 1.5; }
-      .ms-insight b { color: #c62828; }
-      /* v1.9 — 보유 대응 전략 섹션 */
-      section.holding-strategies { padding: 20px 24px; background: #fafafa; }
-      section.holding-strategies h2 { margin: 0 0 8px; font-size: 1.25em; color: #1b5e20; }
-      .hs-summary { margin: 0 0 8px; font-size: .95em; }
-      .hs-disclaimer { margin: 0 0 14px; font-size: .82em; color: #888; padding: 6px 10px; background: #fff7e6; border-left: 3px solid #f5a623; border-radius: 4px; }
-      .hs-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
-      .hs-card { background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 14px 16px; font-size: .9em; }
-      .hs-card.hs-buy { border: 2px solid #2e7d32; background: #f1f8e9; }
-      .hs-card.hs-hold { border-left: 4px solid #fbc02d; }
-      .hs-card.hs-sell { border: 2px solid #c62828; background: #ffebee; }
-      .hs-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-      .hs-name { font-size: 1.05em; font-weight: 700; }
-      .hs-code { font-size: .8em; color: #888; font-weight: normal; margin-left: 4px; }
-      .hs-action { font-size: .95em; }
-      .hs-action b { margin-left: 2px; }
-      .hs-card.hs-buy .hs-action b { color: #2e7d32; }
-      .hs-card.hs-sell .hs-action b { color: #c62828; }
-      .hs-card.hs-hold .hs-action b { color: #f57f17; }
-      .hs-conf { font-size: .82em; color: #888; margin-left: 6px; }
-      .hs-meta { display: flex; gap: 12px; flex-wrap: wrap; padding: 6px 0; font-size: .9em; font-variant-numeric: tabular-nums; color: #555; }
-      .hs-meta .pnl-up { color: #c62828; font-weight: 600; }
-      .hs-meta .pnl-down { color: #2e7d32; font-weight: 600; }
-      .hs-meta .muted { color: #aaa; }
-      .hs-meta .hs-price { font-weight: 600; color: #222; }
-      .hs-meta .hs-pos { color: #777; }
-      .hs-reasons { list-style: none; padding: 8px 0 0; margin: 6px 0 0; border-top: 1px solid #eee; font-size: .87em; line-height: 1.55; }
-      .hs-reasons li { padding: 2px 0; }
-      .hs-reasons .hs-icon { display: inline-block; min-width: 22px; }
-      .hs-reasons b { margin-left: 4px; font-variant-numeric: tabular-nums; }
-      .hs-summary .pnl-up { color: #c62828; }
-      .hs-summary .pnl-down { color: #2e7d32; }
-      /* v1.7 — 시장 이벤트 캘린더 */
-      .market-events { margin: 10px 0; padding: 10px 14px; background: #fffaf0; border-left: 4px solid #ff9800; border-radius: 4px; }
-      .ev-title { font-weight: 600; color: #e65100; margin-bottom: 8px; font-size: .95em; }
-      .ev-list { display: flex; flex-direction: column; gap: 6px; }
-      .ev-chip { display: grid; grid-template-columns: 60px auto auto 1fr; gap: 8px; align-items: baseline; padding: 6px 10px; background: #fff; border-radius: 4px; font-size: .85em; line-height: 1.45; }
-      .ev-chip.ev-sev-high { border-left: 3px solid #c62828; }
-      .ev-chip.ev-sev-medium { border-left: 3px solid #f57c00; }
-      .ev-chip.ev-sev-low { border-left: 3px solid #1976d2; }
-      .ev-tag { font-weight: 700; color: #c62828; }
-      .ev-label { font-weight: 600; }
-      .ev-date { color: #888; font-size: .9em; }
-      .ev-impact { color: #555; }
-      @media (max-width: 640px) {
-        .ev-chip { grid-template-columns: 1fr; gap: 2px; }
-      }
-      /* v1.7 — 거래량 Top 10 테이블 */
-      .volume-top10 .src-note { font-size: .8em; color: #888; font-weight: normal; }
-      .volume-top10 .intro { font-size: .88em; color: #555; margin: 0 0 12px; line-height: 1.5; }
-      .vt-tbl { width: 100%; border-collapse: collapse; background: #fff; font-size: .9em; font-variant-numeric: tabular-nums; }
-      .vt-tbl thead th { background: #f4f4f4; padding: 8px 10px; border: 1px solid #e6e6e6; text-align: center; font-weight: 600; font-size: .85em; }
-      .vt-tbl tbody td { padding: 7px 10px; border: 1px solid #f0f0f0; text-align: center; }
-      .vt-tbl td.rank { color: #c62828; font-weight: 700; }
-      .vt-tbl td.name { text-align: left; font-weight: 600; }
-      .vt-tbl td.name a { color: #1976d2; text-decoration: none; }
-      .vt-tbl td.num { text-align: right; }
-      .vt-tbl td.num.up { color: #c62828; font-weight: 600; }
-      .vt-tbl td.num.down { color: #2e7d32; font-weight: 600; }
-      .vt-tbl td.muted { color: #999; font-size: .9em; }
-      /* v1.7 — 종가 매수 추천 카드 */
-      .eod-picks .src-note { font-size: .8em; color: #888; font-weight: normal; }
-      .eod-picks .intro { font-size: .88em; color: #555; margin: 0 0 14px; line-height: 1.55; }
-      .eod-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
-      .eod-card { background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 14px 16px; font-size: .9em; }
-      .eod-card.eod-strong { border: 2px solid #c62828; background: #fff5f5; }
-      .eod-card.eod-buy { border: 2px solid #ef6c00; background: #fff8e1; }
-      .eod-card.eod-hold { border-left: 4px solid #1976d2; }
-      .eod-card.eod-skip { opacity: .65; }
-      .eod-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
-      .eod-ord { font-size: 1.15em; font-weight: 700; color: #c62828; }
-      .eod-name { font-size: 1.05em; font-weight: 600; flex: 1 1 auto; }
-      .eod-name a { color: #1976d2; text-decoration: none; }
-      .eod-code { font-size: .82em; color: #888; font-weight: normal; margin-left: 4px; }
-      .eod-rec { font-weight: 600; font-size: .92em; color: #c62828; }
-      .eod-stats { display: flex; flex-wrap: wrap; gap: 10px 14px; padding: 6px 0; font-variant-numeric: tabular-nums; font-size: .9em; color: #444; }
-      .eod-stats .up { color: #c62828; font-weight: 600; }
-      .eod-stats .down { color: #2e7d32; font-weight: 600; }
-      .eod-flow { color: #555; font-size: .88em; }
-      .eod-factors { list-style: none; padding: 6px 0 0; margin: 6px 0 0; border-top: 1px solid #eee; font-size: .85em; line-height: 1.55; }
-      .eod-factors li { padding: 2px 0; }
-      .eod-factors .f-cat { display: inline-block; min-width: 50px; color: #1976d2; font-weight: 600; }
-      .eod-factors b { color: #c62828; margin-left: 4px; }
-      .eod-factors .f-det { color: #555; }
-      /* v1.7 — 구조 리스크 태그 */
-      .sr-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .76em; font-weight: 600; margin-left: 6px; vertical-align: middle; white-space: nowrap; }
-      .sr-tag.sr-high { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
-      .sr-tag.sr-medium { background: #fff3e0; color: #ef6c00; border: 1px solid #ffcc80; }
-      .sr-tag.sr-low { background: #fffde7; color: #9e7e00; border: 1px solid #fff59d; }
-      .sr-tag.sr-positive { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
-      /* v1.7 — 카드 인라인 손익 */
-      .pnl-inline { display: inline-block; margin-left: 8px; font-size: .85em; font-weight: 600; font-variant-numeric: tabular-nums; }
-      .pnl-inline.pnl-up { color: #c62828; }
-      .pnl-inline.pnl-down { color: #2e7d32; }
-      .pnl-inline.pnl-flat { color: #888; }
-      /* v1.7 — 보유 종목 손익 섹션 */
-      section.portfolio-pnl { padding: 20px 24px; background: #f9fbe7; border-top: 2px solid #c5e1a5; border-bottom: 2px solid #c5e1a5; }
-      section.portfolio-pnl h2 { margin: 0 0 12px; color: #33691e; font-size: 1.15em; }
-      .pnl-tbl { width: 100%; border-collapse: collapse; background: #fff; font-size: .9em; font-variant-numeric: tabular-nums; }
-      .pnl-tbl thead th { background: #f4f4f4; padding: 7px 10px; border: 1px solid #e6e6e6; font-size: .85em; }
-      .pnl-tbl tbody td { padding: 6px 10px; border: 1px solid #f0f0f0; }
-      .pnl-tbl td.num { text-align: right; }
-      .pnl-tbl td.pnl-name { font-weight: 600; }
-      .pnl-tbl .pnl-code { font-size: .8em; color: #888; margin-left: 4px; font-weight: normal; }
-      .pnl-tbl .pnl-cell { font-weight: 600; }
-      .pnl-tbl tr.pnl-up .pnl-cell { color: #c62828; }
-      .pnl-tbl tr.pnl-down .pnl-cell { color: #2e7d32; }
-      .pnl-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; padding: 12px 14px; background: #fff; border-radius: 8px; font-size: .92em; }
-      .pnl-summary > div { display: flex; flex-direction: column; gap: 2px; }
-      .pnl-summary > div span { color: #777; font-size: .85em; }
-      .pnl-summary > div b { font-variant-numeric: tabular-nums; font-size: 1.05em; }
-      .pnl-summary.pnl-up .pnl-total b { color: #c62828; }
-      .pnl-summary.pnl-down .pnl-total b { color: #2e7d32; }
-      .pnl-note { margin: 10px 0 0; font-size: .82em; color: #777; }
-      .pnl-note code { background: #fff; padding: 1px 5px; border-radius: 3px; }
-      @media (max-width: 640px) {
-        .pnl-summary { grid-template-columns: 1fr; gap: 6px; }
-      }
-      section { padding: 20px 24px; }
-      h2 { margin: 0 0 12px; font-size: 1.2em; }
-      .weather-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-      table.weather-table { border-collapse: collapse; width: 100%; min-width: 560px; background: #fff; }
-      table.weather-table th, table.weather-table td { border: 1px solid #e6e6e6; padding: 8px 10px; font-size: .85em; text-align: center; vertical-align: top; }
-      table.weather-table thead th { background: #f4f4f4; }
-      table.weather-table tbody th.city { background: #fafafa; text-align: left; }
-      table.weather-table td.rainy { background: #ffecec; color: #c62828; font-weight: 600; }
-      .day-desc { font-weight: 500; margin-bottom: 4px; }
-      .temp { color: #555; font-size: .92em; }
-      .pop { color: #888; font-size: .85em; margin-top: 2px; }
-      .legend { font-size: .85em; color: #555; margin-top: 8px; }
-      .rainy-legend { color: #c62828; font-weight: 600; }
-      .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
-      .card { background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 14px 16px; font-size: .92em; }
-      .card h3 { margin: 0 0 10px; font-size: 1.05em; }
-      .ticker { color: #888; font-weight: normal; font-size: .85em; }
-      .row { display: flex; justify-content: space-between; align-items: baseline; padding: 3px 0; gap: 8px; }
-      .label { color: #777; font-size: .9em; flex-shrink: 0; }
-      .value { text-align: right; font-variant-numeric: tabular-nums; }
-      .value.strong { font-weight: 700; font-size: 1.05em; }
-      .value.small { font-size: .85em; }
-      .change { color: #555; font-size: .85em; min-width: 60px; text-align: right; }
-      .quart { color: #888; font-size: .85em; }
-      .dim { color: #aaa; }
-      .ref-block { margin: 6px 0 4px; padding: 6px 8px; background: #f7f9fc; border-radius: 4px; }
-      .ref-title { font-size: .85em; color: #555; margin-bottom: 4px; }
-      .ref-note { color: #999; font-weight: normal; }
-      .ref-table { width: 100%; border-collapse: collapse; font-size: .85em; }
-      .ref-table td { padding: 2px 4px; }
-      .ref-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
-      .ref-table td.pct { color: #888; min-width: 60px; }
-      .ref-table tr.below td.pct { color: #2e7d32; }
-      .ref-table tr.above td.pct { color: #c62828; }
-      .spark { width: 100%; height: 50px; display: block; margin: 8px 0 4px; }
-      .toss-link { color: inherit; text-decoration: none; border-bottom: 1px dashed transparent; }
-      .toss-link:hover { border-bottom-color: #3182f6; color: #3182f6; }
-      .toss-link::after { content: " ↗"; font-size: .75em; color: #3182f6; opacity: .7; }
-      .live-dot { color: #c62828; font-size: .6em; vertical-align: middle; animation: live-pulse 2s ease-in-out infinite; }
-      .live-mini { color: #c62828; font-size: .7em; animation: live-pulse 2s ease-in-out infinite; }
-      @keyframes live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-      .refresh-note { color: #888; font-size: .85em; }
-      .u-price { margin: 2px 0 6px; font-size: .95em; }
-      .price-now { font-weight: 600; font-variant-numeric: tabular-nums; }
-      .price-up { color: #c62828; font-variant-numeric: tabular-nums; margin-left: 6px; }
-      .price-down { color: #2e7d32; font-variant-numeric: tabular-nums; margin-left: 6px; }
-      .flow-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: .9em; }
-      .flow-table thead th { font-weight: 500; color: #888; padding: 4px 6px; text-align: center; border-bottom: 1px solid #eee; font-size: .85em; }
-      .flow-table tbody th { text-align: left; padding: 6px 6px; font-weight: 500; color: #555; min-width: 60px; }
-      .flow-table tbody td { text-align: center; padding: 6px 6px; font-variant-numeric: tabular-nums; }
-      .flow-buy { color: #c62828; font-weight: 600; font-variant-numeric: tabular-nums; }
-      .flow-sell { color: #2e7d32; font-weight: 600; font-variant-numeric: tabular-nums; }
-      .flow-na { color: #bbb; }
-      .flow-live { background: #fff8e1; position: relative; }
-      .flow-live::after { content: "⏱"; font-size: .7em; opacity: .5; position: absolute; top: 2px; right: 2px; }
-      .flow-table tbody td { font-size: .85em; padding: 5px 4px; }
-      @media (max-width: 600px) {
-        .flow-table tbody td { font-size: .78em; padding: 4px 2px; }
-        .flow-table thead th { font-size: .78em; }
-      }
-      .flow-empty { color: #888; font-size: .9em; margin: 6px 0 0; }
-      .bull { color: #c62828; font-weight: 600; }
-      .bear { color: #2e7d32; font-weight: 600; }
-      .macro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
-      .macro-cell { background: #fff; border: 1px solid #e6e6e6; padding: 10px 12px; border-radius: 6px; }
-      .macro-name { font-size: .85em; color: #888; }
-      .macro-value { font-size: 1.1em; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
-      .macro-change { font-size: .85em; font-variant-numeric: tabular-nums; margin-top: 2px; }
-      .macro-change.up { color: #c62828; }
-      .macro-change.down { color: #2e7d32; }
-      section.insights { padding: 20px 24px; background: #fffaf3; border-top: 1px solid #f0e0c0; }
-      .insight-intro { font-size: .9em; color: #555; line-height: 1.55; margin: 0 0 14px; padding: 10px 12px; background: #fff; border-left: 3px solid #f5a623; border-radius: 4px; }
-      .insights-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
-      .insight-group { margin-bottom: 24px; }
-      .insight-group:last-child { margin-bottom: 0; }
-      .insight-group-title { font-size: 1.05em; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 2px solid #f5a623; color: #444; }
-      .group-intro { margin: 0 0 12px; padding: 8px 12px; background: #fff3e0; border-left: 3px solid #ef6c00; border-radius: 4px; font-size: .85em; color: #555; line-height: 1.5; }
-      .ic-head { display: flex; gap: 8px; align-items: baseline; padding: 4px 0 6px; flex-wrap: wrap; }
-      .ic-price-current { font-size: 1.1em; font-weight: 700; font-variant-numeric: tabular-nums; }
-      .ic-price-change { color: #555; font-size: .88em; font-variant-numeric: tabular-nums; }
-      .ic-pos { color: #888; font-size: .82em; margin-left: auto; }
-      .ic-row { font-size: .82em; padding: 4px 8px; background: #f7f9fc; border-radius: 4px; margin: 3px 0; line-height: 1.5; display: flex; gap: 6px; align-items: baseline; }
-      .ic-tag { color: #888; font-weight: 500; min-width: 56px; flex-shrink: 0; }
-      .ic-val { flex: 1; font-variant-numeric: tabular-nums; }
-      .insight-card { background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 14px 16px; font-size: .9em; }
-      .insight-card h3 { margin: 0 0 8px; font-size: 1.05em; }
-      .insight-card h4 { margin: 8px 0 4px; font-size: .9em; color: #555; }
-      .insight-row { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px dashed #f0f0f0; }
-      .ins-label { color: #777; font-size: .9em; }
-      .ins-value { font-weight: 500; text-align: right; }
-      .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-      .signal-grid.signal-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
-      .signal-grid ul { margin: 0; padding-left: 18px; font-size: .85em; line-height: 1.55; }
-      .bullish h4 { color: #c62828; }
-      .cautious h4 { color: #b35900; }
-      .bearish h4 { color: #2e7d32; }
-      .signal-grid li.empty { color: #aaa; list-style: none; margin-left: -18px; }
-      .dominance { margin: 10px 0 8px; padding: 10px 12px; background: #f7f9fc; border-radius: 6px; }
-      .dom-title { font-size: .82em; color: #555; margin-bottom: 6px; }
-      .dom-note { color: #999; font-weight: normal; }
-      .dom-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: #eee; margin-bottom: 6px; }
-      .dom-seg { height: 100%; }
-      .dom-seg.dom-bull { background: #c62828; }
-      .dom-seg.dom-caut { background: #f5a623; }
-      .dom-seg.dom-bear { background: #2e7d32; }
-      .dom-stats { display: flex; justify-content: space-between; gap: 6px; font-size: .78em; flex-wrap: wrap; }
-      .dom-bull-text { color: #c62828; font-weight: 600; }
-      .dom-caut-text { color: #b35900; font-weight: 600; }
-      .dom-bear-text { color: #2e7d32; font-weight: 600; }
-      .dom-summary { margin-top: 6px; font-size: .85em; color: #555; }
-      .dom-reason { margin-top: 6px; padding: 6px 10px; background: #fff; border-left: 3px solid #1976d2; border-radius: 4px; font-size: .82em; color: #555; line-height: 1.5; }
-      section.holdings { padding: 16px 24px; background: #f1f8e9; border-bottom: 1px solid #c5e1a5; }
-      section.holdings h2 { font-size: 1.05em; margin: 0 0 6px; }
-      .holdings-hint { font-size: .85em; color: #555; margin: 0 0 10px; line-height: 1.5; }
-      .holding-form { display: flex; flex-wrap: wrap; gap: 8px; max-width: 720px; align-items: flex-start; }
-      .holding-input-wrap { position: relative; flex: 1.5; min-width: 200px; }
-      .holding-input-wrap input { width: 100%; }
-      .holding-form input { padding: 8px 12px; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; font-variant-numeric: tabular-nums; }
-      .holding-form input[type="number"] { flex: 1; min-width: 110px; }
-      .suggest-list { position: absolute; top: 100%; left: 0; right: 0; margin: 2px 0 0; padding: 0; list-style: none; background: #fff; border: 1px solid #ccc; border-radius: 4px; max-height: 280px; overflow-y: auto; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: none; }
-      .suggest-list.show { display: block; }
-      .suggest-item { padding: 8px 12px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; font-size: .9em; }
-      .suggest-item:hover { background: #f0f4f8; }
-      .suggest-name { color: #222; }
-      .suggest-sym { color: #888; font-size: .85em; font-variant-numeric: tabular-nums; }
-      .holding-form button { padding: 8px 16px; background: #2e7d32; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
-      .holding-form button:hover { background: #1b5e20; }
-      .holdings-empty { font-size: .9em; color: #888; margin: 14px 0 0; }
-      .holdings-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-top: 12px; }
-      .holding-card { background: #fff; border: 1px solid #c5e1a5; border-radius: 8px; padding: 14px 16px; font-size: .9em; position: relative; }
-      .holding-card h3 { margin: 0 0 8px; font-size: 1em; }
-      .holding-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: .9em; border-bottom: 1px dashed #f0f0f0; }
-      .pnl-up { color: #c62828; font-weight: 700; }
-      .pnl-down { color: #2e7d32; font-weight: 700; }
-      .sell-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .72em; font-weight: 600; margin-left: 4px; }
-      .sell-stop { background: #ffcdd2; color: #b71c1c; }
-      .sell-take { background: #fff3e0; color: #ef6c00; }
-      .sell-hold-up { background: #fce4ec; color: #ad1457; }
-      .sell-hold-down { background: #e8f5e9; color: #2e7d32; }
-      .sell-hold { background: #eceff1; color: #455a64; }
-      .sell-na { background: #eee; color: #999; }
-      .sell-reasons { margin-top: 6px; padding: 6px 8px; background: #fafafa; border-radius: 4px; font-size: .82em; color: #555; line-height: 1.5; }
-      .holding-remove { margin-top: 10px; padding: 4px 12px; background: #888; color: #fff; border: 0; border-radius: 4px; cursor: pointer; font-size: .8em; }
-      .holding-remove:hover { background: #555; }
-      .holding-card.loading { color: #888; }
-      .holding-card.error { background: #ffebee; }
-      @media (max-width: 600px) {
-        section.holdings { padding: 14px 16px; }
-        .holding-form { flex-direction: column; }
-        .holding-form input, .holding-form button { width: 100%; }
-      }
-      section.search { padding: 16px 24px; background: #f0f4f8; border-bottom: 1px solid #d6dee6; }
-      .search-hint { margin: 0 0 10px; font-size: .85em; color: #555; line-height: 1.5; }
-      .search-hint code { background: #fff; padding: 1px 6px; border-radius: 3px; font-size: .92em; }
-      .search-form { display: flex; gap: 8px; max-width: 480px; }
-      .search-form input { flex: 1; padding: 8px 12px; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; font-variant-numeric: tabular-nums; }
-      .search-form button { padding: 8px 16px; font-size: 1em; background: #1976d2; color: #fff; border: 0; border-radius: 4px; cursor: pointer; }
-      .search-form button:hover { background: #1565c0; }
-      .search-status { font-size: .85em; margin: 8px 0; min-height: 1em; color: #555; }
-      .search-status.err { color: #c62828; }
-      .search-status.ok { color: #1b5e20; }
-      .search-result { margin-top: 8px; }
-      .search-result .insight-card { max-width: 480px; }
-      .search-close { margin-top: 10px; padding: 6px 14px; background: #888; color: #fff; border: 0; border-radius: 4px; cursor: pointer; font-size: .85em; }
-      .search-close:hover { background: #666; }
-      @media (max-width: 600px) {
-        section.search { padding: 14px 16px; }
-        .search-form { flex-direction: column; }
-        .search-form input, .search-form button { width: 100%; }
-      }
-      section.changelog { padding: 16px 24px; background: #fff8e1; border-bottom: 1px solid #ffe082; }
-      section.changelog h2 { font-size: 1.05em; margin: 0 0 10px; color: #5d4037; }
-      .cl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
-      .cl-block { background: #fff; border-radius: 6px; padding: 10px 14px; }
-      .cl-block.cl-removed { border-left: 4px solid #c62828; }
-      .cl-block.cl-added { border-left: 4px solid #2e7d32; }
-      .cl-block h3 { margin: 0 0 6px; font-size: .95em; }
-      .cl-removed h3 { color: #c62828; }
-      .cl-added h3 { color: #2e7d32; }
-      .cl-block ul { margin: 0; padding-left: 18px; font-size: .9em; }
-      .cl-block li { margin-bottom: 6px; }
-      .cl-section { color: #888; font-size: .82em; }
-      .cl-detail { color: #555; font-size: .82em; margin-top: 2px; line-height: 1.4; }
-      .cl-note { font-size: .8em; color: #888; margin: 8px 0 0; }
-      section.universe { padding: 20px 24px; background: #fff8e1; border-top: 1px solid #ffe082; }
-      section.universe h2 { margin: 0 0 6px; font-size: 1.1em; color: #5d4037; }
-      .universe-intro { font-size: .85em; color: #555; margin: 0 0 14px; padding: 8px 12px; background: #fff; border-left: 3px solid #ef6c00; border-radius: 4px; line-height: 1.5; }
-      .universe-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 10px; }
-      .universe-card { background: #fff; border: 1px solid #ffe082; border-radius: 8px; padding: 10px 14px; display: flex; gap: 12px; transition: background .2s, border-color .2s; }
-      .universe-card.trend-buy { background: #e8f5e9; border-color: #66bb6a; border-width: 2px; }
-      .universe-card.trend-sell { background: #ffebee; border-color: #ef5350; border-width: 2px; }
-      .trend-label { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .75em; font-weight: 700; margin-left: 8px; vertical-align: middle; letter-spacing: .5px; }
-      .trend-label-buy { background: #2e7d32; color: #fff; }
-      .trend-label-sell { background: #c62828; color: #fff; }
-      .quality-score { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .8em; font-weight: 700; margin-left: 8px; vertical-align: middle; font-variant-numeric: tabular-nums; }
-      .quality-score .qs-max { font-size: .75em; opacity: .7; font-weight: 500; }
-      .quality-score .qs-grade { margin-left: 4px; font-size: .85em; }
-      .quality-score.score-s { background: #1565c0; color: #fff; }
-      .quality-score.score-a { background: #2e7d32; color: #fff; }
-      .quality-score.score-b { background: #f9a825; color: #fff; }
-      .quality-score.score-c { background: #ef6c00; color: #fff; }
-      .quality-score.score-d { background: #c62828; color: #fff; }
-      .score-detail { margin-top: 6px; font-size: .85em; }
-      .score-detail summary { cursor: pointer; color: #666; font-size: .9em; }
-      .qs-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; margin-top: 6px; }
-      .qs-rows > div { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px dashed #eee; }
-      .qs-rows > div > span { color: #666; }
-      .qs-rows > div > b { font-variant-numeric: tabular-nums; }
-      .qs-rev { grid-column: 1 / -1; padding-top: 4px !important; border-bottom: none !important; }
-      .u-rank { font-size: 1.4em; font-weight: 700; color: #ef6c00; min-width: 36px; text-align: center; padding-top: 2px; }
-      .u-body { flex: 1; }
-      .universe-card h3 { margin: 0 0 6px; font-size: 1em; }
-      .u-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; padding: 2px 0; }
-      .u-score { margin-left: auto; padding: 2px 8px; background: #ef6c00; color: #fff; border-radius: 12px; font-size: .82em; font-weight: 600; font-variant-numeric: tabular-nums; }
-      .u-reasons { margin: 6px 0 0; padding-left: 18px; font-size: .82em; line-height: 1.55; }
-      .u-bull { color: #c62828; }
-      .u-bear { color: #2e7d32; }
-      @media (max-width: 600px) {
-        .universe-card { padding: 8px 10px; gap: 8px; }
-        .u-rank { font-size: 1.1em; min-width: 28px; }
-      }
-      section.news { padding: 20px 24px; background: #f5f5f5; border-top: 1px solid #ddd; }
-      section.news h2 { margin: 0 0 6px; font-size: 1.05em; }
-      .news-note { font-size: .82em; color: #888; margin: 0 0 14px; }
-      .news-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
-      .news-block { background: #fff; border-radius: 6px; padding: 12px 14px; border: 1px solid #e6e6e6; }
-      .news-block h3 { margin: 0 0 8px; font-size: .95em; color: #555; }
-      .news-block ol { margin: 0; padding-left: 22px; font-size: .9em; line-height: 1.6; }
-      .news-block li { margin-bottom: 6px; }
-      .news-block a { color: #1976d2; text-decoration: none; }
-      .news-block a:hover { text-decoration: underline; }
-      .news-date { color: #999; font-size: .85em; margin-left: 6px; }
-      .top-btn { position: fixed; right: 20px; bottom: 20px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #1976d2; color: #fff; font-size: 1.4em; line-height: 1; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity .2s, transform .2s; z-index: 1000; }
-      .top-btn.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
-      .top-btn:hover { background: #1565c0; }
-      .top-btn:active { background: #0d47a1; }
-      @media (max-width: 600px) {
-        .top-btn { right: 14px; bottom: 14px; width: 40px; height: 40px; font-size: 1.2em; }
-      }
-      .dom-label-bull { color: #c62828; }
-      .dom-label-bear { color: #2e7d32; }
-      .dom-label-caut { color: #b35900; }
-      .dom-label-mix { color: #666; }
-      .patterns ul { margin: 0; padding-left: 0; list-style: none; font-size: .85em; }
-      .patterns .pattern { padding: 6px 8px; margin-bottom: 4px; border-radius: 4px; background: #fafafa; }
-      .patterns .pattern.full { background: #fff3e0; border-left: 3px solid #ef6c00; }
-      .patterns .pattern.partial { background: #fafafa; border-left: 3px solid #ccc; }
-      .patterns .pattern.empty { background: #fafafa; border-left: 3px solid transparent; color: #999; }
-      .pattern-head .ratio { color: #888; font-weight: normal; margin-left: 4px; }
-      .pattern-desc { color: #777; font-size: .92em; margin-top: 2px; }
-      .insight-note { margin: 10px 0 0; padding: 8px 10px; font-size: .82em; color: #666; background: #f7f9fc; border-radius: 4px; line-height: 1.5; }
-      .header-summary { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
-      .hs-chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 14px; font-size: .82em; font-weight: 600; border: 1px solid #e0e0e0; background: #f7f9fc; color: #444; }
-      .hs-chip b { font-variant-numeric: tabular-nums; font-weight: 700; }
-      .hs-chip.fg-zone-extreme-fear { background: #e3f2fd; color: #0d47a1; border-color: #90caf9; }
-      .hs-chip.fg-zone-fear { background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; }
-      .hs-chip.fg-zone-neutral { background: #f5f5f5; color: #555; }
-      .hs-chip.fg-zone-greed { background: #fff3e0; color: #e65100; border-color: #ffcc80; }
-      .hs-chip.fg-zone-extreme-greed { background: #ffebee; color: #b71c1c; border-color: #ef9a9a; }
-      .hs-chip.hs-buy { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
-      .hs-chip.hs-sell { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
-      .hs-chip.hs-neutral { background: #eceff1; color: #455a64; }
-      .hs-chip.hs-top { background: #fff8e1; color: #bf360c; border-color: #f9a825; }
-      .hs-score { color: #c62828; font-weight: 700; font-size: .9em; margin-left: 2px; }
-      section.fear-greed-widget { padding: 20px 24px; background: #fff; border-top: 1px solid #e6e6e6; border-bottom: 1px solid #e6e6e6; }
-      .fg-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
-      .fg-header h2 { margin: 0; font-size: 1.1em; color: #333; }
-      .fg-source { font-size: .7em; color: #888; font-weight: normal; margin-left: 4px; }
-      .fg-time { color: #888; font-size: .82em; }
-      .fg-body { display: grid; grid-template-columns: 3fr 1fr; gap: 20px; align-items: center; }
-      .fg-gauge { position: relative; }
-      .fg-bar { position: relative; display: flex; height: 24px; border-radius: 12px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
-      .fg-segment { height: 100%; }
-      .fg-seg-extreme-fear { background: linear-gradient(90deg, #1565c0, #1976d2); }
-      .fg-seg-fear { background: linear-gradient(90deg, #1976d2, #66bb6a); }
-      .fg-seg-neutral { background: #e0e0e0; }
-      .fg-seg-greed { background: linear-gradient(90deg, #f9a825, #ef6c00); }
-      .fg-seg-extreme-greed { background: linear-gradient(90deg, #ef6c00, #c62828); }
-      .fg-needle { position: absolute; top: -4px; width: 4px; height: 32px; background: #212121; border-radius: 2px; transform: translateX(-2px); box-shadow: 0 2px 4px rgba(0,0,0,0.4); transition: left .5s ease; }
-      .fg-needle::before { content: ''; position: absolute; top: -6px; left: -4px; width: 12px; height: 12px; background: #212121; border-radius: 50%; }
-      .fg-scale { display: flex; justify-content: space-between; margin-top: 4px; font-size: .72em; color: #888; font-variant-numeric: tabular-nums; }
-      .fg-scale span:nth-child(1) { color: #1565c0; font-weight: 700; }
-      .fg-scale span:nth-child(2) { color: #1976d2; }
-      .fg-scale span:nth-child(5) { color: #ef6c00; }
-      .fg-scale span:nth-child(6) { color: #c62828; font-weight: 700; }
-      .fg-value-block { text-align: center; padding: 10px; border-radius: 8px; }
-      .fg-value-block.fg-zone-extreme-fear { background: #e3f2fd; color: #0d47a1; }
-      .fg-value-block.fg-zone-fear { background: #e8f5e9; color: #1b5e20; }
-      .fg-value-block.fg-zone-neutral { background: #f5f5f5; color: #555; }
-      .fg-value-block.fg-zone-greed { background: #fff3e0; color: #e65100; }
-      .fg-value-block.fg-zone-extreme-greed { background: #ffebee; color: #b71c1c; }
-      .fg-value { font-size: 2em; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
-      .fg-max { font-size: .5em; opacity: .6; font-weight: 500; }
-      .fg-label { font-size: .9em; font-weight: 700; margin-top: 4px; }
-      .fg-insight { margin: 12px 0 0; padding: 10px 14px; border-radius: 6px; font-size: .9em; line-height: 1.5; border-left: 3px solid; }
-      .fg-insight.fg-zone-extreme-fear { background: #e3f2fd; border-color: #1565c0; color: #0d47a1; }
-      .fg-insight.fg-zone-fear { background: #e8f5e9; border-color: #2e7d32; color: #1b5e20; }
-      .fg-insight.fg-zone-neutral { background: #f5f5f5; border-color: #757575; color: #555; }
-      .fg-insight.fg-zone-greed { background: #fff3e0; border-color: #ef6c00; color: #e65100; }
-      .fg-insight.fg-zone-extreme-greed { background: #ffebee; border-color: #c62828; color: #b71c1c; }
-      .fg-note { color: #888; font-size: .85em; font-weight: normal; margin-left: 4px; }
-      @media (max-width: 600px) {
-        .fg-body { grid-template-columns: 1fr; gap: 14px; }
-        .fg-value { font-size: 1.6em; }
-      }
-      section.portfolio-plan { padding: 24px; background: linear-gradient(180deg, #fff3e0 0%, #fffaf3 100%); border-top: 3px solid #ef6c00; border-bottom: 3px solid #ef6c00; }
-      section.portfolio-plan h2 { margin: 0 0 8px; color: #bf360c; font-size: 1.25em; }
-      .plan-disclaimer { background: #fff; border-left: 4px solid #d32f2f; padding: 10px 14px; margin: 0 0 14px; font-size: .88em; color: #555; line-height: 1.5; border-radius: 4px; }
-      .plan-summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-      .plan-meta { background: #fff; padding: 8px 14px; border-radius: 8px; border: 1px solid #ffcc80; min-width: 110px; }
-      .plan-meta span { display: block; font-size: .78em; color: #888; }
-      .plan-meta b { font-size: 1em; font-variant-numeric: tabular-nums; color: #bf360c; }
-      .plan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
-      .plan-empty { grid-column: 1/-1; background: #fff; border-radius: 8px; padding: 24px; text-align: center; color: #888; font-size: .95em; }
-      .plan-slot { background: #fff; border: 2px solid #ffcc80; border-radius: 10px; padding: 14px 16px; display: flex; gap: 12px; }
-      .plan-slot.action-strong-buy { border-color: #c62828; background: linear-gradient(180deg, #ffebee 0%, #fff 30%); }
-      .plan-slot.action-buy { border-color: #f57c00; }
-      .plan-rank { font-size: 1.7em; font-weight: 700; color: #bf360c; min-width: 40px; text-align: center; }
-      .plan-body { flex: 1; min-width: 0; }
-      .plan-body h3 { margin: 0 0 8px; font-size: 1.05em; display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
-      .action-chip { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .72em; font-weight: 700; vertical-align: middle; letter-spacing: .5px; }
-      .action-chip.action-strong-buy { background: #c62828; color: #fff; }
-      .action-chip.action-buy { background: #ef6c00; color: #fff; }
-      .action-chip.action-hold { background: #757575; color: #fff; }
-      .action-chip.action-sell { background: #558b2f; color: #fff; }
-      .action-chip.action-strong-sell { background: #1b5e20; color: #fff; }
-      .signal-score { font-size: .9em; color: #bf360c; font-weight: 700; font-variant-numeric: tabular-nums; margin-left: auto; }
-      .plan-trade { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin: 8px 0; padding: 8px; background: #fafafa; border-radius: 6px; }
-      .plan-trade > div { text-align: center; }
-      .plan-trade > div > span { display: block; font-size: .72em; color: #888; }
-      .plan-trade > div > b { font-size: .92em; font-variant-numeric: tabular-nums; color: #333; }
-      .plan-ref { font-size: .78em; color: #666; padding: 4px 8px; background: #f7f9fc; border-radius: 4px; margin: 4px 0; }
-      .plan-factors { margin-top: 6px; }
-      .plan-factors summary { cursor: pointer; color: #666; font-size: .85em; }
-      .plan-factors ul { margin: 6px 0 0; padding-left: 0; list-style: none; font-size: .82em; }
-      .plan-factors li { padding: 4px 8px; margin: 2px 0; border-radius: 4px; display: flex; align-items: baseline; gap: 6px; }
-      .plan-factors li.factor-positive { background: #ffebee; }
-      .plan-factors li.factor-negative { background: #e8f5e9; }
-      .plan-factors li.factor-neutral { background: #f5f5f5; }
-      .fc-cat { display: inline-block; min-width: 36px; font-weight: 700; font-size: .82em; color: #555; }
-      .fc-w { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; color: #bf360c; }
-      .factor-negative .fc-w { color: #2e7d32; }
-      .sell-warn-block { margin-top: 14px; padding: 12px 14px; background: #e8f5e9; border-left: 4px solid #2e7d32; border-radius: 6px; }
-      .sell-warn-block h3 { margin: 0 0 8px; font-size: .98em; color: #1b5e20; }
-      .sell-warn-list { display: flex; flex-direction: column; gap: 6px; }
-      .sell-warn-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: #fff; border-radius: 4px; flex-wrap: wrap; font-size: .88em; }
-      .sell-warn-item .toss-link { overflow-wrap: break-word; word-break: keep-all; }
-      .warn-chip { background: #2e7d32; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: .72em; font-weight: 700; flex-shrink: 0; }
-      .warn-price { font-variant-numeric: tabular-nums; color: #555; flex-shrink: 0; }
-      .warn-reason { color: #666; font-size: .82em; flex: 1; min-width: 0; overflow-wrap: break-word; word-break: keep-all; line-height: 1.45; }
-      .plan-method { font-size: .8em; color: #888; margin: 12px 0 0; padding: 8px 10px; background: rgba(255,255,255,0.6); border-radius: 4px; line-height: 1.5; }
-      @media (max-width: 600px) {
-        section.portfolio-plan { padding: 18px 14px; }
-        .plan-grid { grid-template-columns: 1fr; gap: 8px; }
-        .plan-slot { padding: 12px 12px; gap: 8px; }
-        .plan-rank { font-size: 1.4em; min-width: 32px; }
-        .plan-trade { grid-template-columns: 1fr 1fr; }
-        .plan-summary { gap: 6px; }
-        .plan-meta { flex: 1; min-width: 110px; padding: 6px 10px; }
-        .plan-meta b { font-size: .92em; }
-        .sell-warn-block { padding: 10px 12px; margin-top: 12px; }
-        .sell-warn-list { gap: 8px; }
-        .sell-warn-item {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 4px;
-          padding: 8px 10px;
-          font-size: .85em;
-        }
-        .sell-warn-item .toss-link { width: 100%; line-height: 1.4; }
-        .warn-reason { width: 100%; font-size: .78em; }
-      }
-      section.universe.value-screener { background: #f0f7ff; border-top: 1px solid #cfd8dc; border-bottom: 1px solid #cfd8dc; }
-      section.value-screener h2 { color: #0d47a1; }
-      .value-screener .universe-card.value-card { border-color: #90caf9; }
-      .value-screener .universe-card.value-card.gold { background: #fff8e1; border-color: #f9a825; border-width: 2px; }
-      .value-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .75em; font-weight: 700; margin-left: 8px; vertical-align: middle; letter-spacing: .5px; }
-      .badge-premium { background: #1565c0; color: #fff; }
-      .badge-candidate { background: #f9a825; color: #fff; }
-      .sector-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .75em; background: #eceff1; color: #455a64; margin-left: 6px; vertical-align: middle; }
-      .sector-tag.lead { background: #d32f2f; color: #fff; }
-      .u-pos { color: #888; font-size: .82em; margin-left: 8px; font-variant-numeric: tabular-nums; }
-      .value-gauge { display: flex; align-items: center; gap: 10px; margin: 8px 0 6px; }
-      .value-bar { flex: 1; height: 10px; background: #eceff1; border-radius: 5px; overflow: hidden; }
-      .value-bar-fill { height: 100%; background: linear-gradient(90deg, #66bb6a 0%, #1976d2 70%, #0d47a1 100%); transition: width .3s; }
-      .value-total { font-weight: 700; font-size: 1.05em; color: #0d47a1; font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
-      .value-max { font-size: .75em; color: #888; font-weight: 500; }
-      .value-metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin: 6px 0; }
-      .vm-cell { padding: 6px 8px; border-radius: 4px; background: #f7f9fc; text-align: center; }
-      .vm-cell .vm-k { font-size: .78em; color: #888; margin-bottom: 2px; }
-      .vm-cell .vm-v { font-size: 1em; font-weight: 700; font-variant-numeric: tabular-nums; }
-      .vm-cell.vm-good { background: #e8f5e9; color: #1b5e20; }
-      .vm-cell.vm-good .vm-v { color: #1b5e20; }
-      .vm-cell.vm-ok { background: #fff8e1; color: #6d4c00; }
-      .vm-cell.vm-ok .vm-v { color: #6d4c00; }
-      .vm-cell.vm-bad { background: #ffebee; color: #b71c1c; }
-      .vm-cell.vm-bad .vm-v { color: #b71c1c; }
-      .vm-cell.vm-na .vm-v { color: #aaa; }
-      .value-empty { padding: 20px 16px; text-align: center; color: #888; background: #fff; border-radius: 6px; font-size: .9em; }
-      section.value-candidates { padding: 20px 24px; background: #f0f7ff; border-top: 1px solid #cfd8dc; border-bottom: 1px solid #cfd8dc; }
-      .value-intro { font-size: .9em; color: #555; line-height: 1.55; margin: 0 0 14px; padding: 10px 12px; background: #fff; border-left: 3px solid #1976d2; border-radius: 4px; }
-      .value-intro code { background: #eee; padding: 1px 5px; border-radius: 3px; font-size: .9em; }
-      footer.rules { padding: 20px 24px; background: #f7f9fc; border-top: 1px solid #e6e6e6; }
-      footer.rules h2 { font-size: 1em; margin: 0 0 8px; color: #555; }
-      footer.rules ul { margin: 0; padding-left: 20px; font-size: .9em; color: #444; line-height: 1.6; }
-      footer.rules li { margin-bottom: 4px; }
-      .rules-disclaimer { margin-top: 10px; font-size: .85em; color: #888; line-height: 1.5; }
-      .bar { position: relative; height: 8px; background: #f0f0f0; border-radius: 4px; margin: 8px 0 4px; }
-      .bar-q { position: absolute; top: 0; width: 1px; height: 8px; background: #ccc; left: 25%; }
-      .bar-fill { position: absolute; top: -3px; width: 3px; height: 14px; background: #1976d2; border-radius: 1px; transform: translateX(-1.5px); }
-      .bar-labels { display: flex; justify-content: space-between; color: #999; font-size: .75em; }
-      @media (max-width: 600px) {
-        header { padding: 16px; }
-        section { padding: 14px 16px; }
-        h1 { font-size: 1.3em; }
-        h2 { font-size: 1.05em; }
-        .cards { grid-template-columns: 1fr; gap: 10px; }
-        .card { padding: 12px 14px; font-size: .9em; }
-        .card h3 { font-size: 1em; }
-        table.weather-table th, table.weather-table td { padding: 6px 4px; font-size: .78em; }
-        .ref-table td { padding: 2px 3px; font-size: .8em; }
-        .label { font-size: .82em; }
-        .row { padding: 2px 0; }
-        .disclaimer { font-size: .82em; padding: 8px 10px; }
-      }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐢 터틀 KOSPI 대시보드</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', Roboto, sans-serif;
+    margin: 0; padding: 0;
+    background: #0f172a;
+    color: #e2e8f0;
+    line-height: 1.5;
+  }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  header.main {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
+  }
+  header.main h1 { margin: 0; font-size: 24px; }
+  header.main .sub { color: #94a3b8; font-size: 13px; }
+  .summary {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+    padding: 16px; background: #1e293b; border-radius: 8px;
+  }
+  .summary .item { text-align: center; }
+  .summary .item .label { color: #94a3b8; font-size: 12px; }
+  .summary .item .value { font-size: 20px; font-weight: 600; margin-top: 4px; }
+  .grid {
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  }
+  .card {
+    background: #1e293b; border-radius: 10px; padding: 16px;
+    border: 1px solid #334155;
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
+  .card-head h2 { margin: 0; font-size: 18px; }
+  .card-head .code { color: #64748b; font-size: 12px; font-weight: 400; margin-left: 6px; }
+  .card-head .note { color: #94a3b8; font-size: 12px; margin-top: 2px; }
+  .card-head .price { text-align: right; }
+  .card-head .last { font-size: 20px; font-weight: 600; }
+  .card-head .change { font-size: 13px; margin-top: 2px; }
+  .signal { padding: 12px; border-radius: 6px; margin: 12px 0; }
+  .signal-head { display: flex; gap: 8px; margin-bottom: 6px; }
+  .action-badge, .protocol-badge {
+    color: white; font-size: 11px; font-weight: 600;
+    padding: 3px 8px; border-radius: 4px;
+  }
+  .signal-reason { font-size: 13px; color: #cbd5e1; }
+  .spark { margin: 8px 0 12px; opacity: 0.7; }
+  .section { margin-top: 12px; }
+  .section-title {
+    font-size: 11px; color: #94a3b8; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 6px;
+  }
+  .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 13px; }
+  .kv > div { display: flex; justify-content: space-between; }
+  .kv .k { color: #94a3b8; }
+  .kv .v { color: #e2e8f0; }
+  .alert { color: #dc2626; font-weight: 600; margin-left: 4px; }
+  .alert.ok { color: #16a34a; }
+  ul.protocol { list-style: none; padding: 0; margin: 0; font-size: 12px; }
+  ul.protocol li { padding: 2px 0; }
+  ul.protocol .pass { color: #4ade80; }
+  ul.protocol .fail { color: #f87171; }
+  .notes { font-size: 12px; color: #fbbf24; margin-top: 6px; }
+  .errors {
+    background: #7f1d1d; color: #fee2e2;
+    padding: 12px; border-radius: 6px; margin: 16px 0;
+  }
+  .errors h3 { margin: 0 0 6px; font-size: 14px; }
+  .errors ul { margin: 0; padding-left: 18px; font-size: 13px; }
+  footer {
+    margin-top: 32px; padding-top: 16px; border-top: 1px solid #334155;
+    color: #64748b; font-size: 12px; text-align: center;
+  }
+  footer a { color: #94a3b8; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>오늘의 대시보드 <span class="live-dot" title="장중 5분 자동 갱신">●</span></h1>
-    <div class="meta">2026-05-15 (금요일) · 생성 2026-05-15T07:04:32.375Z · <span class="refresh-note">5분마다 자동 새로고침</span></div>
-    <div class="kospi-bar down">
-      <span class="kospi-label">📈 코스피</span>
-      <span class="kospi-value">7,493.18</span>
-      <span class="kospi-change">-6.12%</span>
+<div class="container">
+  <header class="main">
+    <div>
+      <h1>🐢 터틀 KOSPI 대시보드</h1>
+      <div class="sub">리처드 대니스 원칙 · 1유닛 = (총자산 × 1%) ÷ ATR</div>
     </div>
-    <div class="market-structure ms-concentrated">
-      <div class="ms-row">
-        <span class="ms-label">📊 시장 폭(ADR)</span>
-        <span class="ms-adr">23.3%</span>
-        <span class="ms-breadth">🔴 극단적 쏠림 (대다수 하락)</span>
-      </div>
-      <div class="ms-counts">
-        <span class="ms-up">↑ 상승 165</span>
-        <span class="ms-flat">→ 보합 31</span>
-        <span class="ms-down">↓ 하락 707</span>
-        <span class="ms-edge">상한 1 / 하한 1</span>
-      </div>
-      <p class="ms-insight">극단적 쏠림 — 코스피 지수 ≠ 보유 수익률. 신규 매수 보류 권장. 순환매 발생 시 소외 업종 진입 기회. <b>보유 종목 손실 가능성 90%</b></p>
-    </div>
-    <div class="market-events">
-      <div class="ev-title">⚠️ 시장 이벤트 캘린더 — 종가매매·단타 영향</div>
-      <div class="ev-list"><div class="ev-chip ev-sev-high">
-        <span class="ev-tag">D-27</span>
-        <span class="ev-label">⚡ 쿼드러플 위칭 (선물·옵션 동시만기)</span>
-        <span class="ev-date">2026-06-11</span>
-        <span class="ev-impact">선물·옵션 동시 만기 → 프로그램 매매·차익 청산 대량. 거래량 폭증·변동성 폭증. 추격매수 위험 ↑↑.</span>
-      </div></div>
-    </div>
-    <p class="disclaimer">⚠️ 본 페이지는 객관적 정량 지표를 표시하는 정보 제공 화면이며, 매수/매도 권유 또는 투자 자문이 아닙니다. 모든 투자 판단과 결과 책임은 사용자에게 있습니다.</p>
+    <div class="sub">생성: 2026. 05. 18. 오전 09:57:55 KST</div>
   </header>
-  <section class="holding-strategies">
-    <h2>💼 보유 종목 대응 전략</h2>
-    <p class="hs-summary">총 평가 2,709,400원 · 손익 <b class="pnl-up">+493,900원 (+22.29%)</b></p>
-    <p class="hs-disclaimer">⚠️ 본 액션은 룰 기반 정보 제공이며 매매 권유가 아닙니다. 매수가·손절가·목표가를 단정하지 않습니다.</p>
-    <div class="hs-list"><div class="hs-card hs-hold">
-        <div class="hs-head">
-          <div class="hs-name">한화시스템 <span class="hs-code">272210</span></div>
-          <div class="hs-action">🟡 <b>홀딩</b> <span class="hs-conf">신뢰도 30%</span></div>
-        </div>
-        <div class="hs-meta">
-          <span class="hs-price">104,300원</span>
-          <span class="pnl-up">+52.26%</span>
-          <span class="hs-pos">52주 44%</span>
-        </div>
-        <ul class="hs-reasons"><li><span class="hs-icon">➕</span> 5일 누적 외인+기관 동반 매수 <b class="pnl-up">+20</b></li><li><span class="hs-icon">➖</span> 오늘 외인+기관 동반 순매도 — 평균회귀 가능성 <b class="pnl-down">-12</b></li><li><span class="hs-icon">➖</span> 20일 누적 외인+기관 동반 매도 (중기) — 평균회귀 가능성 <b class="pnl-down">-6</b></li><li><span class="hs-icon">🏆</span> 수익 +52.3% — 부분 차익 실현 검토 <b class="pnl-down">-10</b></li><li><span class="hs-icon">📊</span> 시장 쏠림 ADR 23% — 추가 매수 신중 <b class="pnl-down">-10</b></li></ul>
-      </div><div class="hs-card hs-hold">
-        <div class="hs-head">
-          <div class="hs-name">이마트 <span class="hs-code">139480</span></div>
-          <div class="hs-action">🟡 <b>홀딩</b> <span class="hs-conf">신뢰도 20%</span></div>
-        </div>
-        <div class="hs-meta">
-          <span class="hs-price">102,500원</span>
-          <span class="pnl-down">-2.38%</span>
-          <span class="hs-pos">52주 49%</span>
-        </div>
-        <ul class="hs-reasons"><li><span class="hs-icon">➕</span> 5일 누적 외인+기관 동반 매수 <b class="pnl-up">+20</b></li><li><span class="hs-icon">➕</span> 20일 누적 외인+기관 동반 매수 (중기) <b class="pnl-up">+15</b></li><li><span class="hs-icon">➖</span> 🔴 온라인 경쟁 취약 — 쿠팡·알리 경쟁 심화로 오프라인 유통 구조적 매출 감소 가능성 <b class="pnl-down">-15</b></li><li><span class="hs-icon">⚠️</span> 🔴 구조 리스크 HIGH — 쿠팡·알리 경쟁 심화로 오프라인 유통 구조적 매출 감소 가능성 <b class="pnl-down">-5</b></li><li><span class="hs-icon">📊</span> 시장 쏠림 ADR 23% — 추가 매수 신중 <b class="pnl-down">-10</b></li></ul>
-      </div><div class="hs-card hs-hold">
-        <div class="hs-head">
-          <div class="hs-name">대한항공 <span class="hs-code">003490</span></div>
-          <div class="hs-action">🟡 <b>홀딩</b> <span class="hs-conf">신뢰도 46%</span></div>
-        </div>
-        <div class="hs-meta">
-          <span class="hs-price">26,050원</span>
-          <span class="pnl-down">-5.27%</span>
-          <span class="hs-pos">52주 58%</span>
-        </div>
-        <ul class="hs-reasons"><li><span class="hs-icon">➕</span> 오늘 외인+기관 동반 순매수 <b class="pnl-up">+25</b></li><li><span class="hs-icon">➕</span> 품질 B 등급 (52/100) <b class="pnl-up">+5</b></li><li><span class="hs-icon">➕</span> 정배열 (5일&gt;20일&gt;60일 이평선) <b class="pnl-up">+5</b></li><li><span class="hs-icon">📊</span> 시장 쏠림 ADR 23% — 추가 매수 신중 <b class="pnl-down">-10</b></li></ul>
-      </div><div class="hs-card hs-hold">
-        <div class="hs-head">
-          <div class="hs-name">SK텔레콤 <span class="hs-code">017670</span></div>
-          <div class="hs-action">🟡 <b>홀딩</b> <span class="hs-conf">신뢰도 14%</span></div>
-        </div>
-        <div class="hs-meta">
-          <span class="hs-price">101,300원</span>
-          <span class="pnl-down">-0.69%</span>
-          <span class="hs-pos">52주 88%</span>
-        </div>
-        <ul class="hs-reasons"><li><span class="hs-icon">➕</span> 오늘 외인+기관 동반 순매수 <b class="pnl-up">+25</b></li><li><span class="hs-icon">➖</span> 품질 D 등급 (34/100) — 펀더멘털 취약 <b class="pnl-down">-10</b></li><li><span class="hs-icon">➖</span> 52주 상단 (88%) <b class="pnl-down">-10</b></li><li><span class="hs-icon">📈</span> 52주 고점권 88% — 추가 매수 신중 <b class="pnl-down">-5</b></li><li><span class="hs-icon">📊</span> 시장 쏠림 ADR 23% — 추가 매수 신중 <b class="pnl-down">-10</b></li></ul>
-      </div><div class="hs-card hs-hold">
-        <div class="hs-head">
-          <div class="hs-name">LG전자 <span class="hs-code">066570</span></div>
-          <div class="hs-action">🟡 <b>홀딩</b> <span class="hs-conf">신뢰도 44%</span></div>
-        </div>
-        <div class="hs-meta">
-          <span class="hs-price">240,500원</span>
-          <span class="pnl-up">+173.30%</span>
-          <span class="hs-pos">52주 87%</span>
-        </div>
-        <ul class="hs-reasons"><li><span class="hs-icon">➕</span> 20일 누적 외인+기관 동반 매수 (중기) <b class="pnl-up">+15</b></li><li><span class="hs-icon">➖</span> 오늘 외인+기관 동반 순매도 — 평균회귀 가능성 <b class="pnl-down">-12</b></li><li><span class="hs-icon">➖</span> 52주 상단 (87%) <b class="pnl-down">-10</b></li><li><span class="hs-icon">🏆</span> 수익 +173.3% — 부분 차익 실현 검토 <b class="pnl-down">-10</b></li><li><span class="hs-icon">📈</span> 52주 고점권 87% — 추가 매수 신중 <b class="pnl-down">-5</b></li></ul>
-      </div><div class="hs-card hs-buy">
-        <div class="hs-head">
-          <div class="hs-name">호텔신라 <span class="hs-code">008770</span></div>
-          <div class="hs-action">🟢 <b>추가 매수</b> <span class="hs-conf">신뢰도 86%</span></div>
-        </div>
-        <div class="hs-meta">
-          <span class="hs-price">62,500원</span>
-          <span class="pnl-down">-8.09%</span>
-          <span class="hs-pos">52주 75%</span>
-        </div>
-        <ul class="hs-reasons"><li><span class="hs-icon">➕</span> 오늘 외인+기관 동반 순매수 <b class="pnl-up">+25</b></li><li><span class="hs-icon">➕</span> 5일 누적 외인+기관 동반 매수 <b class="pnl-up">+20</b></li><li><span class="hs-icon">➕</span> 20일 누적 외인+기관 동반 매수 (중기) <b class="pnl-up">+15</b></li><li><span class="hs-icon">📊</span> 시장 쏠림 ADR 23% — 추가 매수 신중 <b class="pnl-down">-10</b></li></ul>
-      </div><div class="hs-card hs-hold">
-        <div class="hs-head">
-          <div class="hs-name">삼성전자 <span class="hs-code">005930</span></div>
-          <div class="hs-action">🟡 <b>홀딩</b> <span class="hs-conf">신뢰도 14%</span></div>
-        </div>
-        <div class="hs-meta">
-          <span class="hs-price">270,500원</span>
-          <span class="pnl-down">-3.39%</span>
-          <span class="hs-pos">52주 88%</span>
-        </div>
-        <ul class="hs-reasons"><li><span class="hs-icon">➖</span> 오늘 외인+기관 동반 순매도 — 평균회귀 가능성 <b class="pnl-down">-12</b></li><li><span class="hs-icon">➕</span> 품질 A 등급 (67/100) <b class="pnl-up">+10</b></li><li><span class="hs-icon">➖</span> 52주 상단 (88%) <b class="pnl-down">-10</b></li><li><span class="hs-icon">📈</span> 52주 고점권 88% — 추가 매수 신중 <b class="pnl-down">-5</b></li><li><span class="hs-icon">📊</span> 시장 쏠림 ADR 23% — 추가 매수 신중 <b class="pnl-down">-10</b></li></ul>
-      </div></div>
-  </section>
-  <section class="eod-picks">
-    <h2>🔥 종가 매수 강력 추천 (KOSPI)</h2>
-    <p class="intro">돌팬티 종가매매 룰 — 거래대금·수급·거래량·양봉·52주 5팩터 점수. <b>🔥 70+ 강력 / ⚡ 50~69 추천</b>. ⚠️ 매수가·손절가 단정 없음.</p>
-    <div class="eod-list"><div class="eod-card eod-buy">
-        <div class="eod-head">
-          <span class="eod-ord">#1</span>
-          <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=001740" target="_blank" rel="noopener">SK네트웍스</a> <span class="eod-code">001740</span></span>
-          <span class="eod-rec">⚡ 추천 <b>67</b>점</span>
-        </div>
-        <div class="eod-stats">
-          <span>8,720원</span>
-          <span class="up">+10.38%</span>
-          <span>거래량 20.5×</span>
-          <span>52주 80%</span>
-          <span class="eod-flow">외인 <span class="down">↓46만</span> / 기관 <span class="up">↑217만</span></span>
-        </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+12</b> <span class="f-det">거래량 순위 7위 · 거래대금 6억</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 기관 순매수</span></li><li><span class="f-cat">거래량</span> <b>+20</b> <span class="f-det">거래량 평소 20.5× — 세력 매집 가능성</span></li><li><span class="f-cat">캔들</span> <b>+15</b> <span class="f-det">강한 양봉 +10.38% — 모멘텀 강</span></li><li><span class="f-cat">52주</span> <b>+10</b> <span class="f-det">52주 80% — 강세 추세 (신고가 근접)</span></li></ul>
-      </div><div class="eod-card eod-buy">
-        <div class="eod-head">
-          <span class="eod-ord">#2</span>
-          <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=452260" target="_blank" rel="noopener">한화갤러리아</a> <span class="eod-code">452260</span></span>
-          <span class="eod-rec">⚡ 추천 <b>55</b>점</span>
-        </div>
-        <div class="eod-stats">
-          <span>3,350원</span>
-          <span class="up">+0.30%</span>
-          <span>거래량 1.9×</span>
-          <span>52주 75%</span>
-          <span class="eod-flow">외인 <span class="up">↑69만</span> / 기관 <span class="up">↑5만</span></span>
-        </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 14위 · 거래대금 1억</span></li><li><span class="f-cat">수급</span> <b>+25</b> <span class="f-det">오늘 외인+기관 동반 순매수</span></li><li><span class="f-cat">거래량</span> <b>+12</b> <span class="f-det">거래량 평소 1.9× — 관심 증가</span></li><li><span class="f-cat">캔들</span> <b>+5</b> <span class="f-det">약한 양봉 +0.30%</span></li><li><span class="f-cat">52주</span> <b>+10</b> <span class="f-det">52주 75% — 강세 추세 (신고가 근접)</span></li></ul>
-      </div><div class="eod-card eod-buy">
-        <div class="eod-head">
-          <span class="eod-ord">#3</span>
-          <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=003280" target="_blank" rel="noopener">흥아해운</a> <span class="eod-code">003280</span></span>
-          <span class="eod-rec">⚡ 추천 <b>53</b>점</span>
-        </div>
-        <div class="eod-stats">
-          <span>2,740원</span>
-          <span class="up">+0.37%</span>
-          <span>거래량 2.7×</span>
-          <span>52주 37%</span>
-          <span class="eod-flow">외인 <span class="down">↓12만</span> / 기관 <span class="up">↑7만</span></span>
-        </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+18</b> <span class="f-det">거래량 순위 5위 · 거래대금 2억</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 기관 순매수</span></li><li><span class="f-cat">거래량</span> <b>+20</b> <span class="f-det">거래량 평소 2.7× — 세력 매집 가능성</span></li><li><span class="f-cat">캔들</span> <b>+5</b> <span class="f-det">약한 양봉 +0.37%</span></li></ul>
-      </div><div class="eod-card eod-buy">
-        <div class="eod-head">
-          <span class="eod-ord">#4</span>
-          <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=088350" target="_blank" rel="noopener">한화생명</a> <span class="eod-code">088350</span></span>
-          <span class="eod-rec">⚡ 추천 <b>53</b>점</span>
-        </div>
-        <div class="eod-stats">
-          <span>5,390원</span>
-          <span class="down">-1.82%</span>
-          <span>거래량 2.8×</span>
-          <span>52주 57%</span>
-          <span class="eod-flow">외인 <span class="up">↑169만</span> / 기관 <span class="up">↑44만</span></span>
-        </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+3</b> <span class="f-det">거래량 순위 19위 · 거래대금 1억</span></li><li><span class="f-cat">수급</span> <b>+25</b> <span class="f-det">오늘 외인+기관 동반 순매수</span></li><li><span class="f-cat">거래량</span> <b>+20</b> <span class="f-det">거래량 평소 2.8× — 세력 매집 가능성</span></li><li><span class="f-cat">52주</span> <b>+5</b> <span class="f-det">52주 57% — 중상단</span></li></ul>
-      </div><div class="eod-card eod-buy">
-        <div class="eod-head">
-          <span class="eod-ord">#5</span>
-          <span class="eod-name"><a href="https://finance.naver.com/item/main.naver?code=018880" target="_blank" rel="noopener">한온시스템</a> <span class="eod-code">018880</span></span>
-          <span class="eod-rec">⚡ 추천 <b>51</b>점</span>
-        </div>
-        <div class="eod-stats">
-          <span>5,050원</span>
-          <span class="up">+1.00%</span>
-          <span>거래량 1.6×</span>
-          <span>52주 74%</span>
-          <span class="eod-flow">외인 <span class="up">↑464만</span> / 기관 <span class="down">↓272</span></span>
-        </div>
-        <ul class="eod-factors"><li><span class="f-cat">거래대금</span> <b>+9</b> <span class="f-det">거래량 순위 8위 · 거래대금 3억</span></li><li><span class="f-cat">수급</span> <b>+10</b> <span class="f-det">오늘 외인 순매수</span></li><li><span class="f-cat">거래량</span> <b>+12</b> <span class="f-det">거래량 평소 1.6× — 관심 증가</span></li><li><span class="f-cat">캔들</span> <b>+10</b> <span class="f-det">양봉 +1.00%</span></li><li><span class="f-cat">52주</span> <b>+10</b> <span class="f-det">52주 74% — 강세 추세 (신고가 근접)</span></li></ul>
-      </div></div>
-  </section>
-  <button id="topBtn" class="top-btn" aria-label="맨 위로" title="맨 위로">↑</button>
-  <script>
-    // 홈화면 추가/PWA 대응 — 페이지 복귀 시 자동 새로고침
-    // (meta refresh는 백그라운드에선 정지되므로 visibilitychange + pageshow로 보완)
-    (function () {
-      var REFRESH_MIN_MS = 60000; // 마지막 로드 후 60초 지나야 재로드
-      var loadedAt = Date.now();
-      document.addEventListener('visibilitychange', function () {
-        if (document.visibilityState === 'visible' && Date.now() - loadedAt > REFRESH_MIN_MS) {
-          window.location.reload();
-        }
-      });
-      // bfcache 복원 시
-      window.addEventListener('pageshow', function (e) {
-        if (e.persisted) window.location.reload();
-      });
-    })();
 
-    // 토스증권 — 모바일은 supertoss:// deep link로 앱 호출, PC는 웹 페이지
-    window.openTossApp = function (e, webUrl) {
-      var ua = navigator.userAgent || '';
-      if (!/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) return true;
-      e.preventDefault();
-      var deepLink = 'supertoss://securities?url=' + encodeURIComponent(webUrl);
-      window.location.href = deepLink;
-      // 앱 미설치 시 fallback — 1.5초 후 웹 URL로
-      setTimeout(function () {
-        if (!document.hidden) window.location.href = webUrl;
-      }, 1500);
-      return false;
-    };
+  <div class="summary">
+    <div class="item"><div class="label">총 자산</div><div class="value">50,000,000원</div></div>
+    <div class="item"><div class="label">1매매 최대 리스크</div><div class="value">500,000원</div></div>
+    <div class="item"><div class="label">감시 종목</div><div class="value">8종</div></div>
+    <div class="item"><div class="label">매수 신호</div><div class="value" style="color:#16a34a">1</div></div>
+    <div class="item"><div class="label">매도/손절</div><div class="value" style="color:#dc2626">4</div></div>
+    <div class="item"><div class="label">보유 손익</div><div class="value" style="color:#16a34a">+382,100원</div></div>
+  </div>
 
-    // 공통 — 한국 주요 종목 키워드 매핑 (회사명·별칭 → ticker)
-    var KR_KEYWORDS = [
-      { kw: ['삼성전자','samsung electronics','삼전'], sym: '005930.KS' },
-      { kw: ['sk하이닉스','하이닉스','sk hynix'], sym: '000660.KS' },
-      { kw: ['네이버','naver'], sym: '035420.KS' },
-      { kw: ['카카오','kakao'], sym: '035720.KS' },
-      { kw: ['카카오뱅크','카뱅'], sym: '323410.KS' },
-      { kw: ['카카오페이'], sym: '377300.KS' },
-      { kw: ['현대차','현대자동차','hyundai motor'], sym: '005380.KS' },
-      { kw: ['기아','kia'], sym: '000270.KS' },
-      { kw: ['lg에너지솔루션','엘지에너지','엘지엔솔','lg energy','lg엔솔','엔솔'], sym: '373220.KS' },
-      { kw: ['lg화학','엘지화학','lg chem'], sym: '051910.KS' },
-      { kw: ['lg전자','엘지전자','lg electronics'], sym: '066570.KS' },
-      { kw: ['lg유플러스','엘지유플러스','유플러스','u+','lguplus'], sym: '032640.KS' },
-      { kw: ['lg','lg corp','lg지주','엘지'], sym: '003550.KS' },
-      { kw: ['삼성sdi'], sym: '006400.KS' },
-      { kw: ['삼성바이오로직스','삼바','삼성바이오'], sym: '207940.KS' },
-      { kw: ['삼성물산'], sym: '028260.KS' },
-      { kw: ['삼성생명'], sym: '032830.KS' },
-      { kw: ['삼성화재'], sym: '000810.KS' },
-      { kw: ['삼성c&t','삼성씨앤티'], sym: '028260.KS' },
-      { kw: ['셀트리온','celltrion'], sym: '068270.KS' },
-      { kw: ['포스코홀딩스','posco홀딩스','포스코'], sym: '005490.KS' },
-      { kw: ['포스코퓨처엠','퓨처엠'], sym: '003670.KS' },
-      { kw: ['현대모비스','모비스'], sym: '012330.KS' },
-      { kw: ['sk텔레콤','skt','에스케이텔레콤'], sym: '017670.KS' },
-      { kw: ['kt','케이티'], sym: '030200.KS' },
-      { kw: ['kt&g','ktg','케이티앤지'], sym: '033780.KS' },
-      { kw: ['kb금융','kb','kb금융지주','국민은행'], sym: '105560.KS' },
-      { kw: ['하나금융','하나금융지주','하나은행'], sym: '086790.KS' },
-      { kw: ['신한지주','신한금융','신한은행'], sym: '055550.KS' },
-      { kw: ['우리금융','우리금융지주','우리은행'], sym: '316140.KS' },
-      { kw: ['기업은행','ibk'], sym: '024110.KS' },
-      { kw: ['hd현대','현대중공업그룹'], sym: '267250.KS' },
-      { kw: ['hd현대중공업','현대중공업'], sym: '329180.KS' },
-      { kw: ['hd현대일렉트릭','현대일렉트릭','hd일렉'], sym: '267260.KS' },
-      { kw: ['hd현대미포','현대미포'], sym: '010620.KS' },
-      { kw: ['한화에어로스페이스','한화에어로'], sym: '012450.KS' },
-      { kw: ['한화시스템'], sym: '272210.KS' },
-      { kw: ['한국전력','한전','kepco'], sym: '015760.KS' },
-      { kw: ['한미반도체'], sym: '042700.KS' },
-      { kw: ['크래프톤','krafton'], sym: '259960.KS' },
-      { kw: ['엔씨소프트','ncsoft','엔씨'], sym: '036570.KS' },
-      { kw: ['넷마블','netmarble'], sym: '251270.KS' },
-      { kw: ['cj제일제당'], sym: '097950.KS' },
-      { kw: ['cj','씨제이'], sym: '001040.KS' },
-      { kw: ['두산에너빌리티','두산에너','두산중공업'], sym: '034020.KS' },
-      { kw: ['두산','doosan'], sym: '000150.KS' },
-      { kw: ['에코프로비엠','에코프로bm'], sym: '247540.KQ' },
-      { kw: ['에코프로'], sym: '086520.KQ' },
-      { kw: ['알테오젠'], sym: '196170.KQ' },
-      { kw: ['리노공업'], sym: '058470.KQ' },
-      { kw: ['카페24'], sym: '042000.KQ' },
-      { kw: ['컴투스'], sym: '078340.KQ' },
-      { kw: ['펄어비스'], sym: '263750.KQ' },
-      { kw: ['스튜디오드래곤'], sym: '253450.KQ' },
-      { kw: ['하이브','hybe','BTS'], sym: '352820.KS' },
-      { kw: ['에스엠','sm엔터'], sym: '041510.KQ' },
-      { kw: ['jyp엔터','jyp'], sym: '035900.KQ' },
-      { kw: ['와이지엔터','yg'], sym: '122870.KQ' },
-      { kw: ['아모레퍼시픽','아모레'], sym: '090430.KS' },
-      { kw: ['lg생활건강','엘지생건','lg생건'], sym: '051900.KS' },
-      { kw: ['오리온','orion'], sym: '271560.KS' },
-      { kw: ['농심'], sym: '004370.KS' },
-      { kw: ['신세계'], sym: '004170.KS' },
-      { kw: ['이마트','emart'], sym: '139480.KS' },
-      { kw: ['롯데','lotte'], sym: '004990.KS' },
-      { kw: ['현대건설'], sym: '000720.KS' },
-      { kw: ['gs건설','지에스건설'], sym: '006360.KS' },
-      { kw: ['대우건설'], sym: '047040.KS' },
-      { kw: ['gs','지에스'], sym: '078930.KS' },
-      { kw: ['s-oil','에스오일','sk이노베이션'], sym: '010950.KS' },
-      { kw: ['sk이노','sk innovation'], sym: '096770.KS' },
-    ];
+  
 
-    function tradingFindKrSymbol(query) {
-      var q = String(query || '').toLowerCase().replace(/s/g, '');
-      if (!q) return null;
-      for (var i = 0; i < KR_KEYWORDS.length; i++) {
-        var entry = KR_KEYWORDS[i];
-        for (var j = 0; j < entry.kw.length; j++) {
-          var k = String(entry.kw[j]).toLowerCase().replace(/s/g, '');
-          if (k === q || k.includes(q) || q.includes(k)) return entry.sym;
-        }
-      }
-      return null;
-    }
+  <div class="grid">
+    
+  <article class="card">
+    <header class="card-head">
+      <div>
+        <h2>삼성전자 <span class="code">005930</span></h2>
+        <div class="note">주도 대형주 (추세 지속성 높음)</div>
+      </div>
+      <div class="price">
+        <div class="last">276,000원</div>
+        <div class="change" style="color:#16a34a">+5,500원 (+2.03%)</div>
+      </div>
+    </header>
 
-    function tradingResolveQuery(rawInput) {
-      var t = String(rawInput || '').trim();
-      if (!t) return Promise.resolve([]);
-      // 6자리 숫자 → KR ticker
-      if (/^[0-9]{6}$/.test(t)) return Promise.resolve([t + '.KS', t + '.KQ']);
-      // 영문 ticker (.KS, .KQ 포함 가능)
-      if (/^[A-Za-z][A-Za-z0-9.-=^]*$/.test(t)) {
-        // 우선 영문 ticker로 시도, 안 되면 search
-        return Promise.resolve([t.toUpperCase()]);
-      }
-      // 한국 매핑 우선
-      var krSym = tradingFindKrSymbol(t);
-      if (krSym) return Promise.resolve([krSym]);
-      // Yahoo search (영문 회사명용)
-      return fetch('https://query2.finance.yahoo.com/v1/finance/search?q=' + encodeURIComponent(t) + '&quotesCount=5')
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) {
-          if (!j || !j.quotes) return [];
-          var equity = j.quotes.find(function (q) { return q.quoteType === 'EQUITY' && q.symbol; });
-          var first = equity || j.quotes.find(function (q) { return q.symbol; });
-          return first ? [first.symbol] : [];
-        })
-        .catch(function () { return []; });
-    }
+    <div class="signal" style="background:#0ea5e91a;border-left:4px solid #0ea5e9">
+      <div class="signal-head">
+        <span class="action-badge" style="background:#0ea5e9">보유 유지</span>
+        <span class="protocol-badge" style="background:#16a34a">유지</span>
+      </div>
+      <div class="signal-reason">손절선 251,600원 / 10일 저점 220,500원 / 다음 피라미딩 287,100원.</div>
+    </div>
 
-    (function () {
-      var btn = document.getElementById('topBtn');
-      if (btn) {
-        function onScroll() {
-          if (window.scrollY > 600) btn.classList.add('show');
-          else btn.classList.remove('show');
-        }
-        window.addEventListener('scroll', onScroll, { passive: true });
-        btn.addEventListener('click', function () {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-        onScroll();
-      }
-    })();
-  </script>
+    <div class="spark"><svg viewBox="0 0 200 40" width="100%" height="40" preserveAspectRatio="none">
+    <polyline points="0.0,32.9 3.4,32.9 6.8,32.0 10.2,29.8 13.6,28.7 16.9,24.2 20.3,24.7 23.7,31.3 27.1,38.4 30.5,32.4 33.9,33.5 37.3,38.0 40.7,33.6 44.1,32.9 47.5,33.6 50.8,34.9 54.2,33.3 57.6,31.7 61.0,27.2 64.4,29.7 67.8,30.0 71.2,34.1 74.6,33.0 78.0,33.2 81.4,36.0 84.7,36.1 88.1,37.2 91.5,40.0 94.9,33.0 98.3,36.5 101.7,34.1 105.1,32.0 108.5,30.9 111.9,26.6 115.3,28.6 118.6,28.0 122.0,29.5 125.4,27.8 128.8,26.4 132.2,24.4 135.6,24.8 139.0,25.3 142.4,23.9 145.8,24.4 149.2,22.2 152.5,23.8 155.9,22.2 159.3,23.0 162.7,21.7 166.1,23.4 169.5,19.7 172.9,9.3 176.3,7.6 179.7,8.5 183.1,3.3 186.4,5.3 189.8,3.7 193.2,0.0 196.6,7.9 200.0,6.2" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  </svg></div>
+
+    <div class="section">
+      <div class="section-title">지표 (2026-05-18)</div>
+      <div class="kv">
+        <div><span class="k">20일 ATR</span><span class="v">14,200원</span></div>
+        <div><span class="k">20일 고점</span><span class="v">299,500원</span></div>
+        <div><span class="k">10일 저점</span><span class="v">220,500원</span></div>
+        <div><span class="k">MA60</span><span class="v">211,235원</span></div>
+        <div><span class="k">MA120</span><span class="v">170,784원</span></div>
+        <div><span class="k">거래량(20일평균)</span><span class="v">28,020,650</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">1유닛 (리스크 500,000원 기준)</div>
+      <div class="kv">
+        <div><span class="k">수량</span><span class="v">17주</span></div>
+        <div><span class="k">금액</span><span class="v">4,692,000원</span></div>
+        <div><span class="k">20일 고점까지</span><span class="v">+8.51%</span></div>
+        <div><span class="k">10일 저점까지</span><span class="v">+20.11%</span></div>
+      </div>
+    </div>
+
+    
+    <div class="section">
+      <div class="section-title">보유 포지션</div>
+      <div class="kv">
+        <div><span class="k">진입가</span><span class="v">280,000원</span></div>
+        <div><span class="k">수량</span><span class="v">2주 (2026-05-01)</span></div>
+        <div><span class="k">평가액</span><span class="v">552,000원</span></div>
+        <div><span class="k">손익</span><span class="v" style="color:#dc2626">-8,000원 (-1.43%)</span></div>
+        <div><span class="k">손절선</span><span class="v">251,600원 </span></div>
+        <div><span class="k">다음 피라미딩</span><span class="v">287,100원 </span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">프로토콜 검증</div>
+      <ul class="protocol"><li class="pass">✓ MA60 위 (276,000원 &gt; 211,235원)</li><li class="pass">✓ MA120 위 (276,000원 &gt; 170,784원)</li><li class="pass">✓ 정배열 (MA60 &gt; MA120)</li><li class="pass">✓ 최근 20일 고점 갱신 활발</li><li class="pass">✓ 거래량 정상</li></ul>
+      
+    </div>
+  </article>
+
+  <article class="card">
+    <header class="card-head">
+      <div>
+        <h2>LG전자 <span class="code">066570</span></h2>
+        <div class="note">강한 모멘텀 (최근 변동성 확대)</div>
+      </div>
+      <div class="price">
+        <div class="last">216,000원</div>
+        <div class="change" style="color:#dc2626">-24,500원 (-10.19%)</div>
+      </div>
+    </header>
+
+    <div class="signal" style="background:#22c55e1a;border-left:4px solid #22c55e">
+      <div class="signal-head">
+        <span class="action-badge" style="background:#22c55e">피라미딩</span>
+        <span class="protocol-badge" style="background:#16a34a">유지</span>
+      </div>
+      <div class="signal-reason">진입가 +0.5 ATR 도달 (95,445원). 1유닛 추가 매수 (최대 4유닛).</div>
+    </div>
+
+    <div class="spark"><svg viewBox="0 0 200 40" width="100%" height="40" preserveAspectRatio="none">
+    <polyline points="0.0,35.4 3.4,34.7 6.8,32.0 10.2,31.4 13.6,31.8 16.9,27.8 20.3,28.1 23.7,33.5 27.1,39.0 30.5,37.1 33.9,36.3 37.3,37.7 40.7,36.9 44.1,36.4 47.5,37.5 50.8,37.8 54.2,37.4 57.6,37.4 61.0,35.7 64.4,36.9 67.8,36.4 71.2,38.8 74.6,37.4 78.0,37.3 81.4,37.8 84.7,38.1 88.1,39.2 91.5,40.0 94.9,38.0 98.3,39.1 101.7,39.2 105.1,38.9 108.5,39.6 111.9,36.7 115.3,36.6 118.6,36.2 122.0,37.1 125.4,35.7 128.8,35.1 132.2,34.0 135.6,34.5 139.0,34.4 142.4,33.8 145.8,31.9 149.2,32.8 152.5,33.5 155.9,32.8 159.3,29.8 162.7,31.0 166.1,29.5 169.5,28.9 172.9,25.4 176.3,27.2 179.7,25.6 183.1,24.8 186.4,16.5 189.8,14.6 193.2,7.0 196.6,0.0 200.0,7.3" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  </svg></div>
+
+    <div class="section">
+      <div class="section-title">지표 (2026-05-18)</div>
+      <div class="kv">
+        <div><span class="k">20일 ATR</span><span class="v">14,890원</span></div>
+        <div><span class="k">20일 고점</span><span class="v">266,500원</span></div>
+        <div><span class="k">10일 저점</span><span class="v">138,800원</span></div>
+        <div><span class="k">MA60</span><span class="v">130,725원</span></div>
+        <div><span class="k">MA120</span><span class="v">113,478원</span></div>
+        <div><span class="k">거래량(20일평균)</span><span class="v">2,659,426</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">1유닛 (리스크 500,000원 기준)</div>
+      <div class="kv">
+        <div><span class="k">수량</span><span class="v">16주</span></div>
+        <div><span class="k">금액</span><span class="v">3,456,000원</span></div>
+        <div><span class="k">20일 고점까지</span><span class="v">+23.38%</span></div>
+        <div><span class="k">10일 저점까지</span><span class="v">+35.74%</span></div>
+      </div>
+    </div>
+
+    
+    <div class="section">
+      <div class="section-title">보유 포지션</div>
+      <div class="kv">
+        <div><span class="k">진입가</span><span class="v">88,000원</span></div>
+        <div><span class="k">수량</span><span class="v">3주 (2026-05-01)</span></div>
+        <div><span class="k">평가액</span><span class="v">648,000원</span></div>
+        <div><span class="k">손익</span><span class="v" style="color:#16a34a">+384,000원 (+145.45%)</span></div>
+        <div><span class="k">손절선</span><span class="v">58,220원 </span></div>
+        <div><span class="k">다음 피라미딩</span><span class="v">95,445원 <span class="alert ok">✓ 도달</span></span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">프로토콜 검증</div>
+      <ul class="protocol"><li class="pass">✓ MA60 위 (216,000원 &gt; 130,725원)</li><li class="pass">✓ MA120 위 (216,000원 &gt; 113,478원)</li><li class="pass">✓ 정배열 (MA60 &gt; MA120)</li><li class="pass">✓ 최근 20일 고점 갱신 활발</li><li class="pass">✓ 거래량 정상</li></ul>
+      
+    </div>
+  </article>
+
+  <article class="card">
+    <header class="card-head">
+      <div>
+        <h2>한화시스템 <span class="code">272210</span></h2>
+        <div class="note">방산/우주 테마 (돌파 신호 유효)</div>
+      </div>
+      <div class="price">
+        <div class="last">101,800원</div>
+        <div class="change" style="color:#dc2626">-2,500원 (-2.40%)</div>
+      </div>
+    </header>
+
+    <div class="signal" style="background:#f59e0b1a;border-left:4px solid #f59e0b">
+      <div class="signal-head">
+        <span class="action-badge" style="background:#f59e0b">익절 청산</span>
+        <span class="protocol-badge" style="background:#f59e0b">관찰</span>
+      </div>
+      <div class="signal-reason">10일 저점 102,900원 이탈. 전량 익절/청산.</div>
+    </div>
+
+    <div class="spark"><svg viewBox="0 0 200 40" width="100%" height="40" preserveAspectRatio="none">
+    <polyline points="0.0,37.0 3.4,30.3 6.8,33.8 10.2,34.1 13.6,33.7 16.9,34.2 20.3,32.2 23.7,10.5 27.1,30.7 30.5,7.8 33.9,2.5 37.3,0.0 40.7,4.3 44.1,9.9 47.5,6.8 50.8,12.0 54.2,14.9 57.6,15.6 61.0,15.0 64.4,14.3 67.8,17.5 71.2,25.4 74.6,23.3 78.0,17.1 81.4,21.7 84.7,25.4 88.1,27.6 91.5,31.9 94.9,22.3 98.3,22.0 101.7,17.9 105.1,23.1 108.5,20.4 111.9,21.1 115.3,16.8 118.6,19.3 122.0,20.2 125.4,19.4 128.8,20.5 132.2,20.3 135.6,21.8 139.0,21.1 142.4,20.6 145.8,18.8 149.2,21.4 152.5,21.2 155.9,24.0 159.3,28.1 162.7,29.3 166.1,29.8 169.5,28.2 172.9,26.6 176.3,30.2 179.7,30.7 183.1,30.6 186.4,33.5 189.8,34.9 193.2,30.6 196.6,38.4 200.0,40.0" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  </svg></div>
+
+    <div class="section">
+      <div class="section-title">지표 (2026-05-18)</div>
+      <div class="kv">
+        <div><span class="k">20일 ATR</span><span class="v">5,840원</span></div>
+        <div><span class="k">20일 고점</span><span class="v">137,700원</span></div>
+        <div><span class="k">10일 저점</span><span class="v">102,900원</span></div>
+        <div><span class="k">MA60</span><span class="v">127,867원</span></div>
+        <div><span class="k">MA120</span><span class="v">99,178원</span></div>
+        <div><span class="k">거래량(20일평균)</span><span class="v">887,521</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">1유닛 (리스크 500,000원 기준)</div>
+      <div class="kv">
+        <div><span class="k">수량</span><span class="v">42주</span></div>
+        <div><span class="k">금액</span><span class="v">4,275,600원</span></div>
+        <div><span class="k">20일 고점까지</span><span class="v">+35.27%</span></div>
+        <div><span class="k">10일 저점까지</span><span class="v">-1.08%</span></div>
+      </div>
+    </div>
+
+    
+    <div class="section">
+      <div class="section-title">보유 포지션</div>
+      <div class="kv">
+        <div><span class="k">진입가</span><span class="v">68,500원</span></div>
+        <div><span class="k">수량</span><span class="v">3주 (2026-05-01)</span></div>
+        <div><span class="k">평가액</span><span class="v">305,400원</span></div>
+        <div><span class="k">손익</span><span class="v" style="color:#16a34a">+99,900원 (+48.61%)</span></div>
+        <div><span class="k">손절선</span><span class="v">56,820원 </span></div>
+        <div><span class="k">다음 피라미딩</span><span class="v">71,420원 <span class="alert ok">✓ 도달</span></span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">프로토콜 검증</div>
+      <ul class="protocol"><li class="pass">✓ MA120 위 (101,800원 &gt; 99,178원)</li><li class="pass">✓ 정배열 (MA60 &gt; MA120)</li><li class="pass">✓ 최근 20일 고점 갱신 활발</li><li class="pass">✓ 거래량 정상</li><li class="fail">✗ MA60 아래 (101,800원 ≤ 127,867원)</li></ul>
+      <div class="notes"><div>· 일부 조건 실패 — 관찰 필요. 추가 조건 충족 시 삭제 검토.</div></div>
+    </div>
+  </article>
+
+  <article class="card">
+    <header class="card-head">
+      <div>
+        <h2>기아 <span class="code">000270</span></h2>
+        <div class="note">실적 대형주 (추세 신뢰도 높음)</div>
+      </div>
+      <div class="price">
+        <div class="last">161,400원</div>
+        <div class="change" style="color:#dc2626">-6,600원 (-3.93%)</div>
+      </div>
+    </header>
+
+    <div class="signal" style="background:#64748b1a;border-left:4px solid #64748b">
+      <div class="signal-head">
+        <span class="action-badge" style="background:#64748b">돌파 대기</span>
+        <span class="protocol-badge" style="background:#f59e0b">관찰</span>
+      </div>
+      <div class="signal-reason">20일 고점 184,200원 까지 14.13% 남음. 돌파 대기.</div>
+    </div>
+
+    <div class="spark"><svg viewBox="0 0 200 40" width="100%" height="40" preserveAspectRatio="none">
+    <polyline points="0.0,23.7 3.4,22.5 6.8,21.9 10.2,21.1 13.6,6.5 16.9,0.0 20.3,0.3 23.7,15.6 27.1,32.4 30.5,26.1 33.9,25.7 37.3,34.6 40.7,29.6 44.1,28.9 47.5,25.7 50.8,27.4 54.2,28.9 57.6,25.5 61.0,20.3 64.4,23.4 67.8,24.7 71.2,29.1 74.6,31.6 78.0,31.6 81.4,33.8 84.7,33.0 88.1,35.9 91.5,40.0 94.9,33.4 98.3,36.4 101.7,36.7 105.1,35.8 108.5,36.3 111.9,30.8 115.3,36.5 118.6,37.5 122.0,38.6 125.4,37.4 128.8,35.9 132.2,31.6 135.6,30.8 139.0,32.0 142.4,30.3 145.8,30.3 149.2,31.3 152.5,34.6 155.9,35.1 159.3,33.2 162.7,32.3 166.1,35.7 169.5,34.2 172.9,33.8 176.3,31.8 179.7,27.3 183.1,20.6 186.4,24.8 189.8,17.4 193.2,18.4 196.6,25.0 200.0,29.3" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  </svg></div>
+
+    <div class="section">
+      <div class="section-title">지표 (2026-05-18)</div>
+      <div class="kv">
+        <div><span class="k">20일 ATR</span><span class="v">8,155원</span></div>
+        <div><span class="k">20일 고점</span><span class="v">184,200원</span></div>
+        <div><span class="k">10일 저점</span><span class="v">151,700원</span></div>
+        <div><span class="k">MA60</span><span class="v">162,558원</span></div>
+        <div><span class="k">MA120</span><span class="v">148,623원</span></div>
+        <div><span class="k">거래량(20일평균)</span><span class="v">1,582,753</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">1유닛 (리스크 500,000원 기준)</div>
+      <div class="kv">
+        <div><span class="k">수량</span><span class="v">30주</span></div>
+        <div><span class="k">금액</span><span class="v">4,842,000원</span></div>
+        <div><span class="k">20일 고점까지</span><span class="v">+14.13%</span></div>
+        <div><span class="k">10일 저점까지</span><span class="v">+6.01%</span></div>
+      </div>
+    </div>
+
+    
+
+    <div class="section">
+      <div class="section-title">프로토콜 검증</div>
+      <ul class="protocol"><li class="pass">✓ MA120 위 (161,400원 &gt; 148,623원)</li><li class="pass">✓ 정배열 (MA60 &gt; MA120)</li><li class="pass">✓ 최근 20일 고점 갱신 활발</li><li class="pass">✓ 거래량 정상</li><li class="fail">✗ MA60 아래 (161,400원 ≤ 162,558원)</li></ul>
+      <div class="notes"><div>· 일부 조건 실패 — 관찰 필요. 추가 조건 충족 시 삭제 검토.</div></div>
+    </div>
+  </article>
+
+  <article class="card">
+    <header class="card-head">
+      <div>
+        <h2>SK텔레콤 <span class="code">017670</span></h2>
+        <div class="note">방어주 성격 (낮은 변동성, 안정적)</div>
+      </div>
+      <div class="price">
+        <div class="last">99,300원</div>
+        <div class="change" style="color:#dc2626">-2,000원 (-1.97%)</div>
+      </div>
+    </header>
+
+    <div class="signal" style="background:#0ea5e91a;border-left:4px solid #0ea5e9">
+      <div class="signal-head">
+        <span class="action-badge" style="background:#0ea5e9">보유 유지</span>
+        <span class="protocol-badge" style="background:#16a34a">유지</span>
+      </div>
+      <div class="signal-reason">손절선 93,320원 / 10일 저점 91,400원 / 다음 피라미딩 104,170원.</div>
+    </div>
+
+    <div class="spark"><svg viewBox="0 0 200 40" width="100%" height="40" preserveAspectRatio="none">
+    <polyline points="0.0,27.4 3.4,28.2 6.8,29.0 10.2,28.1 13.6,27.9 16.9,26.5 20.3,29.3 23.7,31.1 27.1,40.0 30.5,31.4 33.9,33.0 37.3,33.8 40.7,32.2 44.1,31.4 47.5,33.4 50.8,34.7 54.2,33.2 57.6,29.4 61.0,27.7 64.4,31.1 67.8,30.4 71.2,35.6 74.6,32.9 78.0,29.3 81.4,29.1 84.7,29.2 88.1,31.0 91.5,33.1 94.9,30.8 98.3,31.5 101.7,28.1 105.1,28.6 108.5,27.3 111.9,18.9 115.3,13.5 118.6,14.4 122.0,15.0 125.4,11.6 128.8,8.7 132.2,11.2 135.6,8.5 139.0,10.5 142.4,6.0 145.8,6.2 149.2,7.9 152.5,6.5 155.9,8.8 159.3,10.1 162.7,11.5 166.1,12.1 169.5,9.5 172.9,11.6 176.3,14.2 179.7,13.9 183.1,8.6 186.4,2.7 189.8,0.0 193.2,3.5 196.6,5.1 200.0,7.3" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  </svg></div>
+
+    <div class="section">
+      <div class="section-title">지표 (2026-05-18)</div>
+      <div class="kv">
+        <div><span class="k">20일 ATR</span><span class="v">4,340원</span></div>
+        <div><span class="k">20일 고점</span><span class="v">108,000원</span></div>
+        <div><span class="k">10일 저점</span><span class="v">91,400원</span></div>
+        <div><span class="k">MA60</span><span class="v">86,967원</span></div>
+        <div><span class="k">MA120</span><span class="v">73,043원</span></div>
+        <div><span class="k">거래량(20일평균)</span><span class="v">971,238</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">1유닛 (리스크 500,000원 기준)</div>
+      <div class="kv">
+        <div><span class="k">수량</span><span class="v">57주</span></div>
+        <div><span class="k">금액</span><span class="v">5,660,100원</span></div>
+        <div><span class="k">20일 고점까지</span><span class="v">+8.76%</span></div>
+        <div><span class="k">10일 저점까지</span><span class="v">+7.96%</span></div>
+      </div>
+    </div>
+
+    
+    <div class="section">
+      <div class="section-title">보유 포지션</div>
+      <div class="kv">
+        <div><span class="k">진입가</span><span class="v">102,000원</span></div>
+        <div><span class="k">수량</span><span class="v">3주 (2026-05-01)</span></div>
+        <div><span class="k">평가액</span><span class="v">297,900원</span></div>
+        <div><span class="k">손익</span><span class="v" style="color:#dc2626">-8,100원 (-2.65%)</span></div>
+        <div><span class="k">손절선</span><span class="v">93,320원 </span></div>
+        <div><span class="k">다음 피라미딩</span><span class="v">104,170원 </span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">프로토콜 검증</div>
+      <ul class="protocol"><li class="pass">✓ MA60 위 (99,300원 &gt; 86,967원)</li><li class="pass">✓ MA120 위 (99,300원 &gt; 73,043원)</li><li class="pass">✓ 정배열 (MA60 &gt; MA120)</li><li class="pass">✓ 최근 20일 고점 갱신 활발</li><li class="pass">✓ 거래량 정상</li></ul>
+      
+    </div>
+  </article>
+
+  <article class="card">
+    <header class="card-head">
+      <div>
+        <h2>대한항공 <span class="code">003490</span></h2>
+        <div class="note">경기 민감주 (박스권 돌파 확인 필수)</div>
+      </div>
+      <div class="price">
+        <div class="last">25,150원</div>
+        <div class="change" style="color:#dc2626">-900원 (-3.45%)</div>
+      </div>
+    </header>
+
+    <div class="signal" style="background:#dc26261a;border-left:4px solid #dc2626">
+      <div class="signal-head">
+        <span class="action-badge" style="background:#dc2626">손절</span>
+        <span class="protocol-badge" style="background:#16a34a">유지</span>
+      </div>
+      <div class="signal-reason">현재가 25,150원 ≤ 손절선 25,535원 (-2 ATR). 기계적 전량 청산.</div>
+    </div>
+
+    <div class="spark"><svg viewBox="0 0 200 40" width="100%" height="40" preserveAspectRatio="none">
+    <polyline points="0.0,21.7 3.4,23.2 6.8,15.3 10.2,15.0 13.6,0.0 16.9,5.2 20.3,5.2 23.7,22.9 27.1,35.1 30.5,27.2 33.9,27.2 37.3,40.0 40.7,28.1 44.1,26.6 47.5,28.7 50.8,28.4 54.2,26.3 57.6,25.0 61.0,21.1 64.4,26.9 67.8,15.9 71.2,28.4 74.6,25.0 78.0,21.7 81.4,24.4 84.7,22.3 88.1,28.1 91.5,33.0 94.9,26.0 98.3,35.1 101.7,36.3 105.1,35.4 108.5,35.7 111.9,24.4 115.3,28.7 118.6,26.0 122.0,30.5 125.4,26.0 128.8,25.3 132.2,22.9 135.6,23.8 139.0,23.8 142.4,20.5 145.8,22.9 149.2,25.3 152.5,25.0 155.9,26.9 159.3,28.1 162.7,23.5 166.1,26.9 169.5,27.2 172.9,26.9 176.3,15.9 179.7,11.6 183.1,19.5 186.4,25.0 189.8,19.5 193.2,10.1 196.6,17.7 200.0,23.2" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  </svg></div>
+
+    <div class="section">
+      <div class="section-title">지표 (2026-05-18)</div>
+      <div class="kv">
+        <div><span class="k">20일 ATR</span><span class="v">983원</span></div>
+        <div><span class="k">20일 고점</span><span class="v">27,350원</span></div>
+        <div><span class="k">10일 저점</span><span class="v">24,350원</span></div>
+        <div><span class="k">MA60</span><span class="v">25,011원</span></div>
+        <div><span class="k">MA120</span><span class="v">23,928원</span></div>
+        <div><span class="k">거래량(20일평균)</span><span class="v">1,851,469</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">1유닛 (리스크 500,000원 기준)</div>
+      <div class="kv">
+        <div><span class="k">수량</span><span class="v">254주</span></div>
+        <div><span class="k">금액</span><span class="v">6,388,100원</span></div>
+        <div><span class="k">20일 고점까지</span><span class="v">+8.75%</span></div>
+        <div><span class="k">10일 저점까지</span><span class="v">+3.18%</span></div>
+      </div>
+    </div>
+
+    
+    <div class="section">
+      <div class="section-title">보유 포지션</div>
+      <div class="kv">
+        <div><span class="k">진입가</span><span class="v">27,500원</span></div>
+        <div><span class="k">수량</span><span class="v">12주 (2026-05-01)</span></div>
+        <div><span class="k">평가액</span><span class="v">301,800원</span></div>
+        <div><span class="k">손익</span><span class="v" style="color:#dc2626">-28,200원 (-8.55%)</span></div>
+        <div><span class="k">손절선</span><span class="v">25,535원 <span class="alert">⚠ 이탈</span></span></div>
+        <div><span class="k">다음 피라미딩</span><span class="v">27,991원 </span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">프로토콜 검증</div>
+      <ul class="protocol"><li class="pass">✓ MA60 위 (25,150원 &gt; 25,011원)</li><li class="pass">✓ MA120 위 (25,150원 &gt; 23,928원)</li><li class="pass">✓ 정배열 (MA60 &gt; MA120)</li><li class="pass">✓ 최근 20일 고점 갱신 활발</li><li class="pass">✓ 거래량 정상</li></ul>
+      
+    </div>
+  </article>
+
+  <article class="card">
+    <header class="card-head">
+      <div>
+        <h2>호텔신라 <span class="code">008770</span></h2>
+        <div class="note">턴어라운드형 (완전한 바닥 탈출 필요)</div>
+      </div>
+      <div class="price">
+        <div class="last">59,500원</div>
+        <div class="change" style="color:#dc2626">-3,000원 (-4.80%)</div>
+      </div>
+    </header>
+
+    <div class="signal" style="background:#dc26261a;border-left:4px solid #dc2626">
+      <div class="signal-head">
+        <span class="action-badge" style="background:#dc2626">손절</span>
+        <span class="protocol-badge" style="background:#16a34a">유지</span>
+      </div>
+      <div class="signal-reason">현재가 59,500원 ≤ 손절선 60,710원 (-2 ATR). 기계적 전량 청산.</div>
+    </div>
+
+    <div class="spark"><svg viewBox="0 0 200 40" width="100%" height="40" preserveAspectRatio="none">
+    <polyline points="0.0,28.7 3.4,29.3 6.8,28.7 10.2,29.2 13.6,29.2 16.9,29.0 20.3,29.6 23.7,33.3 27.1,38.3 30.5,36.6 33.9,37.7 37.3,40.0 40.7,37.9 44.1,36.3 47.5,34.8 50.8,37.4 54.2,36.8 57.6,36.6 61.0,34.6 64.4,36.0 67.8,34.3 71.2,38.2 74.6,36.3 78.0,36.8 81.4,37.9 84.7,30.3 88.1,33.6 91.5,35.0 94.9,34.8 98.3,36.6 101.7,36.3 105.1,35.1 108.5,32.1 111.9,30.1 115.3,28.2 118.6,26.6 122.0,28.8 125.4,28.8 128.8,27.0 132.2,21.5 135.6,22.8 139.0,22.2 142.4,21.4 145.8,18.9 149.2,17.5 152.5,9.8 155.9,4.8 159.3,0.0 162.7,2.3 166.1,5.4 169.5,6.3 172.9,7.6 176.3,5.1 179.7,7.2 183.1,7.2 186.4,9.7 189.8,11.4 193.2,4.7 196.6,9.5 200.0,13.7" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  </svg></div>
+
+    <div class="section">
+      <div class="section-title">지표 (2026-05-18)</div>
+      <div class="kv">
+        <div><span class="k">20일 ATR</span><span class="v">3,645원</span></div>
+        <div><span class="k">20일 고점</span><span class="v">70,300원</span></div>
+        <div><span class="k">10일 저점</span><span class="v">60,400원</span></div>
+        <div><span class="k">MA60</span><span class="v">50,846원</span></div>
+        <div><span class="k">MA120</span><span class="v">48,614원</span></div>
+        <div><span class="k">거래량(20일평균)</span><span class="v">643,155</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">1유닛 (리스크 500,000원 기준)</div>
+      <div class="kv">
+        <div><span class="k">수량</span><span class="v">68주</span></div>
+        <div><span class="k">금액</span><span class="v">4,046,000원</span></div>
+        <div><span class="k">20일 고점까지</span><span class="v">+18.15%</span></div>
+        <div><span class="k">10일 저점까지</span><span class="v">-1.51%</span></div>
+      </div>
+    </div>
+
+    
+    <div class="section">
+      <div class="section-title">보유 포지션</div>
+      <div class="kv">
+        <div><span class="k">진입가</span><span class="v">68,000원</span></div>
+        <div><span class="k">수량</span><span class="v">5주 (2026-05-01)</span></div>
+        <div><span class="k">평가액</span><span class="v">297,500원</span></div>
+        <div><span class="k">손익</span><span class="v" style="color:#dc2626">-42,500원 (-12.50%)</span></div>
+        <div><span class="k">손절선</span><span class="v">60,710원 <span class="alert">⚠ 이탈</span></span></div>
+        <div><span class="k">다음 피라미딩</span><span class="v">69,823원 </span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">프로토콜 검증</div>
+      <ul class="protocol"><li class="pass">✓ MA60 위 (59,500원 &gt; 50,846원)</li><li class="pass">✓ MA120 위 (59,500원 &gt; 48,614원)</li><li class="pass">✓ 정배열 (MA60 &gt; MA120)</li><li class="pass">✓ 최근 20일 고점 갱신 활발</li><li class="pass">✓ 거래량 정상</li></ul>
+      
+    </div>
+  </article>
+
+  <article class="card">
+    <header class="card-head">
+      <div>
+        <h2>이마트 <span class="code">139480</span></h2>
+        <div class="note">역추세 주의 (20일 고점 돌파 엄격 적용)</div>
+      </div>
+      <div class="price">
+        <div class="last">97,500원</div>
+        <div class="change" style="color:#dc2626">-5,000원 (-4.88%)</div>
+      </div>
+    </header>
+
+    <div class="signal" style="background:#f59e0b1a;border-left:4px solid #f59e0b">
+      <div class="signal-head">
+        <span class="action-badge" style="background:#f59e0b">익절 청산</span>
+        <span class="protocol-badge" style="background:#f59e0b">관찰</span>
+      </div>
+      <div class="signal-reason">10일 저점 100,700원 이탈. 전량 익절/청산.</div>
+    </div>
+
+    <div class="spark"><svg viewBox="0 0 200 40" width="100%" height="40" preserveAspectRatio="none">
+    <polyline points="0.0,9.6 3.4,10.7 6.8,8.4 10.2,14.0 13.6,13.5 16.9,16.4 20.3,18.3 23.7,23.9 27.1,40.0 30.5,36.4 33.9,34.8 37.3,35.1 40.7,36.3 44.1,30.3 47.5,33.2 50.8,33.3 54.2,33.7 57.6,31.3 61.0,29.9 64.4,32.4 67.8,24.0 71.2,31.1 74.6,31.2 78.0,26.9 81.4,27.9 84.7,24.9 88.1,27.6 91.5,30.7 94.9,28.9 98.3,38.1 101.7,38.0 105.1,36.8 108.5,35.3 111.9,33.3 115.3,32.3 118.6,32.4 122.0,34.8 125.4,28.1 128.8,28.0 132.2,20.3 135.6,22.7 139.0,21.6 142.4,22.7 145.8,21.6 149.2,20.4 152.5,17.7 155.9,16.8 159.3,15.9 162.7,14.1 166.1,16.0 169.5,17.1 172.9,20.5 176.3,13.7 179.7,7.7 183.1,7.7 186.4,15.5 189.8,16.9 193.2,0.0 196.6,21.6 200.0,28.3" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  </svg></div>
+
+    <div class="section">
+      <div class="section-title">지표 (2026-05-18)</div>
+      <div class="kv">
+        <div><span class="k">20일 ATR</span><span class="v">5,600원</span></div>
+        <div><span class="k">20일 고점</span><span class="v">118,700원</span></div>
+        <div><span class="k">10일 저점</span><span class="v">100,700원</span></div>
+        <div><span class="k">MA60</span><span class="v">100,318원</span></div>
+        <div><span class="k">MA120</span><span class="v">93,757원</span></div>
+        <div><span class="k">거래량(20일평균)</span><span class="v">234,654</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">1유닛 (리스크 500,000원 기준)</div>
+      <div class="kv">
+        <div><span class="k">수량</span><span class="v">44주</span></div>
+        <div><span class="k">금액</span><span class="v">4,290,000원</span></div>
+        <div><span class="k">20일 고점까지</span><span class="v">+21.74%</span></div>
+        <div><span class="k">10일 저점까지</span><span class="v">-3.28%</span></div>
+      </div>
+    </div>
+
+    
+    <div class="section">
+      <div class="section-title">보유 포지션</div>
+      <div class="kv">
+        <div><span class="k">진입가</span><span class="v">105,000원</span></div>
+        <div><span class="k">수량</span><span class="v">2주 (2026-05-01)</span></div>
+        <div><span class="k">평가액</span><span class="v">195,000원</span></div>
+        <div><span class="k">손익</span><span class="v" style="color:#dc2626">-15,000원 (-7.14%)</span></div>
+        <div><span class="k">손절선</span><span class="v">93,800원 </span></div>
+        <div><span class="k">다음 피라미딩</span><span class="v">107,800원 </span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">프로토콜 검증</div>
+      <ul class="protocol"><li class="pass">✓ MA120 위 (97,500원 &gt; 93,757원)</li><li class="pass">✓ 정배열 (MA60 &gt; MA120)</li><li class="pass">✓ 최근 20일 고점 갱신 활발</li><li class="pass">✓ 거래량 정상</li><li class="fail">✗ MA60 아래 (97,500원 ≤ 100,318원)</li></ul>
+      <div class="notes"><div>· 일부 조건 실패 — 관찰 필요. 추가 조건 충족 시 삭제 검토.</div></div>
+    </div>
+  </article>
+  </div>
+
+  <footer>
+    데이터: Yahoo Finance · 시스템: 터틀 트레이딩 (CLAUDE.md) · <a href="https://daewon82.github.io/trading/">https://daewon82.github.io/trading/</a>
+  </footer>
+</div>
 </body>
 </html>

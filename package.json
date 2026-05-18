@@ -1,25 +1,17 @@
 {
-  "name": "trading",
-  "version": "0.2.0",
+  "name": "turtle-kospi",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "lint": "tsc --noEmit",
-    "test:health": "playwright test tests/source-health.spec.ts",
-    "test:kr": "playwright test tests/kr-stock-comparison.spec.ts",
-    "test:us": "playwright test tests/us-stock-comparison.spec.ts",
-    "test:us:full": "CROSS_VERIFY=1 playwright test tests/us-stock-comparison.spec.ts",
-    "test:dashboard": "playwright test tests/dashboard.spec.ts",
-    "test:value": "playwright test tests/value-screening.spec.ts",
-    "test:backtest": "playwright test tests/flow-backtest.spec.ts",
-    "test:market": "playwright test tests/market-structure.spec.ts",
-    "report:generate": "tsx scripts/generate-report.ts"
+    "build": "tsx scripts/run.ts",
+    "start": "tsx scripts/run.ts"
   },
   "devDependencies": {
-    "@playwright/test": "^1.48.0",
     "@types/node": "^20.11.0",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0"

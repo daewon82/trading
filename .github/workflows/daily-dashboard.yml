@@ -2,13 +2,10 @@ name: daily-dashboard
 
 on:
   schedule:
-    # 장중(09:00-15:55 KST = 00:00-06:55 UTC) 평일 5분 간격
-    # GitHub Actions cron은 5~30분 지연 가능 (정시 보장 X)
-    - cron: '*/5 0-6 * * 1-5'
-    # 장외 평일 1시간 간격 (16:00 KST ~ 다음 08:00 KST = 07:00-23:00 UTC)
-    - cron: '0 7-23 * * 1-5'
-    # 주말 1시간 간격
-    - cron: '0 * * * 0,6'
+    # 평일 장마감 후 16:00 KST = 07:00 UTC (일봉 데이터 갱신 직후)
+    - cron: '0 7 * * 1-5'
+    # 주말 1회 (모니터링용)
+    - cron: '0 0 * * 6'
   workflow_dispatch: {}
 
 permissions:
@@ -21,7 +18,7 @@ concurrency:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -31,19 +28,13 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Type check
+        run: npm run lint
 
-      - name: Run dashboard
-        run: npm run test:dashboard
-
-      - name: Prune old history files (keep last 500)
-        run: |
-          cd docs/history
-          ls -t dashboard-*.html 2>/dev/null | tail -n +501 | xargs -r rm
-          cd ../..
+      - name: Generate dashboard
+        run: npm start
 
       - name: Commit docs/
         run: |

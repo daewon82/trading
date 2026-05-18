@@ -1,0 +1,16 @@
+[
+  {
+    "code": "005930",
+    "name": "삼성전자",
+    "buyPrice": 80000,
+    "quantity": 41,
+    "buyDate": "2026-05-01"
+  },
+  {
+    "code": "066570",
+    "name": "LG전자",
+    "buyPrice": 90000,
+    "quantity": 33,
+    "buyDate": "2026-05-01"
+  }
+]

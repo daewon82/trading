@@ -1,13 +1,12 @@
 node_modules/
-reports/
-test-results/
-playwright-report/
 .DS_Store
 *.log
-docs/history/
-# v1.7 — 보안: 웹훅 URL·API 키 (절대 커밋 금지, CLAUDE.md §10)
+
+# 환경변수 (절대 커밋 금지)
 .env
 .env.*
 !.env.example
-# v1.7 — 잔디 알림 발송 캐시 (중복 방지)
-cache/
+
+# 보유 종목 (개인 데이터, 커밋 금지)
+holdings.json
+!holdings.example.json
