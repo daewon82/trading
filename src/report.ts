@@ -620,11 +620,10 @@ function liveUpdateScript(): string {
     const j = JSON.parse(wrapper.contents);
     const item = j.datas && j.datas[0];
     if (!item) throw new Error('no data');
-    const dir = item.compareToPreviousPrice && item.compareToPreviousPrice.code; // 2=상승,5=하락
-    const sign = dir === '5' ? -1 : 1;
+    // *Raw 필드는 이미 부호 포함 (하락 시 음수). 별도 sign 곱셈 금지.
     const price = Number(item.closePriceRaw);
-    const change = Number(item.compareToPreviousClosePriceRaw || 0) * sign;
-    const changePct = Number(item.fluctuationsRatioRaw || 0) * sign;
+    const change = Number(item.compareToPreviousClosePriceRaw || 0);
+    const changePct = Number(item.fluctuationsRatioRaw || 0);
     if (!isFinite(price) || price <= 0) throw new Error('invalid price: ' + item.closePriceRaw);
     return { price, change, changePct };
   }

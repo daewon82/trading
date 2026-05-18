@@ -197,7 +197,7 @@
       <div class="sub">리처드 대니스 원칙 · 1유닛 = (총자산 × 1%) ÷ ATR</div>
       <div class="sub" style="margin-top:4px;color:#fbbf24">기준 종가: 2026-05-15 · 장중/시초가 직전 실행 — 어제 확정 종가 기준</div>
     </div>
-    <div class="sub">생성: 2026. 05. 18. 오후 01:32:45 KST</div>
+    <div class="sub">생성: 2026. 05. 18. 오후 01:57:11 KST</div>
   </header>
 
   <div class="summary">
@@ -282,93 +282,6 @@
   </section>
 
   
-  <section class="scan-section">
-    <h2 class="scan-title">🔍 매수 후보 (KOSPI 대형주 31종목 스캔, 최대 5개 표시)</h2>
-    <div class="scan-meta">claude.md "매수 후보 스캔 프로토콜" — 20일 신고가 돌파 + 정배열 (MA60>MA120) + 종가 > MA60·MA120</div>
-
-    <div class="scan-tier-title">A 등급 — 즉시 진입 신호 (4개 조건 전부 충족)</div>
-    <div class="scan-list">
-        <div class="scan-card scan-tier-a">
-          <div class="scan-head">
-            <span class="scan-name">LG <span class="scan-code">003550</span></span>
-            <span class="scan-price">126,000원</span>
-          </div>
-          <div class="scan-body">
-            <div class="scan-buy-row">
-              <span class="scan-buy-label">매수 적정가</span>
-              <span class="scan-buy-price">126,000원</span>
-              <span class="scan-buy-note">시장가 / 다음 거래일 시초가</span>
-            </div>
-            <div class="scan-stop-row">
-              <span class="scan-stop-label">손절선 (-2 ATR)</span>
-              <span class="scan-stop-price">113,525원</span>
-            </div>
-            <div class="scan-meta-line">20일 고점 118,400원 (+6.03% 돌파) · ATR 6,238원</div>
-            <div class="scan-meta-line">MA60 95,658원 · MA120 90,240원</div>
-            <div class="scan-size"><span class="scan-warn">⚠ 자본 부족 (1유닛 0주, 실제 매수 불가)</span></div>
-          </div>
-        </div></div>
-
-    <div class="scan-tier-title">B 등급 — 돌파 임박 (추세 충족 + 돌파까지 7% 이내)</div>
-    <div class="scan-list">
-        <div class="scan-card scan-tier-b">
-          <div class="scan-head">
-            <span class="scan-name">현대차 <span class="scan-code">005380</span></span>
-            <span class="scan-price">700,000원</span>
-          </div>
-          <div class="scan-body">
-            <div class="scan-buy-row">
-              <span class="scan-buy-label">매수 트리거</span>
-              <span class="scan-buy-price">730,000원</span>
-              <span class="scan-buy-note">돌파 시 진입 (현재가 대비 4.29%)</span>
-            </div>
-            <div class="scan-stop-row">
-              <span class="scan-stop-label">손절선 (-2 ATR)</span>
-              <span class="scan-stop-price">652,500원</span>
-            </div>
-            <div class="scan-meta-line">ATR 38,750원 · 1유닛 <span class="scan-warn">0주 (자본 부족)</span></div>
-          </div>
-        </div>
-        <div class="scan-card scan-tier-b">
-          <div class="scan-head">
-            <span class="scan-name">삼성전기 <span class="scan-code">009150</span></span>
-            <span class="scan-price">1,010,000원</span>
-          </div>
-          <div class="scan-body">
-            <div class="scan-buy-row">
-              <span class="scan-buy-label">매수 트리거</span>
-              <span class="scan-buy-price">1,060,000원</span>
-              <span class="scan-buy-note">돌파 시 진입 (현재가 대비 4.95%)</span>
-            </div>
-            <div class="scan-stop-row">
-              <span class="scan-stop-label">손절선 (-2 ATR)</span>
-              <span class="scan-stop-price">934,750원</span>
-            </div>
-            <div class="scan-meta-line">ATR 62,625원 · 1유닛 <span class="scan-warn">0주 (자본 부족)</span></div>
-          </div>
-        </div>
-        <div class="scan-card scan-tier-b">
-          <div class="scan-head">
-            <span class="scan-name">KT&amp;G <span class="scan-code">033780</span></span>
-            <span class="scan-price">179,800원</span>
-          </div>
-          <div class="scan-body">
-            <div class="scan-buy-row">
-              <span class="scan-buy-label">매수 트리거</span>
-              <span class="scan-buy-price">189,500원</span>
-              <span class="scan-buy-note">돌파 시 진입 (현재가 대비 5.39%)</span>
-            </div>
-            <div class="scan-stop-row">
-              <span class="scan-stop-label">손절선 (-2 ATR)</span>
-              <span class="scan-stop-price">178,500원</span>
-            </div>
-            <div class="scan-meta-line">ATR 5,500원 · 1유닛 1주</div>
-          </div>
-        </div></div>
-
-    
-    
-  </section>
 
   <div class="grid">
     
@@ -967,11 +880,10 @@
     const j = JSON.parse(wrapper.contents);
     const item = j.datas && j.datas[0];
     if (!item) throw new Error('no data');
-    const dir = item.compareToPreviousPrice && item.compareToPreviousPrice.code; // 2=상승,5=하락
-    const sign = dir === '5' ? -1 : 1;
+    // *Raw 필드는 이미 부호 포함 (하락 시 음수). 별도 sign 곱셈 금지.
     const price = Number(item.closePriceRaw);
-    const change = Number(item.compareToPreviousClosePriceRaw || 0) * sign;
-    const changePct = Number(item.fluctuationsRatioRaw || 0) * sign;
+    const change = Number(item.compareToPreviousClosePriceRaw || 0);
+    const changePct = Number(item.fluctuationsRatioRaw || 0);
     if (!isFinite(price) || price <= 0) throw new Error('invalid price: ' + item.closePriceRaw);
     return { price, change, changePct };
   }
