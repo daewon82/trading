@@ -122,6 +122,31 @@ const HINT_COLOR: Record<MismatchHint['tone'], string> = {
   info: '#0ea5e9',
 };
 
+const ACTION_BUY: TurtleAction[] = ['ENTRY_BREAKOUT', 'PYRAMID'];
+const ACTION_SELL: TurtleAction[] = ['EXIT_10D_LOW', 'STOP_LOSS'];
+
+function renderActionNoti(action: TurtleAction, code: string): string {
+  const isBuy = ACTION_BUY.includes(action);
+  const isSell = ACTION_SELL.includes(action);
+  if (!isBuy && !isSell) return '';
+
+  const label = isBuy ? '매수' : '매도';
+  const sublabel = ACTION_LABEL[action];
+  const cssClass = isBuy ? 'buy' : 'sell';
+  const key = `${code}:${action}`;
+
+  return `
+    <div class="action-noti ${cssClass}" data-action-key="${escape(key)}">
+      <div class="action-noti-main">
+        <div class="action-noti-label">📌 시스템 액션: ${label}</div>
+        <div class="action-noti-sub">${escape(sublabel)}</div>
+      </div>
+      <button class="action-noti-btn" data-live="action-btn">실행함</button>
+      <span class="action-noti-badge" data-live="action-badge" style="display:none"></span>
+      <button class="action-noti-undo" data-live="action-undo" style="display:none" title="이행 취소">↺</button>
+    </div>`;
+}
+
 function renderScanSection(candidates: import('./types.js').ScanCandidateResult[]): string {
   if (!candidates || candidates.length === 0) return '';
   const MAX_DISPLAY = 5;
@@ -162,6 +187,7 @@ function renderScanSection(candidates: import('./types.js').ScanCandidateResult[
             <div class="scan-meta-line">MA60 ${fmtWon(c.ma60)} · MA120 ${fmtWon(c.ma120)}</div>
             <div class="scan-size">${sizeWarning}</div>
           </div>
+          ${renderActionNoti('ENTRY_BREAKOUT', c.code)}
         </div>`;
     }).join('');
   }
@@ -285,6 +311,8 @@ function renderStockCard(r: StockReport, riskPerTrade: number): string {
       <div class="signal-reason">${escape(signal.reason)}</div>
     </div>
 
+    ${renderActionNoti(signal.action, config.code)}
+
     ${myPosition}
 
     <div class="spark">${renderSparkline(closes)}</div>
@@ -399,6 +427,41 @@ export function renderHtml(data: DashboardData): string {
   .qo-pnl-amt { font-size: 14px; }
   .qo-pnl-pct { font-size: 11px; opacity: 0.85; margin-top: 1px; }
   .qo-pnl.muted { color: #64748b; font-weight: 400; font-style: italic; font-size: 13px; }
+  .action-noti {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; margin: 10px 0;
+    background: rgba(0,0,0,0.25); border-radius: 6px;
+    border-left: 4px solid #64748b;
+  }
+  .action-noti.buy { border-left-color: #16a34a; }
+  .action-noti.sell { border-left-color: #f59e0b; }
+  .action-noti.executed { opacity: 0.7; }
+  .action-noti-main { flex: 1; }
+  .action-noti-label { font-weight: 700; font-size: 13px; color: #e2e8f0; }
+  .action-noti.buy .action-noti-label { color: #4ade80; }
+  .action-noti.sell .action-noti-label { color: #fbbf24; }
+  .action-noti-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+  .action-noti-btn {
+    background: #1e40af; color: white;
+    border: none; padding: 7px 16px;
+    border-radius: 4px; cursor: pointer;
+    font-size: 12px; font-weight: 600;
+    transition: background 0.1s ease;
+  }
+  .action-noti-btn:hover { background: #1d4ed8; }
+  .action-noti-btn:active { transform: translateY(1px); }
+  .action-noti-badge {
+    color: #22c55e; font-weight: 700; font-size: 12px;
+    padding: 4px 8px; border-radius: 4px;
+    background: rgba(34,197,94,0.15);
+  }
+  .action-noti-undo {
+    background: transparent; color: #94a3b8;
+    border: 1px solid #475569; padding: 4px 8px;
+    border-radius: 4px; cursor: pointer; font-size: 14px;
+    line-height: 1;
+  }
+  .action-noti-undo:hover { background: #334155; color: #e2e8f0; }
   .scan-section {
     background: #1e293b; border-radius: 8px; padding: 16px;
     margin-bottom: 24px;
@@ -543,12 +606,12 @@ export function renderHtml(data: DashboardData): string {
   </header>
 
   <div class="summary">
-    <div class="item"><div class="label">총 자산 (매수 평단가 합계)</div><div class="value">${fmtWon(data.totalCapital)}</div></div>
+    <div class="item"><div class="label">총 자산 (현재 평가액)</div><div class="value" data-live="totalValue">${fmtWon(summary.totalValue)}</div></div>
     <div class="item"><div class="label">1매매 최대 리스크 (1%)</div><div class="value">${fmtWon(data.riskPerTrade)}</div></div>
     <div class="item"><div class="label">감시 종목</div><div class="value">${data.reports.length}종</div></div>
     <div class="item"><div class="label">매수 신호</div><div class="value" style="color:#16a34a">${summary.entry}</div></div>
     <div class="item"><div class="label">매도/손절</div><div class="value" style="color:#dc2626">${summary.exit}</div></div>
-    <div class="item"><div class="label">보유 손익</div><div class="value" style="color:${summary.totalPnl >= 0 ? '#16a34a' : '#dc2626'}">${fmtPnl(summary.totalPnl)}</div></div>
+    <div class="item"><div class="label">보유 손익</div><div class="value" data-live="totalPnl" style="color:${summary.totalPnl >= 0 ? '#16a34a' : '#dc2626'}">${fmtPnl(summary.totalPnl)}</div></div>
   </div>
 
   ${errorBlock}
@@ -568,9 +631,68 @@ export function renderHtml(data: DashboardData): string {
 </div>
 
 <script id="turtle-data" type="application/json">${JSON.stringify(buildLiveDataPayload(data)).replace(/<\/script>/gi, '<\\/script>')}</script>
+<script>${actionTrackingScript()}</script>
 <script>${liveUpdateScript()}</script>
 </body>
 </html>`;
+}
+
+function actionTrackingScript(): string {
+  return `(function(){
+  const PREFIX = 'turtle-action:';
+  function loadTs(key){
+    try { const v = localStorage.getItem(PREFIX + key); return v ? parseInt(v,10) : null; }
+    catch(e){ return null; }
+  }
+  function saveTs(key, ts){
+    try { localStorage.setItem(PREFIX + key, String(ts)); } catch(e){}
+  }
+  function clearTs(key){
+    try { localStorage.removeItem(PREFIX + key); } catch(e){}
+  }
+  function fmtTs(ts){
+    return new Date(ts).toLocaleString('ko-KR', {
+      timeZone:'Asia/Seoul', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', hour12:false
+    });
+  }
+  function update(el, ts){
+    const btn = el.querySelector('[data-live="action-btn"]');
+    const badge = el.querySelector('[data-live="action-badge"]');
+    const undo = el.querySelector('[data-live="action-undo"]');
+    if (ts){
+      if (btn) btn.style.display = 'none';
+      if (badge){ badge.style.display = ''; badge.textContent = '✓ 실행함 (' + fmtTs(ts) + ')'; }
+      if (undo) undo.style.display = '';
+      el.classList.add('executed');
+    } else {
+      if (btn) btn.style.display = '';
+      if (badge) badge.style.display = 'none';
+      if (undo) undo.style.display = 'none';
+      el.classList.remove('executed');
+    }
+  }
+  document.querySelectorAll('[data-action-key]').forEach(function(el){
+    const key = el.getAttribute('data-action-key');
+    update(el, loadTs(key));
+    const btn = el.querySelector('[data-live="action-btn"]');
+    const undo = el.querySelector('[data-live="action-undo"]');
+    if (btn){
+      btn.addEventListener('click', function(){
+        const ts = Date.now();
+        saveTs(key, ts);
+        update(el, ts);
+      });
+    }
+    if (undo){
+      undo.addEventListener('click', function(){
+        if (!confirm('이행 취소하시겠습니까?')) return;
+        clearTs(key);
+        update(el, null);
+      });
+    }
+  });
+})();`;
 }
 
 function buildLiveDataPayload(data: DashboardData) {
@@ -580,6 +702,8 @@ function buildLiveDataPayload(data: DashboardData) {
       buyPrice: r.holding?.position.buyPrice ?? null,
       quantity: r.holding?.position.quantity ?? 0,
       action: r.signal.action,
+      initialPnl: r.holding?.pnl ?? 0,
+      initialValue: r.holding?.currentValue ?? 0,
     })),
   };
 }
@@ -590,6 +714,12 @@ function liveUpdateScript(): string {
   const POLL_MS = 10000;
   const PROXY = 'https://api.allorigins.win/get?url=';
   let failStreak = 0;
+  const pnlByCode = {};
+  const valueByCode = {};
+  for (const s of data.stocks) {
+    pnlByCode[s.code] = s.initialPnl || 0;
+    valueByCode[s.code] = s.initialValue || 0;
+  }
 
   function kstHour(){
     const p = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',hour:'2-digit',hour12:false}).formatToParts(new Date());
@@ -664,6 +794,8 @@ function liveUpdateScript(): string {
       const cb = s.buyPrice * s.quantity;
       const pnl = cv - cb;
       const pnlPct = (pnl / cb) * 100;
+      pnlByCode[s.code] = pnl;
+      valueByCode[s.code] = cv;
       const cvEl = card.querySelector('[data-live="currentValue"]');
       if (cvEl) cvEl.textContent = fmtWon(cv);
       const pnlEl = card.querySelector('[data-live="pnl"]');
@@ -682,6 +814,19 @@ function liveUpdateScript(): string {
       }
       updateHint(card, s.action, pnlPct);
     }
+  }
+
+  function updateTotals(){
+    let totalPnl = 0, totalValue = 0;
+    for (const code in pnlByCode) totalPnl += pnlByCode[code];
+    for (const code in valueByCode) totalValue += valueByCode[code];
+    const pnlEl = document.querySelector('[data-live="totalPnl"]');
+    if (pnlEl){
+      pnlEl.textContent = fmtPnl(totalPnl);
+      pnlEl.style.color = totalPnl >= 0 ? '#16a34a' : '#dc2626';
+    }
+    const valEl = document.querySelector('[data-live="totalValue"]');
+    if (valEl) valEl.textContent = fmtWon(totalValue);
   }
 
   function setStatus(text, color){
@@ -709,6 +854,7 @@ function liveUpdateScript(): string {
       }));
       let ok = 0;
       for (const r of results){ if (r){ updateCard(r.s, r.live); ok++; } }
+      if (ok > 0) updateTotals();
       if (ok === 0){
         failStreak++;
         const msg = failStreak >= 3
@@ -732,11 +878,14 @@ function liveUpdateScript(): string {
 }
 
 function summarize(data: DashboardData) {
-  let entry = 0, exit = 0, totalPnl = 0;
+  let entry = 0, exit = 0, totalPnl = 0, totalValue = 0;
   for (const r of data.reports) {
     if (r.signal.action === 'ENTRY_BREAKOUT' || r.signal.action === 'PYRAMID') entry++;
     if (r.signal.action === 'EXIT_10D_LOW' || r.signal.action === 'STOP_LOSS') exit++;
-    if (r.holding) totalPnl += r.holding.pnl;
+    if (r.holding) {
+      totalPnl += r.holding.pnl;
+      totalValue += r.holding.currentValue;
+    }
   }
-  return { entry, exit, totalPnl };
+  return { entry, exit, totalPnl, totalValue };
 }
