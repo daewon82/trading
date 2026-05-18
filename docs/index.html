@@ -53,8 +53,10 @@
     color: white; font-size: 11px; font-weight: 600;
     padding: 2px 8px; border-radius: 3px;
   }
-  .qo-pnl { margin-top: 6px; font-size: 13px; font-weight: 600; }
-  .qo-pnl.muted { color: #64748b; font-weight: 400; font-style: italic; }
+  .qo-pnl { margin-top: 6px; font-weight: 600; line-height: 1.2; }
+  .qo-pnl-amt { font-size: 14px; }
+  .qo-pnl-pct { font-size: 11px; opacity: 0.85; margin-top: 1px; }
+  .qo-pnl.muted { color: #64748b; font-weight: 400; font-style: italic; font-size: 13px; }
   .grid {
     display: grid; gap: 16px;
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -145,7 +147,7 @@
       <div class="sub">리처드 대니스 원칙 · 1유닛 = (총자산 × 1%) ÷ ATR</div>
       <div class="sub" style="margin-top:4px;color:#fbbf24">기준 종가: 2026-05-15 · 장중/시초가 직전 실행 — 어제 확정 종가 기준</div>
     </div>
-    <div class="sub">생성: 2026. 05. 18. 오전 11:23:10 KST</div>
+    <div class="sub">생성: 2026. 05. 18. 오후 12:20:36 KST</div>
   </header>
 
   <div class="summary">
@@ -166,42 +168,66 @@
       <a class="qo-item" data-stock-code="005930" href="#stock-005930" style="border-left:3px solid #0ea5e9">
         <div class="qo-name">삼성전자</div>
         <div class="qo-action" style="background:#0ea5e9">보유 유지</div>
-        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">-8.61%</div>
+        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">
+          <div class="qo-pnl-amt" data-live="qoPnlAmt">-25,500원</div>
+          <div class="qo-pnl-pct" data-live="qoPnlPct">-8.61%</div>
+        </div>
       </a>
       <a class="qo-item" data-stock-code="066570" href="#stock-066570" style="border-left:3px solid #0ea5e9">
         <div class="qo-name">LG전자</div>
         <div class="qo-action" style="background:#0ea5e9">보유 유지</div>
-        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">-6.24%</div>
+        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">
+          <div class="qo-pnl-amt" data-live="qoPnlAmt">-16,000원</div>
+          <div class="qo-pnl-pct" data-live="qoPnlPct">-6.24%</div>
+        </div>
       </a>
       <a class="qo-item" data-stock-code="272210" href="#stock-272210" style="border-left:3px solid #f59e0b">
         <div class="qo-name">한화시스템</div>
         <div class="qo-action" style="background:#f59e0b">익절 청산</div>
-        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">-3.43%</div>
+        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">
+          <div class="qo-pnl-amt" data-live="qoPnlAmt">-3,700원</div>
+          <div class="qo-pnl-pct" data-live="qoPnlPct">-3.43%</div>
+        </div>
       </a>
       <a class="qo-item" data-stock-code="000270" href="#stock-000270" style="border-left:3px solid #0ea5e9">
         <div class="qo-name">기아</div>
         <div class="qo-action" style="background:#0ea5e9">보유 유지</div>
-        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">-0.83%</div>
+        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">
+          <div class="qo-pnl-amt" data-live="qoPnlAmt">-1,400원</div>
+          <div class="qo-pnl-pct" data-live="qoPnlPct">-0.83%</div>
+        </div>
       </a>
       <a class="qo-item" data-stock-code="017670" href="#stock-017670" style="border-left:3px solid #0ea5e9">
         <div class="qo-name">SK텔레콤</div>
         <div class="qo-action" style="background:#0ea5e9">보유 유지</div>
-        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">-5.94%</div>
+        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">
+          <div class="qo-pnl-amt" data-live="qoPnlAmt">-6,400원</div>
+          <div class="qo-pnl-pct" data-live="qoPnlPct">-5.94%</div>
+        </div>
       </a>
       <a class="qo-item" data-stock-code="003490" href="#stock-003490" style="border-left:3px solid #0ea5e9">
         <div class="qo-name">대한항공</div>
         <div class="qo-action" style="background:#0ea5e9">보유 유지</div>
-        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">-4.05%</div>
+        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">
+          <div class="qo-pnl-amt" data-live="qoPnlAmt">-1,100원</div>
+          <div class="qo-pnl-pct" data-live="qoPnlPct">-4.05%</div>
+        </div>
       </a>
       <a class="qo-item" data-stock-code="008770" href="#stock-008770" style="border-left:3px solid #0ea5e9">
         <div class="qo-name">호텔신라</div>
         <div class="qo-action" style="background:#0ea5e9">보유 유지</div>
-        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">-6.16%</div>
+        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">
+          <div class="qo-pnl-amt" data-live="qoPnlAmt">-4,100원</div>
+          <div class="qo-pnl-pct" data-live="qoPnlPct">-6.16%</div>
+        </div>
       </a>
       <a class="qo-item" data-stock-code="139480" href="#stock-139480" style="border-left:3px solid #0ea5e9">
         <div class="qo-name">이마트</div>
         <div class="qo-action" style="background:#0ea5e9">보유 유지</div>
-        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">-4.30%</div>
+        <div class="qo-pnl" data-live="qoPnl" style="color:#f87171">
+          <div class="qo-pnl-amt" data-live="qoPnlAmt">-4,600원</div>
+          <div class="qo-pnl-pct" data-live="qoPnlPct">-4.30%</div>
+        </div>
       </a></div>
   </section>
 
@@ -854,10 +880,14 @@
         pnlEl.innerHTML = fmtPnl(pnl) + '<br><span class="pct">' + fmtPct(pnlPct) + '</span>';
         pnlEl.style.color = pnl >= 0 ? '#22c55e' : '#f87171';
       }
-      const qo = document.querySelector('.qo-item[data-stock-code="' + s.code + '"] [data-live="qoPnl"]');
-      if (qo){
-        qo.textContent = fmtPct(pnlPct);
-        qo.style.color = pnl >= 0 ? '#22c55e' : '#f87171';
+      const qoItem = document.querySelector('.qo-item[data-stock-code="' + s.code + '"]');
+      if (qoItem){
+        const qoWrap = qoItem.querySelector('[data-live="qoPnl"]');
+        if (qoWrap) qoWrap.style.color = pnl >= 0 ? '#22c55e' : '#f87171';
+        const qoAmt = qoItem.querySelector('[data-live="qoPnlAmt"]');
+        if (qoAmt) qoAmt.textContent = fmtPnl(pnl);
+        const qoPct = qoItem.querySelector('[data-live="qoPnlPct"]');
+        if (qoPct) qoPct.textContent = fmtPct(pnlPct);
       }
       updateHint(card, s.action, pnlPct);
     }

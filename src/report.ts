@@ -128,7 +128,10 @@ function renderQuickOverview(reports: StockReport[]): string {
     const { config, signal, holding } = r;
     const color = ACTION_COLOR[signal.action];
     const pnlBlock = holding
-      ? `<div class="qo-pnl" data-live="qoPnl" style="color:${holding.pnl >= 0 ? '#22c55e' : '#f87171'}">${fmtPct(holding.pnlPct)}</div>`
+      ? `<div class="qo-pnl" data-live="qoPnl" style="color:${holding.pnl >= 0 ? '#22c55e' : '#f87171'}">
+          <div class="qo-pnl-amt" data-live="qoPnlAmt">${fmtPnl(holding.pnl)}</div>
+          <div class="qo-pnl-pct" data-live="qoPnlPct">${fmtPct(holding.pnlPct)}</div>
+        </div>`
       : '<div class="qo-pnl muted">미보유</div>';
     return `
       <a class="qo-item" data-stock-code="${escape(config.code)}" href="#stock-${escape(config.code)}" style="border-left:3px solid ${color}">
@@ -304,8 +307,10 @@ export function renderHtml(data: DashboardData): string {
     color: white; font-size: 11px; font-weight: 600;
     padding: 2px 8px; border-radius: 3px;
   }
-  .qo-pnl { margin-top: 6px; font-size: 13px; font-weight: 600; }
-  .qo-pnl.muted { color: #64748b; font-weight: 400; font-style: italic; }
+  .qo-pnl { margin-top: 6px; font-weight: 600; line-height: 1.2; }
+  .qo-pnl-amt { font-size: 14px; }
+  .qo-pnl-pct { font-size: 11px; opacity: 0.85; margin-top: 1px; }
+  .qo-pnl.muted { color: #64748b; font-weight: 400; font-style: italic; font-size: 13px; }
   .grid {
     display: grid; gap: 16px;
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -527,10 +532,14 @@ function liveUpdateScript(): string {
         pnlEl.innerHTML = fmtPnl(pnl) + '<br><span class="pct">' + fmtPct(pnlPct) + '</span>';
         pnlEl.style.color = pnl >= 0 ? '#22c55e' : '#f87171';
       }
-      const qo = document.querySelector('.qo-item[data-stock-code="' + s.code + '"] [data-live="qoPnl"]');
-      if (qo){
-        qo.textContent = fmtPct(pnlPct);
-        qo.style.color = pnl >= 0 ? '#22c55e' : '#f87171';
+      const qoItem = document.querySelector('.qo-item[data-stock-code="' + s.code + '"]');
+      if (qoItem){
+        const qoWrap = qoItem.querySelector('[data-live="qoPnl"]');
+        if (qoWrap) qoWrap.style.color = pnl >= 0 ? '#22c55e' : '#f87171';
+        const qoAmt = qoItem.querySelector('[data-live="qoPnlAmt"]');
+        if (qoAmt) qoAmt.textContent = fmtPnl(pnl);
+        const qoPct = qoItem.querySelector('[data-live="qoPnlPct"]');
+        if (qoPct) qoPct.textContent = fmtPct(pnlPct);
       }
       updateHint(card, s.action, pnlPct);
     }
