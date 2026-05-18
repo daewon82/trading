@@ -510,9 +510,9 @@ export function renderHtml(data: DashboardData): string {
 
   ${errorBlock}
 
-  ${renderQuickOverview(data.reports)}
-
   ${renderScanSection(data.scanCandidates)}
+
+  ${renderQuickOverview(data.reports)}
 
   <div class="grid">
     ${cards}
