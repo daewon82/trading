@@ -36,7 +36,10 @@ jobs:
       - name: Type check
         run: npm run lint
 
-      - name: Generate dashboard
+      - name: Generate dashboard + notify
+        env:
+          JANDI_WEBHOOK_URL: ${{ secrets.JANDI_WEBHOOK_URL }}
+          DASHBOARD_PUBLIC_URL: ${{ vars.DASHBOARD_PUBLIC_URL || 'https://daewon82.github.io/trading/' }}
         run: npm start
 
       - name: Commit docs/
