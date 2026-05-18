@@ -443,7 +443,7 @@ function liveUpdateScript(): string {
   return `(function(){
   const data = JSON.parse(document.getElementById('turtle-data').textContent);
   const POLL_MS = 10000;
-  const PROXY = 'https://api.allorigins.win/raw?url=';
+  const PROXY = 'https://api.allorigins.win/get?url=';
   let failStreak = 0;
 
   function kstHour(){
@@ -470,14 +470,17 @@ function liveUpdateScript(): string {
     const naverUrl = 'https://polling.finance.naver.com/api/realtime/domestic/stock/' + code;
     const res = await fetch(PROXY + encodeURIComponent(naverUrl));
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const j = await res.json();
+    const wrapper = await res.json();
+    if (!wrapper || !wrapper.contents) throw new Error('proxy: empty contents');
+    const j = JSON.parse(wrapper.contents);
     const item = j.datas && j.datas[0];
     if (!item) throw new Error('no data');
-    const price = parseInt(String(item.closePrice).replace(/,/g,''),10);
     const dir = item.compareToPreviousPrice && item.compareToPreviousPrice.code; // 2=상승,5=하락
     const sign = dir === '5' ? -1 : 1;
-    const change = parseInt(String(item.compareToPreviousClosePrice||'0').replace(/,/g,''),10) * sign;
-    const changePct = parseFloat(item.fluctuationsRatio||'0') * sign;
+    const price = Number(item.closePriceRaw);
+    const change = Number(item.compareToPreviousClosePriceRaw || 0) * sign;
+    const changePct = Number(item.fluctuationsRatioRaw || 0) * sign;
+    if (!isFinite(price) || price <= 0) throw new Error('invalid price: ' + item.closePriceRaw);
     return { price, change, changePct };
   }
 
@@ -560,8 +563,12 @@ function liveUpdateScript(): string {
       for (const r of results){ if (r){ updateCard(r.s, r.live); ok++; } }
       if (ok === 0){
         failStreak++;
-        setStatus('⚠ 갱신 실패 (' + failStreak + '회)','#f59e0b');
+        const msg = failStreak >= 3
+          ? '🔴 프록시 ' + failStreak + '회 연속 실패 — 일봉 종가 표시 중'
+          : '⚠ 갱신 실패 (' + failStreak + '회)';
+        setStatus(msg, failStreak >= 3 ? '#dc2626' : '#f59e0b');
       } else {
+        if (failStreak > 0) console.log('[live] 복구 (실패 ' + failStreak + '회 → 0)');
         failStreak = 0;
         setUpdated();
       }
