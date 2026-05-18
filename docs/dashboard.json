@@ -1,7 +1,9 @@
 {
-  "generatedAt": "2026-05-18T01:07:50.556Z",
+  "generatedAt": "2026-05-18T01:29:04.037Z",
   "totalCapital": 50000000,
   "riskPerTrade": 500000,
+  "asOfDate": "2026-05-15",
+  "isLive": false,
   "reports": [
     {
       "config": {
@@ -10,37 +12,37 @@
         "positionNote": "주도 대형주 (추세 지속성 높음)"
       },
       "indicators": {
-        "atr20": 14375,
+        "atr20": 13850,
         "donchianHigh20": 299500,
-        "donchianLow10": 220500,
-        "ma60": 211260,
-        "ma120": 170796.66666666666,
-        "prevClose": 270500,
-        "lastClose": 277500,
-        "lastDate": "2026-05-18",
-        "change": 7000,
-        "changePct": 2.5878003696857674,
-        "volume": 12391033,
-        "avgVolume20": 28130922.45
+        "donchianLow10": 218500,
+        "ma60": 209655,
+        "ma120": 169299.16666666666,
+        "prevClose": 296000,
+        "lastClose": 270500,
+        "lastDate": "2026-05-15",
+        "change": -25500,
+        "changePct": -8.614864864864865,
+        "volume": 38075487,
+        "avgVolume20": 28586360.2
       },
       "signal": {
         "action": "HOLD",
-        "reason": "손절선 251,250원 / 10일 저점 220,500원 / 다음 피라미딩 287,188원.",
-        "unitSize": 17,
-        "unitCost": 4717500,
-        "stopPrice": 251250,
-        "nextPyramidPrice": 287187.5,
-        "distanceToEntryPct": 7.927927927927928,
-        "distanceToStopPct": 9.45945945945946,
-        "distanceToExitPct": 20.54054054054054
+        "reason": "손절선 252,300원 / 10일 저점 218,500원 / 다음 피라미딩 286,925원.",
+        "unitSize": 18,
+        "unitCost": 4869000,
+        "stopPrice": 252300,
+        "nextPyramidPrice": 286925,
+        "distanceToEntryPct": 10.720887245841034,
+        "distanceToStopPct": 6.728280961182994,
+        "distanceToExitPct": 19.223659889094268
       },
       "protocol": {
         "status": "KEEP",
         "passed": [
-          "MA60 위 (277,500원 > 211,260원)",
-          "MA120 위 (277,500원 > 170,797원)",
+          "MA60 위 (270,500원 > 209,655원)",
+          "MA120 위 (270,500원 > 169,299원)",
           "정배열 (MA60 > MA120)",
-          "최근 20일 고점 갱신 활발",
+          "최근 20일 신고가 돌파 1일 전",
           "거래량 정상"
         ],
         "failed": [],
@@ -54,17 +56,25 @@
           "quantity": 2,
           "buyDate": "2026-05-01"
         },
-        "currentValue": 555000,
+        "currentValue": 541000,
         "costBasis": 560000,
-        "pnl": -5000,
-        "pnlPct": -0.8928571428571428,
-        "stopPrice": 251250,
+        "pnl": -19000,
+        "pnlPct": -3.392857142857143,
+        "stopPrice": 252300,
         "stoppedOut": false,
-        "nextPyramidPrice": 287187.5,
+        "nextPyramidPrice": 286925,
         "pyramidReady": false,
         "exitTrigger10dLow": false
       },
       "history": [
+        {
+          "date": "2026-02-13",
+          "open": 179500,
+          "high": 184400,
+          "low": 178900,
+          "close": 181200,
+          "volume": 34454192
+        },
         {
           "date": "2026-02-19",
           "open": 188000,
@@ -536,14 +546,6 @@
           "low": 266000,
           "close": 270500,
           "volume": 38075487
-        },
-        {
-          "date": "2026-05-18",
-          "open": 269500,
-          "high": 280000,
-          "low": 262000,
-          "close": 277500,
-          "volume": 12391033
         }
       ]
     },
@@ -554,37 +556,37 @@
         "positionNote": "강한 모멘텀 (최근 변동성 확대)"
       },
       "indicators": {
-        "atr20": 14890,
-        "donchianHigh20": 266500,
-        "donchianLow10": 138800,
-        "ma60": 130783.33333333333,
-        "ma120": 113506.66666666667,
-        "prevClose": 240500,
-        "lastClose": 219500,
-        "lastDate": "2026-05-18",
-        "change": -21000,
-        "changePct": -8.731808731808732,
-        "volume": 2171239,
-        "avgVolume20": 2671595.2
+        "atr20": 13255,
+        "donchianHigh20": 224500,
+        "donchianLow10": 134600,
+        "ma60": 129078.33333333333,
+        "ma120": 112407.5,
+        "prevClose": 217000,
+        "lastClose": 240500,
+        "lastDate": "2026-05-15",
+        "change": 23500,
+        "changePct": 10.829493087557603,
+        "volume": 5856267,
+        "avgVolume20": 2606135.4
       },
       "signal": {
         "action": "PYRAMID",
-        "reason": "진입가 +0.5 ATR 도달 (95,445원). 1유닛 추가 매수 (최대 4유닛).",
-        "unitSize": 16,
-        "unitCost": 3512000,
-        "stopPrice": 58220,
-        "nextPyramidPrice": 95445,
-        "distanceToEntryPct": 21.4123006833713,
-        "distanceToStopPct": 73.4760820045558,
-        "distanceToExitPct": 36.76537585421412
+        "reason": "진입가 +0.5 ATR 도달 (94,628원). 1유닛 추가 매수 (최대 4유닛).",
+        "unitSize": 18,
+        "unitCost": 4329000,
+        "stopPrice": 61490,
+        "nextPyramidPrice": 94627.5,
+        "distanceToEntryPct": -6.652806652806653,
+        "distanceToStopPct": 74.43243243243242,
+        "distanceToExitPct": 44.03326403326403
       },
       "protocol": {
         "status": "KEEP",
         "passed": [
-          "MA60 위 (219,500원 > 130,783원)",
-          "MA120 위 (219,500원 > 113,507원)",
+          "MA60 위 (240,500원 > 129,078원)",
+          "MA120 위 (240,500원 > 112,408원)",
           "정배열 (MA60 > MA120)",
-          "최근 20일 고점 갱신 활발",
+          "오늘 20일 신고가 돌파",
           "거래량 정상"
         ],
         "failed": [],
@@ -598,17 +600,25 @@
           "quantity": 3,
           "buyDate": "2026-05-01"
         },
-        "currentValue": 658500,
+        "currentValue": 721500,
         "costBasis": 264000,
-        "pnl": 394500,
-        "pnlPct": 149.4318181818182,
-        "stopPrice": 58220,
+        "pnl": 457500,
+        "pnlPct": 173.29545454545453,
+        "stopPrice": 61490,
         "stoppedOut": false,
-        "nextPyramidPrice": 95445,
+        "nextPyramidPrice": 94627.5,
         "pyramidReady": true,
         "exitTrigger10dLow": false
       },
       "history": [
+        {
+          "date": "2026-02-13",
+          "open": 117900,
+          "high": 119700,
+          "low": 116100,
+          "close": 117200,
+          "volume": 2261854
+        },
         {
           "date": "2026-02-19",
           "open": 120000,
@@ -1080,14 +1090,6 @@
           "low": 233000,
           "close": 240500,
           "volume": 5856267
-        },
-        {
-          "date": "2026-05-18",
-          "open": 249000,
-          "high": 249500,
-          "low": 212000,
-          "close": 219500,
-          "volume": 2171239
         }
       ]
     },
@@ -1098,40 +1100,40 @@
         "positionNote": "방산/우주 테마 (돌파 신호 유효)"
       },
       "indicators": {
-        "atr20": 5840,
+        "atr20": 5565,
         "donchianHigh20": 137700,
-        "donchianLow10": 102900,
-        "ma60": 127873.33333333333,
-        "ma120": 99181.66666666667,
-        "prevClose": 104300,
-        "lastClose": 102200,
-        "lastDate": "2026-05-18",
-        "change": -2100,
-        "changePct": -2.013422818791946,
-        "volume": 333528,
-        "avgVolume20": 888824
+        "donchianLow10": 108000,
+        "ma60": 127893.33333333333,
+        "ma120": 98750,
+        "prevClose": 116100,
+        "lastClose": 104300,
+        "lastDate": "2026-05-15",
+        "change": -11800,
+        "changePct": -10.163652024117141,
+        "volume": 1061441,
+        "avgVolume20": 900692.85
       },
       "signal": {
         "action": "EXIT_10D_LOW",
-        "reason": "10일 저점 102,900원 이탈. 전량 익절/청산.",
-        "unitSize": 42,
-        "unitCost": 4292400,
-        "stopPrice": 56820,
-        "nextPyramidPrice": 71420,
-        "distanceToEntryPct": 34.73581213307241,
-        "distanceToStopPct": 44.403131115459885,
-        "distanceToExitPct": -0.684931506849315
+        "reason": "10일 저점 108,000원 이탈. 전량 익절/청산.",
+        "unitSize": 44,
+        "unitCost": 4589200,
+        "stopPrice": 57370,
+        "nextPyramidPrice": 71282.5,
+        "distanceToEntryPct": 32.02301054650048,
+        "distanceToStopPct": 44.99520613614573,
+        "distanceToExitPct": -3.547459252157239
       },
       "protocol": {
         "status": "WATCH",
         "passed": [
-          "MA120 위 (102,200원 > 99,182원)",
+          "MA120 위 (104,300원 > 98,750원)",
           "정배열 (MA60 > MA120)",
-          "최근 20일 고점 갱신 활발",
+          "최근 20일 신고가 돌파 51일 전",
           "거래량 정상"
         ],
         "failed": [
-          "MA60 아래 (102,200원 ≤ 127,873원)"
+          "MA60 아래 (104,300원 ≤ 127,893원)"
         ],
         "notes": [
           "일부 조건 실패 — 관찰 필요. 추가 조건 충족 시 삭제 검토."
@@ -1145,17 +1147,25 @@
           "quantity": 3,
           "buyDate": "2026-05-01"
         },
-        "currentValue": 306600,
+        "currentValue": 312900,
         "costBasis": 205500,
-        "pnl": 101100,
-        "pnlPct": 49.1970802919708,
-        "stopPrice": 56820,
+        "pnl": 107400,
+        "pnlPct": 52.26277372262774,
+        "stopPrice": 57370,
         "stoppedOut": false,
-        "nextPyramidPrice": 71420,
+        "nextPyramidPrice": 71282.5,
         "pyramidReady": true,
         "exitTrigger10dLow": true
       },
       "history": [
+        {
+          "date": "2026-02-13",
+          "open": 103500,
+          "high": 106250,
+          "low": 101800,
+          "close": 103400,
+          "volume": 1105572
+        },
         {
           "date": "2026-02-19",
           "open": 105900,
@@ -1627,14 +1637,6 @@
           "low": 102900,
           "close": 104300,
           "volume": 1061441
-        },
-        {
-          "date": "2026-05-18",
-          "open": 105800,
-          "high": 106900,
-          "low": 99700,
-          "close": 102200,
-          "volume": 333528
         }
       ]
     },
@@ -1645,47 +1647,52 @@
         "positionNote": "실적 대형주 (추세 신뢰도 높음)"
       },
       "indicators": {
-        "atr20": 8155,
-        "donchianHigh20": 184200,
+        "atr20": 7920,
+        "donchianHigh20": 183000,
         "donchianLow10": 151700,
-        "ma60": 162566.66666666666,
-        "ma120": 148626.66666666666,
-        "prevClose": 168000,
-        "lastClose": 161900,
-        "lastDate": "2026-05-18",
-        "change": -6100,
-        "changePct": -3.6309523809523814,
-        "volume": 585739,
-        "avgVolume20": 1585066.7
+        "ma60": 162603.33333333334,
+        "ma120": 148231.66666666666,
+        "prevClose": 178100,
+        "lastClose": 168000,
+        "lastDate": "2026-05-15",
+        "change": -10100,
+        "changePct": -5.670971364402021,
+        "volume": 2839184,
+        "avgVolume20": 1626049.25
       },
       "signal": {
         "action": "WAIT",
-        "reason": "20일 고점 184,200원 까지 13.77% 남음. 돌파 대기.",
-        "unitSize": 30,
-        "unitCost": 4857000,
+        "reason": "20일 고점 183,000원 까지 8.93% 남음. 돌파 대기.",
+        "unitSize": 31,
+        "unitCost": 5208000,
         "stopPrice": null,
         "nextPyramidPrice": null,
-        "distanceToEntryPct": 13.773934527486103,
+        "distanceToEntryPct": 8.928571428571429,
         "distanceToStopPct": null,
-        "distanceToExitPct": 6.300185299567635
+        "distanceToExitPct": 9.702380952380953
       },
       "protocol": {
-        "status": "WATCH",
+        "status": "KEEP",
         "passed": [
-          "MA120 위 (161,900원 > 148,627원)",
+          "MA60 위 (168,000원 > 162,603원)",
+          "MA120 위 (168,000원 > 148,232원)",
           "정배열 (MA60 > MA120)",
-          "최근 20일 고점 갱신 활발",
+          "최근 20일 신고가 돌파 4일 전",
           "거래량 정상"
         ],
-        "failed": [
-          "MA60 아래 (161,900원 ≤ 162,567원)"
-        ],
-        "notes": [
-          "일부 조건 실패 — 관찰 필요. 추가 조건 충족 시 삭제 검토."
-        ]
+        "failed": [],
+        "notes": []
       },
       "holding": null,
       "history": [
+        {
+          "date": "2026-02-13",
+          "open": 164900,
+          "high": 166000,
+          "low": 163200,
+          "close": 164100,
+          "volume": 972962
+        },
         {
           "date": "2026-02-19",
           "open": 169000,
@@ -2157,14 +2164,6 @@
           "low": 164900,
           "close": 168000,
           "volume": 2839184
-        },
-        {
-          "date": "2026-05-18",
-          "open": 168800,
-          "high": 170700,
-          "low": 158600,
-          "close": 161900,
-          "volume": 585739
         }
       ]
     },
@@ -2175,37 +2174,37 @@
         "positionNote": "방어주 성격 (낮은 변동성, 안정적)"
       },
       "indicators": {
-        "atr20": 4340,
+        "atr20": 4195,
         "donchianHigh20": 108000,
         "donchianLow10": 91400,
-        "ma60": 86971.66666666667,
-        "ma120": 73045,
-        "prevClose": 101300,
-        "lastClose": 99600,
-        "lastDate": "2026-05-18",
-        "change": -1700,
-        "changePct": -1.678183613030602,
-        "volume": 439665,
-        "avgVolume20": 972621.45
+        "ma60": 86753.33333333333,
+        "ma120": 72654.16666666667,
+        "prevClose": 102700,
+        "lastClose": 101300,
+        "lastDate": "2026-05-15",
+        "change": -1400,
+        "changePct": -1.3631937682570594,
+        "volume": 1013036,
+        "avgVolume20": 997323.5
       },
       "signal": {
         "action": "HOLD",
-        "reason": "손절선 93,320원 / 10일 저점 91,400원 / 다음 피라미딩 104,170원.",
-        "unitSize": 57,
-        "unitCost": 5677200,
-        "stopPrice": 93320,
-        "nextPyramidPrice": 104170,
-        "distanceToEntryPct": 8.433734939759036,
-        "distanceToStopPct": 6.305220883534137,
-        "distanceToExitPct": 8.23293172690763
+        "reason": "손절선 93,610원 / 10일 저점 91,400원 / 다음 피라미딩 104,098원.",
+        "unitSize": 59,
+        "unitCost": 5976700,
+        "stopPrice": 93610,
+        "nextPyramidPrice": 104097.5,
+        "distanceToEntryPct": 6.614017769002961,
+        "distanceToStopPct": 7.591312931885488,
+        "distanceToExitPct": 9.772951628825272
       },
       "protocol": {
         "status": "KEEP",
         "passed": [
-          "MA60 위 (99,600원 > 86,972원)",
-          "MA120 위 (99,600원 > 73,045원)",
+          "MA60 위 (101,300원 > 86,753원)",
+          "MA120 위 (101,300원 > 72,654원)",
           "정배열 (MA60 > MA120)",
-          "최근 20일 고점 갱신 활발",
+          "최근 20일 신고가 돌파 3일 전",
           "거래량 정상"
         ],
         "failed": [],
@@ -2219,17 +2218,25 @@
           "quantity": 3,
           "buyDate": "2026-05-01"
         },
-        "currentValue": 298800,
+        "currentValue": 303900,
         "costBasis": 306000,
-        "pnl": -7200,
-        "pnlPct": -2.3529411764705883,
-        "stopPrice": 93320,
+        "pnl": -2100,
+        "pnlPct": -0.6862745098039216,
+        "stopPrice": 93610,
         "stoppedOut": false,
-        "nextPyramidPrice": 104170,
+        "nextPyramidPrice": 104097.5,
         "pyramidReady": false,
         "exitTrigger10dLow": false
       },
       "history": [
+        {
+          "date": "2026-02-13",
+          "open": 81200,
+          "high": 88600,
+          "low": 79500,
+          "close": 86500,
+          "volume": 4134911
+        },
         {
           "date": "2026-02-19",
           "open": 84200,
@@ -2701,14 +2708,6 @@
           "low": 100100,
           "close": 101300,
           "volume": 1013036
-        },
-        {
-          "date": "2026-05-18",
-          "open": 102200,
-          "high": 105000,
-          "low": 97600,
-          "close": 99600,
-          "volume": 439665
         }
       ]
     },
@@ -2719,37 +2718,37 @@
         "positionNote": "경기 민감주 (박스권 돌파 확인 필수)"
       },
       "indicators": {
-        "atr20": 982.5,
+        "atr20": 952.5,
         "donchianHigh20": 27350,
         "donchianLow10": 24350,
-        "ma60": 25014.166666666668,
-        "ma120": 23929.166666666668,
-        "prevClose": 26050,
-        "lastClose": 25350,
-        "lastDate": "2026-05-18",
-        "change": -700,
-        "changePct": -2.6871401151631478,
-        "volume": 615194,
-        "avgVolume20": 1854948.45
+        "ma60": 25005,
+        "ma120": 23895,
+        "prevClose": 27300,
+        "lastClose": 26050,
+        "lastDate": "2026-05-15",
+        "change": -1250,
+        "changePct": -4.5787545787545785,
+        "volume": 2368660,
+        "avgVolume20": 1900187.25
       },
       "signal": {
-        "action": "STOP_LOSS",
-        "reason": "현재가 25,350원 ≤ 손절선 25,535원 (-2 ATR). 기계적 전량 청산.",
-        "unitSize": 254,
-        "unitCost": 6438900,
-        "stopPrice": 25535,
-        "nextPyramidPrice": 27991.25,
-        "distanceToEntryPct": 7.889546351084813,
-        "distanceToStopPct": -0.7297830374753451,
-        "distanceToExitPct": 3.9447731755424065
+        "action": "HOLD",
+        "reason": "손절선 25,595원 / 10일 저점 24,350원 / 다음 피라미딩 27,976원.",
+        "unitSize": 262,
+        "unitCost": 6825100,
+        "stopPrice": 25595,
+        "nextPyramidPrice": 27976.25,
+        "distanceToEntryPct": 4.990403071017274,
+        "distanceToStopPct": 1.7466410748560461,
+        "distanceToExitPct": 6.525911708253358
       },
       "protocol": {
         "status": "KEEP",
         "passed": [
-          "MA60 위 (25,350원 > 25,014원)",
-          "MA120 위 (25,350원 > 23,929원)",
+          "MA60 위 (26,050원 > 25,005원)",
+          "MA120 위 (26,050원 > 23,895원)",
           "정배열 (MA60 > MA120)",
-          "최근 20일 고점 갱신 활발",
+          "최근 20일 신고가 돌파 6일 전",
           "거래량 정상"
         ],
         "failed": [],
@@ -2763,17 +2762,25 @@
           "quantity": 12,
           "buyDate": "2026-05-01"
         },
-        "currentValue": 304200,
+        "currentValue": 312600,
         "costBasis": 330000,
-        "pnl": -25800,
-        "pnlPct": -7.818181818181818,
-        "stopPrice": 25535,
-        "stoppedOut": true,
-        "nextPyramidPrice": 27991.25,
+        "pnl": -17400,
+        "pnlPct": -5.2727272727272725,
+        "stopPrice": 25595,
+        "stoppedOut": false,
+        "nextPyramidPrice": 27976.25,
         "pyramidReady": false,
         "exitTrigger10dLow": false
       },
       "history": [
+        {
+          "date": "2026-02-13",
+          "open": 24800,
+          "high": 25200,
+          "low": 24500,
+          "close": 24800,
+          "volume": 2760898
+        },
         {
           "date": "2026-02-19",
           "open": 25600,
@@ -3245,14 +3252,6 @@
           "low": 25650,
           "close": 26050,
           "volume": 2368660
-        },
-        {
-          "date": "2026-05-18",
-          "open": 25750,
-          "high": 25900,
-          "low": 24750,
-          "close": 25350,
-          "volume": 615194
         }
       ]
     },
@@ -3263,37 +3262,37 @@
         "positionNote": "턴어라운드형 (완전한 바닥 탈출 필요)"
       },
       "indicators": {
-        "atr20": 3645,
+        "atr20": 3682.5,
         "donchianHigh20": 70300,
         "donchianLow10": 60400,
-        "ma60": 50852.5,
-        "ma120": 48617.5,
-        "prevClose": 62500,
-        "lastClose": 59900,
-        "lastDate": "2026-05-18",
-        "change": -2600,
-        "changePct": -4.16,
-        "volume": 134902,
-        "avgVolume20": 643864
+        "ma60": 50667.5,
+        "ma120": 48507.083333333336,
+        "prevClose": 66000,
+        "lastClose": 62500,
+        "lastDate": "2026-05-15",
+        "change": -3500,
+        "changePct": -5.303030303030303,
+        "volume": 452047,
+        "avgVolume20": 696932.65
       },
       "signal": {
-        "action": "STOP_LOSS",
-        "reason": "현재가 59,900원 ≤ 손절선 60,710원 (-2 ATR). 기계적 전량 청산.",
-        "unitSize": 68,
-        "unitCost": 4073200,
-        "stopPrice": 60710,
-        "nextPyramidPrice": 69822.5,
-        "distanceToEntryPct": 17.362270450751254,
-        "distanceToStopPct": -1.3522537562604342,
-        "distanceToExitPct": -0.8347245409015025
+        "action": "HOLD",
+        "reason": "손절선 60,635원 / 10일 저점 60,400원 / 다음 피라미딩 69,841원.",
+        "unitSize": 67,
+        "unitCost": 4187500,
+        "stopPrice": 60635,
+        "nextPyramidPrice": 69841.25,
+        "distanceToEntryPct": 12.479999999999999,
+        "distanceToStopPct": 2.984,
+        "distanceToExitPct": 3.36
       },
       "protocol": {
         "status": "KEEP",
         "passed": [
-          "MA60 위 (59,900원 > 50,853원)",
-          "MA120 위 (59,900원 > 48,618원)",
+          "MA60 위 (62,500원 > 50,668원)",
+          "MA120 위 (62,500원 > 48,507원)",
           "정배열 (MA60 > MA120)",
-          "최근 20일 고점 갱신 활발",
+          "최근 20일 신고가 돌파 11일 전",
           "거래량 정상"
         ],
         "failed": [],
@@ -3307,17 +3306,25 @@
           "quantity": 5,
           "buyDate": "2026-05-01"
         },
-        "currentValue": 299500,
+        "currentValue": 312500,
         "costBasis": 340000,
-        "pnl": -40500,
-        "pnlPct": -11.911764705882351,
-        "stopPrice": 60710,
-        "stoppedOut": true,
-        "nextPyramidPrice": 69822.5,
+        "pnl": -27500,
+        "pnlPct": -8.088235294117647,
+        "stopPrice": 60635,
+        "stoppedOut": false,
+        "nextPyramidPrice": 69841.25,
         "pyramidReady": false,
-        "exitTrigger10dLow": true
+        "exitTrigger10dLow": false
       },
       "history": [
+        {
+          "date": "2026-02-13",
+          "open": 49700,
+          "high": 49750,
+          "low": 48650,
+          "close": 48800,
+          "volume": 314532
+        },
         {
           "date": "2026-02-19",
           "open": 49150,
@@ -3789,14 +3796,6 @@
           "low": 61300,
           "close": 62500,
           "volume": 452047
-        },
-        {
-          "date": "2026-05-18",
-          "open": 62600,
-          "high": 62600,
-          "low": 58200,
-          "close": 59900,
-          "volume": 134902
         }
       ]
     },
@@ -3807,44 +3806,41 @@
         "positionNote": "역추세 주의 (20일 고점 돌파 엄격 적용)"
       },
       "indicators": {
-        "atr20": 5600,
+        "atr20": 5565,
         "donchianHigh20": 118700,
-        "donchianLow10": 100700,
-        "ma60": 100330,
-        "ma120": 93762.5,
-        "prevClose": 102500,
-        "lastClose": 98200,
-        "lastDate": "2026-05-18",
-        "change": -4300,
-        "changePct": -4.195121951219512,
-        "volume": 117887,
-        "avgVolume20": 234986.35
+        "donchianLow10": 102000,
+        "ma60": 100548.33333333333,
+        "ma120": 93610,
+        "prevClose": 118700,
+        "lastClose": 102500,
+        "lastDate": "2026-05-15",
+        "change": -16200,
+        "changePct": -13.647851727042964,
+        "volume": 551420,
+        "avgVolume20": 244388.55
       },
       "signal": {
-        "action": "EXIT_10D_LOW",
-        "reason": "10일 저점 100,700원 이탈. 전량 익절/청산.",
+        "action": "HOLD",
+        "reason": "손절선 93,870원 / 10일 저점 102,000원 / 다음 피라미딩 107,783원.",
         "unitSize": 44,
-        "unitCost": 4320800,
-        "stopPrice": 93800,
-        "nextPyramidPrice": 107800,
-        "distanceToEntryPct": 20.875763747454176,
-        "distanceToStopPct": 4.480651731160896,
-        "distanceToExitPct": -2.5458248472505094
+        "unitCost": 4510000,
+        "stopPrice": 93870,
+        "nextPyramidPrice": 107782.5,
+        "distanceToEntryPct": 15.804878048780488,
+        "distanceToStopPct": 8.419512195121952,
+        "distanceToExitPct": 0.4878048780487805
       },
       "protocol": {
-        "status": "WATCH",
+        "status": "KEEP",
         "passed": [
-          "MA120 위 (98,200원 > 93,763원)",
+          "MA60 위 (102,500원 > 100,548원)",
+          "MA120 위 (102,500원 > 93,610원)",
           "정배열 (MA60 > MA120)",
-          "최근 20일 고점 갱신 활발",
+          "최근 20일 신고가 돌파 1일 전",
           "거래량 정상"
         ],
-        "failed": [
-          "MA60 아래 (98,200원 ≤ 100,330원)"
-        ],
-        "notes": [
-          "일부 조건 실패 — 관찰 필요. 추가 조건 충족 시 삭제 검토."
-        ]
+        "failed": [],
+        "notes": []
       },
       "holding": {
         "position": {
@@ -3854,17 +3850,25 @@
           "quantity": 2,
           "buyDate": "2026-05-01"
         },
-        "currentValue": 196400,
+        "currentValue": 205000,
         "costBasis": 210000,
-        "pnl": -13600,
-        "pnlPct": -6.476190476190475,
-        "stopPrice": 93800,
+        "pnl": -5000,
+        "pnlPct": -2.380952380952381,
+        "stopPrice": 93870,
         "stoppedOut": false,
-        "nextPyramidPrice": 107800,
+        "nextPyramidPrice": 107782.5,
         "pyramidReady": false,
-        "exitTrigger10dLow": true
+        "exitTrigger10dLow": false
       },
       "history": [
+        {
+          "date": "2026-02-13",
+          "open": 118500,
+          "high": 118600,
+          "low": 111300,
+          "close": 111300,
+          "volume": 755487
+        },
         {
           "date": "2026-02-19",
           "open": 111300,
@@ -4336,14 +4340,6 @@
           "low": 100700,
           "close": 102500,
           "volume": 551420
-        },
-        {
-          "date": "2026-05-18",
-          "open": 102900,
-          "high": 102900,
-          "low": 96200,
-          "close": 98200,
-          "volume": 117887
         }
       ]
     }

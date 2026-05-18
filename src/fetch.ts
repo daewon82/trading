@@ -19,36 +19,35 @@ export async function fetchOhlcv(code: string, days = 400): Promise<Candle[]> {
   const start = new Date();
   start.setDate(start.getDate() - days);
   const url = `${NAVER_BASE}?symbol=${encodeURIComponent(code)}&requestType=1&startTime=${fmtDate(start)}&endTime=${fmtDate(end)}&timeframe=day`;
+  const headers = {
+    'User-Agent':
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    Accept: 'application/json,text/javascript,*/*;q=0.01',
+    Referer: `https://finance.naver.com/item/sise.naver?code=${encodeURIComponent(code)}`,
+  };
 
-  let text = '';
-  let lastErr: Error | null = null;
+  let lastErr: Error = new Error(`Naver fetch failed (${code}): no attempt made`);
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
     try {
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          Accept: 'application/json,text/javascript,*/*;q=0.01',
-          Referer: `https://finance.naver.com/item/sise.naver?code=${encodeURIComponent(code)}`,
-        },
-      });
-      if (!res.ok) {
-        lastErr = new Error(`Naver fetch failed (${code}): HTTP ${res.status}`);
-        if (res.status < 500 && res.status !== 429) throw lastErr;
-        if (attempt === RETRY_DELAYS_MS.length) throw lastErr;
-        await sleep(RETRY_DELAYS_MS[attempt]);
-        continue;
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const text = await res.text();
+        return parseNaverSise(text, code);
       }
-      text = await res.text();
-      break;
+      const err = new Error(`Naver fetch failed (${code}): HTTP ${res.status}`);
+      const retriable = res.status === 429 || res.status >= 500;
+      if (!retriable) throw err;
+      lastErr = err;
     } catch (err) {
+      if (err instanceof Error && err.message.includes('HTTP ') && !err.message.match(/HTTP (429|5\d\d)/)) {
+        throw err;
+      }
       lastErr = err instanceof Error ? err : new Error(String(err));
-      if (attempt === RETRY_DELAYS_MS.length) throw lastErr;
-      await sleep(RETRY_DELAYS_MS[attempt]);
     }
+    if (attempt === RETRY_DELAYS_MS.length) throw lastErr;
+    await sleep(RETRY_DELAYS_MS[attempt]);
   }
-
-  return parseNaverSise(text, code);
+  throw lastErr;
 }
 
 function parseNaverSise(text: string, code: string): Candle[] {

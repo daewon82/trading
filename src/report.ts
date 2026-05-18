@@ -1,5 +1,5 @@
 import type { DashboardData, StockReport, TurtleAction, ProtocolStatus } from './types.js';
-import { DASHBOARD_PUBLIC_URL } from './config.js';
+import { DASHBOARD_PUBLIC_URL, RISK_PER_TRADE } from './config.js';
 
 const ACTION_LABEL: Record<TurtleAction, string> = {
   ENTRY_BREAKOUT: '신규 매수',
@@ -139,7 +139,7 @@ function renderStockCard(r: StockReport): string {
     </div>
 
     <div class="section">
-      <div class="section-title">1유닛 (리스크 ${fmtWon(500_000)} 기준)</div>
+      <div class="section-title">1유닛 (리스크 ${fmtWon(RISK_PER_TRADE)} 기준)</div>
       <div class="kv">
         <div><span class="k">수량</span><span class="v">${signal.unitSize}주</span></div>
         <div><span class="k">금액</span><span class="v">${fmtWon(signal.unitCost)}</span></div>
@@ -174,6 +174,10 @@ export function renderHtml(data: DashboardData): string {
     </section>` : '';
 
   const summary = summarize(data);
+
+  const asOfLine = data.asOfDate
+    ? `기준 종가: ${escape(data.asOfDate)} · ${data.isLive ? '장 마감 후 확정' : '장중/시초가 직전 실행 — 어제 확정 종가 기준'}`
+    : '기준 종가: 알 수 없음';
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -263,6 +267,7 @@ export function renderHtml(data: DashboardData): string {
     <div>
       <h1>🐢 터틀 KOSPI 대시보드</h1>
       <div class="sub">리처드 대니스 원칙 · 1유닛 = (총자산 × 1%) ÷ ATR</div>
+      <div class="sub" style="margin-top:4px;color:${data.isLive ? '#22c55e' : '#fbbf24'}">${asOfLine}</div>
     </div>
     <div class="sub">생성: ${escape(ts)} KST</div>
   </header>

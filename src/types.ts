@@ -91,6 +91,8 @@ export interface DashboardData {
   generatedAt: string;
   totalCapital: number;
   riskPerTrade: number;
+  asOfDate: string | null;
+  isLive: boolean;
   reports: StockReport[];
   errors: { code: string; name: string; message: string }[];
 }

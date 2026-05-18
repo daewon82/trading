@@ -67,13 +67,14 @@ function buildPayload(data: DashboardData): JandiPayload | null {
     month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
   });
 
-  const headline = priorityWeight(actionable[0].signal.action);
   const color = COLOR[actionable[0].signal.action];
-
+  const asOf = data.asOfDate
+    ? `기준 ${data.asOfDate}${data.isLive ? ' (확정 종가)' : ' (장중 실행 — 어제 종가)'}`
+    : '';
   const connectInfo = actionable.map((r) => buildSection(r));
 
   return {
-    body: `🐢 터틀 KOSPI 신호 (${ts}) — ${summary}\n${DASHBOARD_PUBLIC_URL}`,
+    body: `🐢 터틀 KOSPI 신호 (${ts} · ${asOf}) — ${summary}\n${DASHBOARD_PUBLIC_URL}`,
     connectColor: color,
     connectInfo,
   };
