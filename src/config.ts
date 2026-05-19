@@ -16,7 +16,7 @@ export const DASHBOARD_PUBLIC_URL =
 export const STOCKS: StockConfig[] = [
   { code: '005930', name: '삼성전자', positionNote: '주도 대형주 (추세 지속성 높음)' },
   { code: '066570', name: 'LG전자', positionNote: '강한 모멘텀 (최근 변동성 확대)' },
-  { code: '272210', name: '한화시스템', positionNote: '방산/우주 테마 (돌파 신호 유효)' },
+  { code: '003550', name: 'LG', positionNote: '지주회사 (LG그룹 전체 익스포저)' },
   { code: '000270', name: '기아', positionNote: '실적 대형주 (추세 신뢰도 높음)' },
   { code: '017670', name: 'SK텔레콤', positionNote: '방어주 성격 (낮은 변동성, 안정적)' },
   { code: '003490', name: '대한항공', positionNote: '경기 민감주 (박스권 돌파 확인 필수)' },

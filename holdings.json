@@ -1,7 +1,7 @@
 [
   { "code": "005930", "name": "삼성전자", "buyPrice": 296000, "quantity": 1, "buyDate": "2026-05-01" },
   { "code": "066570", "name": "LG전자", "buyPrice": 256500, "quantity": 1, "buyDate": "2026-05-01" },
-  { "code": "272210", "name": "한화시스템", "buyPrice": 108000, "quantity": 1, "buyDate": "2026-05-01" },
+  { "code": "003550", "name": "LG", "buyPrice": 115900, "quantity": 1, "buyDate": "2026-05-18" },
   { "code": "000270", "name": "기아", "buyPrice": 169400, "quantity": 1, "buyDate": "2026-05-18" },
   { "code": "017670", "name": "SK텔레콤", "buyPrice": 107700, "quantity": 1, "buyDate": "2026-05-01" },
   { "code": "003490", "name": "대한항공", "buyPrice": 27150, "quantity": 1, "buyDate": "2026-05-01" },

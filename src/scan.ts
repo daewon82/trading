@@ -17,7 +17,7 @@ export const SCAN_CANDIDATES: ScanCandidate[] = [
   { code: '068270', name: '셀트리온' },
   { code: '012330', name: '현대모비스' },
   { code: '086790', name: '하나금융지주' },
-  { code: '003550', name: 'LG' },
+  { code: '272210', name: '한화시스템' },
   { code: '015760', name: '한국전력' },
   { code: '011200', name: 'HMM' },
   { code: '010130', name: '고려아연' },
